@@ -1,8 +1,31 @@
+# Local planning artifacts
 KFlow_Code_KFC_最小实现与智能体架构学习路线.docx
+
+# Dependencies
 node_modules/
+
+# Build outputs
 dist/
+*.tsbuildinfo
+
+# Environment files
 .env
 .env.*
 !.env.example
+
+# Logs and runtime artifacts
 *.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Test and coverage output
+coverage/
+
+# Package manager local cache
+.pnpm-store/
+
+# OS/editor files
 .DS_Store
+.vscode/
