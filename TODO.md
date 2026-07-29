@@ -27,10 +27,18 @@
 - [ ] 创建 `docs/experiments/`：记录真实仓库任务及工具轨迹。
 - [ ] 创建 `docs/reviews/`：每阶段一份 `P0-review.md` 等复盘。
 
+## 学习展示基础设施
+
+- [x] **LR.1 建立 LR Machine**：从真实项目文件生成进度、学习日志、KFC API 和 Git 状态页面。
+- [x] **LR.2 建立 HTML 快照**：每项开发任务结束时生成自包含、不可变的学习证据。
+- [x] **LR.3 建立安全边界**：服务仅监听本机、只读数据、拒绝路径穿越和浏览器写操作。
+- [x] **LR.4 完成浏览器验收**：验证桌面端、390px 窄屏、控制台和安全路由。
+
 每条学习记录使用以下结构：
 
 ```md
 ## YYYY-MM-DD / 任务编号
+
 - 第一性问题：
 - 我的初始假设：
 - 最小实验：
@@ -46,7 +54,7 @@
 **核心问题：一个 CLI 程序最少需要哪些边界，才能被运行、测试和诊断？**
 
 - [x] **P0.1 定义范围**：写 `docs/vision.md`，明确首版只做 CLI、单 Provider、单 Agent；不做 TUI、插件、MCP、多 Agent。
-- [ ] **P0.2 初始化工程**：创建 Node.js 22+、TypeScript、pnpm 项目；加入 Vitest、ESLint、Prettier。
+- [x] **P0.2 初始化工程**：创建 Node.js 22+、TypeScript、pnpm 项目；加入 Vitest、ESLint、Prettier。
 - [ ] **P0.3 建立最小入口**：实现 `kfc --help` 与 `kfc --version`，分离 CLI 参数解析和核心逻辑。
 - [ ] **P0.4 配置边界**：用 Zod 校验环境变量和单 Provider 配置；禁止输出密钥。
 - [ ] **P0.5 错误边界**：定义 `KfcError`，区分配置错误、Provider 错误和用户中断。
@@ -146,4 +154,4 @@
 
 ## 当前唯一任务
 
-**P0.2 初始化工程**：先确认本机 Node.js 与 pnpm 环境，再创建最小 TypeScript 项目。只安装支撑运行、类型检查、测试和格式检查的工具，不写 Agent 功能。
+**P0.3 建立最小入口**：先理解 CLI 参数解析与核心逻辑为什么必须分离，再实现 `kfc --help` 和 `kfc --version`。不读取配置，不调用模型。
