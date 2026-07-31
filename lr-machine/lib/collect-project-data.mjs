@@ -3,6 +3,7 @@ import { basename, resolve } from "node:path";
 
 import { collectApiExports } from "./collect-api.mjs";
 import { collectGitState } from "./git-state.mjs";
+import { collectSourceFiles } from "./collect-source-files.mjs";
 import {
   collectVerifiedTaskIds,
   parseLearningLog,
@@ -52,6 +53,7 @@ export async function collectProjectData(projectRoot, snapshotMeta = null) {
     visionMarkdown,
     packageText,
     api,
+    sourceFiles,
     snapshots,
   ] = await Promise.all([
     readText(resolve(projectRoot, "TODO.md")),
@@ -59,6 +61,7 @@ export async function collectProjectData(projectRoot, snapshotMeta = null) {
     readText(resolve(projectRoot, "docs", "vision.md")),
     readText(resolve(projectRoot, "package.json")),
     collectApiExports(projectRoot),
+    collectSourceFiles(projectRoot),
     collectSnapshots(projectRoot),
   ]);
 
@@ -89,6 +92,7 @@ export async function collectProjectData(projectRoot, snapshotMeta = null) {
     visionMarkdown,
     commands,
     api,
+    sourceFiles,
     git: collectGitState(projectRoot),
     snapshots,
   };

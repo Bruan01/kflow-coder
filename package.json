@@ -10,13 +10,15 @@
   "packageManager": "pnpm@10.11.0",
   "scripts": {
     "build": "tsc -p tsconfig.json",
+    "typecheck:tests": "tsc -p tsconfig.tests.json",
     "test": "vitest run",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "learning:serve": "node lr-machine/server.mjs",
     "learning:snapshot": "node lr-machine/generate-snapshot.mjs",
-    "learning:test": "vitest run lr-machine/tests"
+    "learning:test": "vitest run lr-machine/tests",
+    "kfc": "node dist/cli.js"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -26,5 +28,11 @@
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.65.0",
     "vitest": "^4.1.10"
+  },
+  "bin": {
+    "kfc": "./dist/cli.js"
+  },
+  "dependencies": {
+    "zod": "^4.4.3"
   }
 }

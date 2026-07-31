@@ -29,3 +29,5 @@ coverage/
 # OS/editor files
 .DS_Store
 .vscode/
+
+credentials.json

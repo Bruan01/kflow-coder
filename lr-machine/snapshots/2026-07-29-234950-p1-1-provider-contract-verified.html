@@ -1,0 +1,1986 @@
+<!doctype html>
+<html lang="zh-CN" data-mode="snapshot">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="description" content="KFlow Code learning progress, verified evidence, and API archive">
+  <title>KFlow / Learning Machine</title>
+  <style>:root {
+  --paper: #eee7d8;
+  --paper-bright: #f8f3e8;
+  --paper-deep: #dfd3bd;
+  --ink: #171a17;
+  --ink-soft: #4f534c;
+  --line: rgba(23, 26, 23, 0.2);
+  --line-strong: rgba(23, 26, 23, 0.72);
+  --signal: #c84b31;
+  --signal-soft: #f0c4b5;
+  --verified: #2e6a4f;
+  --verified-soft: #c7d8c9;
+  --amber: #c38c2f;
+  --blueprint: #315b6d;
+  --shadow: 7px 7px 0 rgba(23, 26, 23, 0.92);
+  --serif:
+    "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Palatino, Georgia,
+    serif;
+  --mono:
+    "SFMono-Regular", "Cascadia Code", "JetBrains Mono", "Liberation Mono",
+    monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  min-width: 320px;
+  margin: 0;
+  color: var(--ink);
+  background: var(--paper);
+  font-family: var(--serif);
+  line-height: 1.55;
+}
+
+button,
+a {
+  color: inherit;
+}
+
+button {
+  font: inherit;
+}
+
+::selection {
+  color: var(--paper-bright);
+  background: var(--signal);
+}
+
+.paper-grid {
+  position: fixed;
+  z-index: -1;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(
+      90deg,
+      transparent 0 47px,
+      rgba(200, 75, 49, 0.2) 48px,
+      transparent 49px
+    ),
+    repeating-linear-gradient(
+      0deg,
+      transparent 0 31px,
+      rgba(49, 91, 109, 0.07) 32px
+    ),
+    radial-gradient(
+      circle at 18% 8%,
+      rgba(255, 255, 255, 0.85),
+      transparent 31%
+    ),
+    radial-gradient(
+      circle at 80% 90%,
+      rgba(195, 140, 47, 0.09),
+      transparent 32%
+    );
+}
+
+.paper-grid::after {
+  position: absolute;
+  inset: 0;
+  content: "";
+  opacity: 0.2;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.16'/%3E%3C/svg%3E");
+}
+
+.topbar {
+  position: sticky;
+  z-index: 20;
+  top: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 74px;
+  padding: 10px clamp(18px, 3vw, 48px);
+  border-bottom: 2px solid var(--ink);
+  background: rgba(238, 231, 216, 0.94);
+  backdrop-filter: blur(12px);
+}
+
+.brand {
+  display: inline-flex;
+  gap: 13px;
+  align-items: center;
+  text-decoration: none;
+}
+
+.brand-mark {
+  display: grid;
+  width: 45px;
+  height: 45px;
+  place-items: center;
+  border: 2px solid var(--ink);
+  color: var(--paper-bright);
+  background: var(--ink);
+  box-shadow: 3px 3px 0 var(--signal);
+  font: 700 14px/1 var(--mono);
+  letter-spacing: 0.05em;
+  transform: rotate(-2deg);
+}
+
+.brand strong,
+.brand small {
+  display: block;
+}
+
+.brand strong {
+  font: 700 12px/1.2 var(--mono);
+  letter-spacing: 0.13em;
+}
+
+.brand small {
+  margin-top: 4px;
+  color: var(--ink-soft);
+  font-size: 12px;
+}
+
+.topbar-status {
+  display: flex;
+  gap: 9px;
+  align-items: center;
+  color: var(--ink-soft);
+  font: 600 11px/1.4 var(--mono);
+  letter-spacing: 0.04em;
+}
+
+.signal {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--verified);
+  box-shadow: 0 0 0 4px rgba(46, 106, 79, 0.14);
+  animation: signal-pulse 2.4s ease-in-out infinite;
+}
+
+.text-button {
+  padding: 5px 8px;
+  border: 1px solid var(--line-strong);
+  background: transparent;
+  cursor: pointer;
+  font: 700 10px/1 var(--mono);
+  text-transform: uppercase;
+}
+
+.text-button:hover {
+  color: var(--paper-bright);
+  background: var(--ink);
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  width: min(1540px, 100%);
+  margin: 0 auto;
+}
+
+.sidebar {
+  position: sticky;
+  top: 74px;
+  align-self: start;
+  min-height: calc(100vh - 74px);
+  padding: 44px 24px 36px clamp(20px, 3vw, 44px);
+  border-right: 2px solid var(--ink);
+}
+
+.sidebar-heading {
+  display: grid;
+  gap: 3px;
+  margin-bottom: 34px;
+}
+
+.sidebar-heading strong {
+  margin-top: 8px;
+  font-size: 23px;
+  line-height: 1;
+}
+
+.eyebrow,
+.subheading,
+.section-index,
+.task-code,
+.muted {
+  font-family: var(--mono);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.eyebrow {
+  color: var(--signal);
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.muted {
+  color: var(--ink-soft);
+  font-size: 9px;
+}
+
+.phase-rail {
+  position: relative;
+  display: grid;
+  gap: 3px;
+}
+
+.phase-rail::before {
+  position: absolute;
+  top: 12px;
+  bottom: 12px;
+  left: 7px;
+  width: 1px;
+  content: "";
+  background: var(--line-strong);
+}
+
+.phase-item {
+  position: relative;
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: start;
+  padding: 10px 7px 10px 0;
+  text-decoration: none;
+}
+
+.phase-item::after {
+  position: absolute;
+  right: -24px;
+  bottom: 0;
+  left: 0;
+  height: 1px;
+  content: "";
+  background: var(--line);
+}
+
+.phase-node {
+  z-index: 1;
+  width: 9px;
+  height: 9px;
+  margin-top: 5px;
+  border: 2px solid var(--ink);
+  border-radius: 50%;
+  background: var(--paper);
+}
+
+.phase-item.active .phase-node,
+.phase-item.is-current .phase-node {
+  background: var(--signal);
+}
+
+.phase-item.verified .phase-node {
+  background: var(--verified);
+}
+
+.phase-item.is-current {
+  transform: translateX(5px);
+}
+
+.phase-item strong,
+.phase-item small {
+  display: block;
+}
+
+.phase-item strong {
+  font: 800 12px/1.2 var(--mono);
+}
+
+.phase-item small {
+  max-width: 145px;
+  margin-top: 2px;
+  color: var(--ink-soft);
+  font-size: 12px;
+}
+
+.phase-item em {
+  color: var(--ink-soft);
+  font: normal 9px/1.4 var(--mono);
+}
+
+.sidebar-note {
+  display: grid;
+  gap: 4px;
+  margin-top: 42px;
+  padding: 14px;
+  border: 1px dashed var(--line-strong);
+  background: rgba(248, 243, 232, 0.58);
+  transform: rotate(-1deg);
+}
+
+.sidebar-note span {
+  color: var(--ink-soft);
+  font-size: 12px;
+}
+
+.sidebar-note strong {
+  color: var(--verified);
+  font-size: 14px;
+}
+
+.content {
+  min-width: 0;
+  padding: clamp(28px, 5vw, 76px);
+}
+
+.hero-panel {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 240px;
+  gap: 36px;
+  min-height: 340px;
+  padding: clamp(28px, 5vw, 64px);
+  overflow: hidden;
+  border: 2px solid var(--ink);
+  background: var(--paper-bright);
+  box-shadow: var(--shadow);
+}
+
+.hero-panel::before {
+  position: absolute;
+  top: 20px;
+  right: -42px;
+  width: 170px;
+  padding: 5px 0;
+  content: "ACTIVE STUDY";
+  color: var(--paper-bright);
+  background: var(--signal);
+  font: 800 10px/1 var(--mono);
+  letter-spacing: 0.13em;
+  text-align: center;
+  transform: rotate(34deg);
+}
+
+.hero-copy {
+  align-self: center;
+}
+
+.task-code {
+  display: inline-block;
+  margin: 28px 0 10px;
+  padding: 6px 9px;
+  color: var(--paper-bright);
+  background: var(--ink);
+  font-size: 11px;
+}
+
+.hero-panel h1 {
+  max-width: 760px;
+  margin: 0;
+  font-size: clamp(42px, 7vw, 91px);
+  font-weight: 500;
+  line-height: 0.94;
+  letter-spacing: -0.055em;
+}
+
+.hero-description {
+  max-width: 720px;
+  margin: 24px 0 0;
+  color: var(--ink-soft);
+  font-size: clamp(15px, 1.8vw, 20px);
+}
+
+.evidence-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 34px;
+  font: 700 10px/1 var(--mono);
+  letter-spacing: 0.06em;
+}
+
+.evidence-legend span {
+  display: inline-flex;
+  gap: 7px;
+  align-items: center;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border: 1px solid var(--ink);
+  border-radius: 50%;
+}
+
+.dot.completed {
+  background: var(--signal);
+}
+
+.dot.verified {
+  background: var(--verified);
+}
+
+.progress-instrument {
+  display: grid;
+  place-content: center;
+  align-self: center;
+}
+
+.progress-ring {
+  --progress: 0deg;
+  display: grid;
+  width: 170px;
+  height: 170px;
+  place-items: center;
+  border-radius: 50%;
+  background: conic-gradient(
+    var(--signal) 0 var(--progress),
+    var(--paper-deep) var(--progress) 360deg
+  );
+  box-shadow: inset 0 0 0 2px var(--ink);
+}
+
+.progress-ring::before {
+  width: 124px;
+  height: 124px;
+  border: 2px solid var(--ink);
+  border-radius: 50%;
+  content: "";
+  background: var(--paper-bright);
+}
+
+.progress-ring > div {
+  position: absolute;
+  display: grid;
+  place-items: center;
+}
+
+.progress-ring strong,
+.progress-ring span {
+  display: block;
+}
+
+.progress-ring strong {
+  font: 800 34px/1 var(--mono);
+}
+
+.progress-ring span {
+  margin-top: 7px;
+  color: var(--ink-soft);
+  font: 700 9px/1 var(--mono);
+  letter-spacing: 0.13em;
+}
+
+.instrument-readout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  margin: 22px 0 0;
+  border-top: 1px solid var(--ink);
+}
+
+.instrument-readout div {
+  padding: 9px;
+  text-align: center;
+}
+
+.instrument-readout div + div {
+  border-left: 1px solid var(--ink);
+}
+
+.instrument-readout dt {
+  color: var(--ink-soft);
+  font-size: 11px;
+}
+
+.instrument-readout dd {
+  margin: 4px 0 0;
+  font: 800 12px/1 var(--mono);
+}
+
+.metric-strip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  margin-top: 54px;
+  border-top: 2px solid var(--ink);
+  border-bottom: 2px solid var(--ink);
+}
+
+.metric-strip article {
+  display: grid;
+  min-height: 128px;
+  padding: 19px;
+  align-content: center;
+}
+
+.metric-strip article + article {
+  border-left: 1px solid var(--ink);
+}
+
+.metric-strip span,
+.metric-strip small {
+  color: var(--ink-soft);
+  font: 700 9px/1.3 var(--mono);
+  letter-spacing: 0.08em;
+}
+
+.metric-strip strong {
+  margin: 9px 0;
+  font: 500 clamp(35px, 5vw, 62px)/0.9 var(--serif);
+}
+
+.section-block {
+  padding: 94px 0 8px;
+}
+
+.section-title {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  padding-bottom: 16px;
+  border-bottom: 2px solid var(--ink);
+}
+
+.section-title h2 {
+  margin: 5px 0 0;
+  font-size: clamp(34px, 5vw, 64px);
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: -0.035em;
+}
+
+.section-index {
+  color: var(--signal);
+  font-size: 13px;
+}
+
+.timeline {
+  position: relative;
+  max-width: 1050px;
+  margin-top: 40px;
+}
+
+.timeline::before {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 52px;
+  width: 2px;
+  content: "";
+  background: var(--ink);
+}
+
+.log-entry {
+  display: grid;
+  grid-template-columns: 105px minmax(0, 1fr);
+  margin-bottom: 30px;
+  opacity: 0;
+  transform: translateY(14px);
+}
+
+.is-ready .log-entry {
+  animation: reveal-up 500ms ease forwards;
+  animation-delay: var(--delay);
+}
+
+.log-marker {
+  z-index: 1;
+  padding-top: 22px;
+}
+
+.log-marker span {
+  display: grid;
+  width: 54px;
+  height: 54px;
+  place-items: center;
+  border: 2px solid var(--ink);
+  border-radius: 50%;
+  color: var(--paper-bright);
+  background: var(--verified);
+  font: 800 10px/1 var(--mono);
+}
+
+.log-card {
+  border: 1px solid var(--ink);
+  background: rgba(248, 243, 232, 0.74);
+}
+
+.log-card header {
+  display: grid;
+  grid-template-columns: 110px minmax(0, 1fr);
+  border-bottom: 1px solid var(--ink);
+}
+
+.log-card header > * {
+  padding: 15px 18px;
+}
+
+.log-card header time {
+  border-right: 1px solid var(--ink);
+  font: 700 10px/1.4 var(--mono);
+}
+
+.log-card h3 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.log-card dl {
+  margin: 0;
+}
+
+.log-card dl div {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr);
+  border-bottom: 1px solid var(--line);
+}
+
+.log-card dl div:last-child {
+  border-bottom: 0;
+}
+
+.log-card dt,
+.log-card dd {
+  padding: 13px 18px;
+}
+
+.log-card dt {
+  color: var(--ink-soft);
+  font: 700 10px/1.4 var(--mono);
+}
+
+.log-card dd {
+  margin: 0;
+  border-left: 1px solid var(--line);
+  font-size: 14px;
+}
+
+code {
+  font-family: var(--mono);
+}
+
+.log-card code,
+.prose code {
+  padding: 1px 4px;
+  color: var(--signal);
+  background: rgba(200, 75, 49, 0.09);
+}
+
+.api-layout {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.82fr) minmax(420px, 1.5fr);
+  gap: clamp(30px, 5vw, 80px);
+  margin-top: 36px;
+}
+
+.subheading {
+  margin: 0 0 14px;
+  color: var(--ink-soft);
+  font-size: 10px;
+}
+
+.command-list,
+.api-list,
+.change-list,
+.commit-list {
+  border-top: 1px solid var(--ink);
+}
+
+.command-card,
+.api-card {
+  border-right: 1px solid var(--ink);
+  border-bottom: 1px solid var(--ink);
+  border-left: 1px solid var(--ink);
+  background: rgba(248, 243, 232, 0.62);
+}
+
+.command-card {
+  padding: 15px;
+}
+
+.command-card > div {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.terminal-prompt {
+  color: var(--verified);
+  font: 900 16px/1 var(--mono);
+}
+
+.command-card code {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.command-card p {
+  margin: 8px 0 4px;
+  font-size: 13px;
+}
+
+.command-card small {
+  display: block;
+  overflow: hidden;
+  color: var(--ink-soft);
+  font: 9px/1.4 var(--mono);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.api-card {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(150px, 0.6fr) minmax(0, 1fr);
+  gap: 12px;
+  padding: 17px;
+}
+
+.api-kind {
+  position: absolute;
+  top: 0;
+  right: 0;
+  padding: 4px 7px;
+  color: var(--paper-bright);
+  background: var(--blueprint);
+  font: 700 8px/1 var(--mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.api-card strong,
+.api-card code {
+  display: block;
+}
+
+.api-card strong {
+  font-size: 18px;
+}
+
+.api-card code {
+  margin-top: 5px;
+  color: var(--ink-soft);
+  font-size: 9px;
+}
+
+.api-card p {
+  max-height: 48px;
+  margin: 7px 0 0;
+  overflow: hidden;
+  color: var(--ink-soft);
+  font: 10px/1.5 var(--mono);
+}
+
+.git-grid {
+  display: grid;
+  grid-template-columns: 180px minmax(250px, 0.9fr) minmax(320px, 1.25fr);
+  gap: 30px;
+  margin-top: 36px;
+}
+
+.git-summary {
+  display: grid;
+  align-content: center;
+  min-height: 160px;
+  padding: 20px;
+  border: 2px solid var(--ink);
+  color: var(--paper-bright);
+  background: var(--ink);
+  box-shadow: 5px 5px 0 var(--signal);
+}
+
+.git-summary span {
+  font: 700 9px/1 var(--mono);
+  letter-spacing: 0.12em;
+}
+
+.git-summary strong {
+  margin: 12px 0;
+  overflow-wrap: anywhere;
+  font-size: 28px;
+}
+
+.git-summary code {
+  color: var(--signal-soft);
+}
+
+.change-row,
+.commit-row {
+  display: grid;
+  gap: 9px;
+  align-items: baseline;
+  padding: 10px 8px;
+  border-bottom: 1px solid var(--line);
+  font-size: 12px;
+}
+
+.change-row {
+  grid-template-columns: 30px minmax(0, 1fr);
+}
+
+.change-row span {
+  color: var(--signal);
+  font: 800 10px/1 var(--mono);
+}
+
+.change-row code,
+.commit-row span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.commit-row {
+  grid-template-columns: 58px minmax(0, 1fr) 78px;
+}
+
+.commit-row code {
+  color: var(--verified);
+  font-size: 10px;
+}
+
+.commit-row time {
+  color: var(--ink-soft);
+  font: 9px/1 var(--mono);
+  text-align: right;
+}
+
+.snapshot-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+  margin-top: 36px;
+}
+
+.snapshot-card {
+  position: relative;
+  display: grid;
+  min-height: 145px;
+  padding: 22px;
+  overflow: hidden;
+  border: 1px solid var(--ink);
+  background: var(--paper-bright);
+  text-decoration: none;
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.snapshot-card:hover {
+  box-shadow: 5px 5px 0 var(--ink);
+  transform: translate(-2px, -2px);
+}
+
+.snapshot-card strong {
+  max-width: calc(100% - 50px);
+  overflow-wrap: anywhere;
+  font: 700 13px/1.5 var(--mono);
+}
+
+.snapshot-card time {
+  align-self: end;
+  color: var(--ink-soft);
+  font: 9px/1 var(--mono);
+}
+
+.snapshot-stamp {
+  position: absolute;
+  top: 16px;
+  right: -12px;
+  padding: 5px 17px;
+  border: 2px solid var(--signal);
+  color: var(--signal);
+  font: 900 9px/1 var(--mono);
+  transform: rotate(7deg);
+}
+
+.vision-panel {
+  margin-top: 86px;
+  border-top: 2px solid var(--ink);
+  border-bottom: 2px solid var(--ink);
+}
+
+.vision-panel summary {
+  display: flex;
+  justify-content: space-between;
+  padding: 20px 4px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.vision-panel summary::-webkit-details-marker {
+  display: none;
+}
+
+.vision-panel summary span {
+  color: var(--signal);
+  font: 800 10px/1 var(--mono);
+  letter-spacing: 0.1em;
+}
+
+.vision-panel summary strong {
+  font-size: 17px;
+}
+
+.prose {
+  max-width: 820px;
+  padding: 16px 4px 50px;
+}
+
+.prose h3,
+.prose h4,
+.prose h5,
+.prose h6 {
+  margin: 32px 0 10px;
+  font-weight: 600;
+}
+
+.prose p,
+.prose li {
+  color: var(--ink-soft);
+  font-size: 15px;
+}
+
+.prose pre {
+  overflow: auto;
+  padding: 18px;
+  color: var(--paper-bright);
+  background: var(--ink);
+}
+
+.empty-state {
+  margin: 0;
+  padding: 28px;
+  border: 1px dashed var(--line-strong);
+  color: var(--ink-soft);
+  font-style: italic;
+  background: rgba(248, 243, 232, 0.4);
+}
+
+.empty-state.compact {
+  padding: 12px 8px;
+  border-width: 0 0 1px;
+}
+
+.footer {
+  display: flex;
+  justify-content: space-between;
+  padding: 22px clamp(20px, 4vw, 60px);
+  border-top: 2px solid var(--ink);
+  color: var(--ink-soft);
+  font: 700 9px/1.4 var(--mono);
+  letter-spacing: 0.09em;
+}
+
+.reveal {
+  opacity: 0;
+  transform: translateY(18px);
+}
+
+.is-ready .reveal {
+  animation: reveal-up 650ms cubic-bezier(0.2, 0.75, 0.2, 1) forwards;
+}
+
+.is-ready .metric-strip {
+  animation-delay: 80ms;
+}
+
+.is-ready .section-block:nth-of-type(3) {
+  animation-delay: 130ms;
+}
+
+@keyframes reveal-up {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes signal-pulse {
+  50% {
+    box-shadow: 0 0 0 7px rgba(46, 106, 79, 0.04);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@media (max-width: 1050px) {
+  .layout {
+    grid-template-columns: 210px minmax(0, 1fr);
+  }
+
+  .sidebar {
+    padding-right: 18px;
+    padding-left: 22px;
+  }
+
+  .hero-panel {
+    grid-template-columns: minmax(0, 1fr) 190px;
+  }
+
+  .progress-ring {
+    width: 148px;
+    height: 148px;
+  }
+
+  .progress-ring::before {
+    width: 108px;
+    height: 108px;
+  }
+
+  .metric-strip {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .metric-strip article:nth-child(3) {
+    border-left: 0;
+  }
+
+  .metric-strip article:nth-child(n + 3) {
+    border-top: 1px solid var(--ink);
+  }
+
+  .api-layout,
+  .git-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .topbar {
+    min-height: 66px;
+    padding: 9px 16px;
+  }
+
+  .brand small,
+  .topbar-status > span:not(.signal) {
+    display: none;
+  }
+
+  .layout {
+    display: block;
+  }
+
+  .sidebar {
+    position: static;
+    min-height: auto;
+    padding: 22px 16px 16px;
+    overflow: hidden;
+    border-right: 0;
+    border-bottom: 2px solid var(--ink);
+  }
+
+  .sidebar-heading {
+    margin-bottom: 14px;
+  }
+
+  .phase-rail {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    padding: 4px 2px 13px;
+    scrollbar-width: thin;
+  }
+
+  .phase-rail::before,
+  .phase-item::after {
+    display: none;
+  }
+
+  .phase-item {
+    flex: 0 0 126px;
+    grid-template-columns: 14px minmax(0, 1fr);
+    padding: 10px;
+    border: 1px solid var(--ink);
+    background: rgba(248, 243, 232, 0.72);
+  }
+
+  .phase-item em,
+  .sidebar-note {
+    display: none;
+  }
+
+  .content {
+    padding: 25px 16px 50px;
+  }
+
+  .hero-panel {
+    grid-template-columns: 1fr;
+    gap: 24px;
+    min-height: 0;
+    padding: 30px 23px;
+    box-shadow: 4px 4px 0 var(--ink);
+  }
+
+  .hero-panel h1 {
+    font-size: clamp(42px, 15vw, 66px);
+  }
+
+  .progress-instrument {
+    grid-template-columns: 130px minmax(0, 1fr);
+    gap: 18px;
+    justify-content: start;
+  }
+
+  .progress-ring {
+    width: 130px;
+    height: 130px;
+  }
+
+  .progress-ring::before {
+    width: 94px;
+    height: 94px;
+  }
+
+  .instrument-readout {
+    display: block;
+    margin: 0;
+    border-top: 0;
+    border-left: 1px solid var(--ink);
+  }
+
+  .instrument-readout div + div {
+    border-top: 1px solid var(--ink);
+    border-left: 0;
+  }
+
+  .metric-strip {
+    margin-top: 38px;
+  }
+
+  .metric-strip article {
+    min-height: 110px;
+    padding: 14px;
+  }
+
+  .section-block {
+    padding-top: 72px;
+  }
+
+  .section-title h2 {
+    font-size: 39px;
+  }
+
+  .timeline::before {
+    left: 20px;
+  }
+
+  .log-entry {
+    grid-template-columns: 50px minmax(0, 1fr);
+  }
+
+  .log-marker span {
+    width: 40px;
+    height: 40px;
+    font-size: 8px;
+  }
+
+  .log-card header,
+  .log-card dl div {
+    grid-template-columns: 1fr;
+  }
+
+  .log-card header time,
+  .log-card dd {
+    border-right: 0;
+    border-left: 0;
+  }
+
+  .log-card header time {
+    padding-bottom: 0;
+  }
+
+  .log-card h3 {
+    padding-top: 6px;
+  }
+
+  .log-card dt {
+    padding-bottom: 2px;
+  }
+
+  .log-card dd {
+    padding-top: 4px;
+  }
+
+  .api-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .api-card {
+    grid-template-columns: 1fr;
+  }
+
+  .snapshot-list {
+    grid-template-columns: 1fr;
+  }
+
+  .footer {
+    display: grid;
+    gap: 6px;
+  }
+}
+
+.source-intro {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 40px;
+  align-items: center;
+  margin: 28px 0 34px;
+  padding: 19px 0;
+  border-bottom: 1px solid var(--ink);
+}
+
+.source-intro p {
+  max-width: 720px;
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 16px;
+}
+
+.source-intro dl {
+  display: flex;
+  margin: 0;
+  border: 1px solid var(--ink);
+  background: var(--paper-bright);
+}
+
+.source-intro dl div {
+  min-width: 95px;
+  padding: 12px 16px;
+  text-align: center;
+}
+
+.source-intro dl div + div {
+  border-left: 1px solid var(--ink);
+}
+
+.source-intro dt {
+  color: var(--ink-soft);
+  font: 700 8px/1 var(--mono);
+  letter-spacing: 0.12em;
+}
+
+.source-intro dd {
+  margin: 7px 0 0;
+  font: 700 24px/1 var(--serif);
+}
+
+.source-groups {
+  display: grid;
+  gap: 34px;
+}
+
+.source-group > header {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: baseline;
+  margin-bottom: 10px;
+}
+
+.source-group > header span,
+.source-group > header em {
+  color: var(--signal);
+  font: 800 9px/1 var(--mono);
+  letter-spacing: 0.08em;
+}
+
+.source-group > header h3 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 600;
+}
+
+.source-group > header em {
+  color: var(--ink-soft);
+  font-style: normal;
+}
+
+.source-file-list {
+  border-top: 2px solid var(--ink);
+}
+
+.source-file {
+  border-right: 1px solid var(--ink);
+  border-bottom: 1px solid var(--ink);
+  border-left: 1px solid var(--ink);
+  background: rgba(248, 243, 232, 0.64);
+}
+
+.source-file summary {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr) auto auto;
+  gap: 14px;
+  align-items: center;
+  min-height: 72px;
+  padding: 11px 14px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.source-file summary::-webkit-details-marker {
+  display: none;
+}
+
+.source-file[open] summary {
+  border-bottom: 1px solid var(--ink);
+  background: var(--paper-bright);
+}
+
+.source-file-mark {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border: 1px solid var(--ink);
+  color: var(--paper-bright);
+  background: var(--blueprint);
+  font: 800 9px/1 var(--mono);
+}
+
+.source-file-name strong,
+.source-file-name small {
+  display: block;
+}
+
+.source-file-name strong {
+  font: 700 13px/1.35 var(--mono);
+}
+
+.source-file-name small {
+  margin-top: 4px;
+  color: var(--ink-soft);
+  font-size: 12px;
+}
+
+.source-file-meta {
+  color: var(--ink-soft);
+  font: 700 8px/1 var(--mono);
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+
+.copy-source {
+  padding: 6px 9px;
+  border: 1px solid var(--ink);
+  background: transparent;
+  cursor: pointer;
+  font: 700 9px/1 var(--mono);
+}
+
+.copy-source:hover {
+  color: var(--paper-bright);
+  background: var(--ink);
+}
+
+.code-frame {
+  position: relative;
+  overflow: hidden;
+  background: #111512;
+}
+
+.code-frame pre {
+  max-height: 620px;
+  margin: 0;
+  overflow: auto;
+  padding: 18px 0 24px;
+  color: #e8e3d8;
+  tab-size: 2;
+}
+
+.code-line {
+  display: grid;
+  grid-template-columns: 54px minmax(max-content, 1fr);
+  min-height: 21px;
+  font: 12px/1.65 var(--mono);
+}
+
+.code-line:hover {
+  background: rgba(255, 255, 255, 0.055);
+}
+
+.code-line i {
+  padding-right: 13px;
+  color: #6f786f;
+  font-style: normal;
+  text-align: right;
+  user-select: none;
+}
+
+.code-line code {
+  padding: 0 22px 0 13px;
+  border-left: 1px solid rgba(232, 227, 216, 0.12);
+  white-space: pre;
+}
+
+.truncation-note {
+  margin: 0;
+  padding: 9px 18px;
+  color: #201a11;
+  background: var(--amber);
+  font: 700 10px/1.4 var(--mono);
+}
+
+@media (max-width: 760px) {
+  .source-intro {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+
+  .source-intro dl {
+    justify-self: start;
+  }
+
+  .source-file summary {
+    grid-template-columns: 34px minmax(0, 1fr) auto;
+  }
+
+  .source-file-meta {
+    display: none;
+  }
+
+  .copy-source {
+    grid-column: 2 / -1;
+    justify-self: start;
+    margin-top: -5px;
+  }
+
+  .code-frame pre {
+    max-height: 520px;
+  }
+
+  .code-line {
+    grid-template-columns: 42px minmax(max-content, 1fr);
+    font-size: 10px;
+  }
+}
+
+.source-groups,
+.source-group,
+.source-file-list,
+.source-file,
+.code-frame {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.code-frame {
+  contain: inline-size;
+}
+
+.code-frame pre {
+  width: 100%;
+  max-width: 100%;
+}
+
+.code-line {
+  width: max-content;
+  min-width: 100%;
+  grid-template-columns: 54px max-content;
+}
+
+@media (max-width: 760px) {
+  .code-line {
+    grid-template-columns: 42px max-content;
+  }
+}
+</style>
+</head>
+<body>
+  <div class="paper-grid" aria-hidden="true"></div>
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="KFlow Learning Machine home">
+      <span class="brand-mark">KF</span>
+      <span><strong>LEARNING MACHINE</strong><small>实验记录与工程证据</small></span>
+    </a>
+    <div class="topbar-status">
+      <span class="signal" aria-hidden="true"></span>
+      <span id="modeLabel">正在读取项目状态</span>
+      <button id="refreshButton" class="text-button" type="button">重新采样</button>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar" aria-label="项目阶段">
+      <div class="sidebar-heading">
+        <span class="eyebrow">RESEARCH ROUTE</span>
+        <strong id="projectName">KFLOW CODE</strong>
+        <span id="projectVersion" class="muted">loading</span>
+      </div>
+      <nav id="phaseRail" class="phase-rail"></nav>
+      <div class="sidebar-note">
+        <span>完成不是模型的声明。</span>
+        <strong>完成是证据的集合。</strong>
+      </div>
+    </aside>
+
+    <main class="content">
+      <section class="hero-panel reveal" aria-labelledby="currentHeading">
+        <div class="hero-copy">
+          <span class="eyebrow">CURRENT EXPERIMENT</span>
+          <p id="currentTaskId" class="task-code">—</p>
+          <h1 id="currentHeading">正在定位当前唯一任务</h1>
+          <p id="currentTaskText" class="hero-description"></p>
+          <div class="evidence-legend" aria-label="状态图例">
+            <span><i class="dot pending"></i>未开始</span>
+            <span><i class="dot completed"></i>已完成</span>
+            <span><i class="dot verified"></i>有证据</span>
+          </div>
+        </div>
+        <div class="progress-instrument" aria-label="项目完成度">
+          <div id="progressRing" class="progress-ring">
+            <div><strong id="completionPercent">0%</strong><span>CHECKED</span></div>
+          </div>
+          <dl class="instrument-readout">
+            <div><dt>已完成</dt><dd id="completedCount">0 / 0</dd></div>
+            <div><dt>已验证</dt><dd id="verifiedCount">0 / 0</dd></div>
+          </dl>
+        </div>
+      </section>
+
+      <section class="metric-strip reveal" aria-label="项目指标">
+        <article><span>LEARNING NOTES</span><strong id="noteCount">0</strong><small>认知变化记录</small></article>
+        <article><span>REAL API</span><strong id="apiCount">0</strong><small>真实导出声明</small></article>
+        <article><span>COMMANDS</span><strong id="commandCount">0</strong><small>当前可运行脚本</small></article>
+        <article><span>WORKTREE</span><strong id="changeCount">0</strong><small>尚未提交变更</small></article>
+      </section>
+
+      <section id="learning" class="section-block reveal">
+        <div class="section-title">
+          <div><span class="eyebrow">OBSERVATION LOG</span><h2>最近学习记录</h2></div>
+          <span class="section-index">01</span>
+        </div>
+        <div id="learningTimeline" class="timeline"></div>
+      </section>
+
+      <section id="api" class="section-block reveal">
+        <div class="section-title">
+          <div><span class="eyebrow">IMPLEMENTED SURFACE</span><h2>KFC API 与命令</h2></div>
+          <span class="section-index">02</span>
+        </div>
+        <div class="api-layout">
+          <div><h3 class="subheading">PACKAGE COMMANDS</h3><div id="commandList" class="command-list"></div></div>
+          <div><h3 class="subheading">SOURCE EXPORTS</h3><div id="apiList" class="api-list"></div></div>
+        </div>
+      </section>
+
+      <section id="source" class="section-block reveal">
+        <div class="section-title">
+          <div><span class="eyebrow">SOURCE MEMORY</span><h2>核心代码复习</h2></div>
+          <span class="section-index">03</span>
+        </div>
+        <div class="source-intro">
+          <p>快照保存当时真正运行的 <code>src/**/*.ts</code>。先理解调用链，再看实现细节；代码不是装饰，而是认知证据。</p>
+          <dl>
+            <div><dt>FILES</dt><dd id="sourceFileCount">0</dd></div>
+            <div><dt>LINES</dt><dd id="sourceLineCount">0</dd></div>
+          </dl>
+        </div>
+        <div id="sourceGroups" class="source-groups"></div>
+      </section>
+
+      <section id="git" class="section-block reveal">
+        <div class="section-title">
+          <div><span class="eyebrow">REPOSITORY SIGNAL</span><h2>Git 开发状态</h2></div>
+          <span class="section-index">04</span>
+        </div>
+        <div class="git-grid">
+          <article class="git-summary"><span>BRANCH</span><strong id="gitBranch">—</strong><code id="gitHead">—</code></article>
+          <div><h3 class="subheading">WORKTREE</h3><div id="changeList" class="change-list"></div></div>
+          <div><h3 class="subheading">RECENT COMMITS</h3><div id="commitList" class="commit-list"></div></div>
+        </div>
+      </section>
+
+      <section id="snapshots" class="section-block reveal">
+        <div class="section-title">
+          <div><span class="eyebrow">IMMUTABLE EVIDENCE</span><h2>HTML 学习快照</h2></div>
+          <span class="section-index">05</span>
+        </div>
+        <div id="snapshotList" class="snapshot-list"></div>
+      </section>
+
+      <details id="vision" class="vision-panel reveal">
+        <summary><span>PROJECT PREMISE</span><strong>展开项目愿景与边界</strong></summary>
+        <div id="visionContent" class="prose"></div>
+      </details>
+    </main>
+  </div>
+
+  <footer class="footer">
+    <span>KFLOW CODE / LR MACHINE</span>
+    <span id="generatedAt">未采样</span>
+  </footer>
+
+  <script id="lr-data" type="application/json">{"generatedAt":"2026-07-29T15:49:50.306Z","snapshot":{"title":"p1-1-provider-contract-verified","fileName":"2026-07-29-234950-p1-1-provider-contract-verified.html"},"project":{"name":"kflow-code","version":"0.1.0","description":"A learning-first, verifiable coding agent built from first principles."},"progress":{"phases":[{"id":"P0","title":"工程骨架与边界","tasks":[{"id":"P0.1","text":"P0.1 定义范围：写 docs/vision.md，明确首版只做 CLI、单 Provider、单 Agent；不做 TUI、插件、MCP、多 Agent。","completed":true,"verified":true},{"id":"P0.2","text":"P0.2 初始化工程：创建 Node.js 22+、TypeScript、pnpm 项目；加入 Vitest、ESLint、Prettier。","completed":true,"verified":true},{"id":"P0.3","text":"P0.3 建立最小入口：实现 kfc --help 与 kfc --version，分离 CLI 参数解析和核心逻辑。","completed":true,"verified":true},{"id":"P0.4","text":"P0.4 配置边界：用 Zod 校验环境变量和单 Provider 配置；禁止输出密钥。","completed":true,"verified":true},{"id":"P0.5","text":"P0.5 错误边界：定义 KfcError，区分配置错误、Provider 错误和用户中断。","completed":true,"verified":true},{"id":"P0.6","text":"P0.6 健康检查：实现 kfc doctor，检查 Node 版本、配置文件和 API Key 是否存在。","completed":true,"verified":true},{"id":"P0.7","text":"P0.7 写首个 ADR：ADR-0001-typescript-first.md，记录选择 TypeScript 的收益、代价和重新评估条件。","completed":true,"verified":true},{"id":"P0.8","text":"P0.8 阶段验收：运行 pnpm build \u0026\u0026 pnpm lint \u0026\u0026 pnpm test；记录命令、输出和一次失败案例。","completed":true,"verified":true},{"id":"P0.9","text":"P0.9 阶段复盘：完成 docs/reviews/P0-review.md，确认每项验收都有证据。","completed":true,"verified":true},{"id":"P0.10","text":"P0.10 DIY Quickstart：实现 kfc --quickstart / --qs，交互写入自定义 OpenAI-compatible 非秘密配置并复用 Doctor。","completed":true,"verified":true}],"completed":10,"verified":10,"total":10},{"id":"P1","title":"单轮模型调用","tasks":[{"id":null,"text":"定义内部 ModelProvider、请求、事件和错误类型。","completed":true,"verified":false},{"id":null,"text":"只实现一个 OpenAI-compatible Provider，不让 CLI 依赖供应商 SDK 类型。","completed":false,"verified":false},{"id":null,"text":"首个真实回归目标使用 deepseek-v4-flash；供应商差异留在 Provider 适配层，不进入 Core。","completed":false,"verified":false},{"id":null,"text":"实现流式输出、超时和 AbortController 中断。","completed":false,"verified":false},{"id":null,"text":"标准化认证、限流、超时、上下文超限和服务端错误。","completed":false,"verified":false},{"id":null,"text":"用 Mock Provider 测试流式事件、中断与失败，不调用真实 API。","completed":true,"verified":false},{"id":null,"text":"记录首 Token 延迟、总耗时和 Token 用量。","completed":false,"verified":false},{"id":"P1","text":"完成真实 kfc ask 实验、ADR、学习日志和 P1 复盘。","completed":false,"verified":false}],"completed":2,"verified":0,"total":8},{"id":"P2","title":"最小 Agent Loop 与只读工具","tasks":[{"id":null,"text":"定义内部消息、Tool Call、Tool Result 和最大步数。","completed":false,"verified":false},{"id":null,"text":"实现 Tool Registry 与 Zod 参数校验。","completed":false,"verified":false},{"id":null,"text":"实现 list_directory、read_file、grep。","completed":false,"verified":false},{"id":null,"text":"防止路径穿越，限制文件大小、结果数量和工具超时。","completed":false,"verified":false},{"id":null,"text":"检测重复调用；工具失败应成为结构化结果，而非进程崩溃。","completed":false,"verified":false},{"id":null,"text":"用脚本化 Mock Provider 确定性重放完整循环。","completed":false,"verified":false},{"id":null,"text":"在陌生 TypeScript 仓库回答配置来源并给出文件与行号。","completed":false,"verified":false},{"id":"P2","text":"保存工具轨迹、ADR、学习日志和 P2 复盘。","completed":false,"verified":false}],"completed":0,"verified":0,"total":8},{"id":"P3","title":"写操作、Shell 与最小权限","tasks":[{"id":null,"text":"实现结构化 apply_patch，禁止静默整文件覆盖。","completed":false,"verified":false},{"id":null,"text":"实现受限 Shell：工作区边界、超时、输出上限和退出码。","completed":false,"verified":false},{"id":null,"text":"建立只读、写入、执行三档策略与显式确认。","completed":false,"verified":false},{"id":null,"text":"实现 git diff 检查和失败后的恢复说明。","completed":false,"verified":false},{"id":null,"text":"完成一次“读取—修改—测试—解释”的真实任务。","completed":false,"verified":false},{"id":"P3","text":"记录被拒绝操作、失败恢复、ADR 和 P3 复盘。","completed":false,"verified":false}],"completed":0,"verified":0,"total":6},{"id":"P4","title":"事件驱动 Core 与会话持久化","tasks":[{"id":null,"text":"用领域事件统一模型、工具、权限和完成状态。","completed":false,"verified":false},{"id":null,"text":"CLI 只消费事件，不反向控制 Core。","completed":false,"verified":false},{"id":null,"text":"使用 JSONL 持久化会话，支持崩溃后读取与诊断。","completed":false,"verified":false},{"id":null,"text":"测试事件顺序、追加写入和损坏记录处理。","completed":false,"verified":false},{"id":"P4","text":"完成 ADR、学习日志和 P4 复盘。","completed":false,"verified":false}],"completed":0,"verified":0,"total":5},{"id":"P5","title":"上下文与长会话","tasks":[{"id":null,"text":"区分系统规则、用户目标、代码证据、工具结果和历史摘要。","completed":false,"verified":false},{"id":null,"text":"实现 Token 预算、输出截断、摘要和按需文件读取。","completed":false,"verified":false},{"id":null,"text":"建立固定长任务，比较截断前后的正确性与成本。","completed":false,"verified":false},{"id":null,"text":"记录错误遗忘、错误摘要和上下文污染案例。","completed":false,"verified":false},{"id":"P5","text":"完成 ADR、学习日志和 P5 复盘。","completed":false,"verified":false}],"completed":0,"verified":0,"total":5},{"id":"P6","title":"可验证完成","tasks":[{"id":null,"text":"将目标拆成可检查验收条件。","completed":false,"verified":false},{"id":null,"text":"为每个条件绑定测试、Diff、静态检查或人工确认。","completed":false,"verified":false},{"id":null,"text":"用退出码和结构化规则更新状态，模型不得自行标记通过。","completed":false,"verified":false},{"id":null,"text":"输出 Completion Report：改动、证据、未验证项、风险和恢复方式。","completed":false,"verified":false},{"id":null,"text":"测试“代码看似正确但测试失败”的拒绝完成路径。","completed":false,"verified":false},{"id":"P6","text":"完成 ADR、学习日志和 P6 复盘。","completed":false,"verified":false}],"completed":0,"verified":0,"total":6},{"id":"P7–P8","title":"扩展能力（锁定区）","tasks":[{"id":"P7","text":"P7：按 Skills → Hooks → MCP 的顺序逐一加入，每次只验证一种扩展机制。","completed":false,"verified":false},{"id":"P8","text":"P8：最后研究 Subagents、会话分支与 Git Worktree，并用相同验收集比较收益和成本。","completed":false,"verified":false},{"id":null,"text":"为每个扩展写“为何现在需要它”和“删除它会失去什么”。","completed":false,"verified":false}],"completed":0,"verified":0,"total":3}],"currentTask":{"id":"P1.2","text":"P1.2 OpenAI-compatible Provider：基于 P1.1 契约设计唯一的 OpenAI-compatible 流式适配器；先确定 HTTP/SSE、错误映射、超时与取消边界，再实现录制 Fixture 测试。"},"totals":{"total":51,"completed":12,"verified":10,"completionPercent":24,"verificationPercent":20}},"learningEntries":[{"date":"2026-07-29","title":"P1.1 Provider 契约","taskId":"P1.1","fields":[{"label":"第一性问题","value":"远程模型协议和供应商字段都不稳定时，Core 最少需要认识什么，才能消费单轮文本流而不依赖任何 SDK？"},{"label":"我的初始假设","value":"一个只包含规范化消息、`AsyncIterable` 流、平台 `AbortSignal`、四类事件和现有结构化错误的契约，已经足以支撑 P1；Tool Calling、采样参数和供应商 chunk 都应推迟到真实问题出现后。"},{"label":"最小实验","value":"新增 `src/provider/model-provider.ts` 与公共出口，用测试内 `ScriptedModelProvider` 实现成功流、`ProviderError` 传播、请求前取消和消费期间取消；不加入网络请求、SDK、运行时校验器或生产 Mock。"},{"label":"观察到的证据","value":"Mock 按 `start → text-delta* → usage? → finish` 产生确定序列，消费者可拼接文本并读取规范化 Token 用量；错误在异步迭代边界保持稳定 code、retryable 和 details；两类取消都产生 `UserInterruptedError`，中断后无后续事件。`pnpm build`、`pnpm lint`、`pnpm format:check` 全部通过；全量 `pnpm test` 为 21 个文件、76 个测试通过；契约测试另经 TypeScript 6 严格 `tsc --noEmit` 类型检查通过。"},{"label":"假设哪里错了","value":"`pnpm test -- tests/provider/model-provider.test.ts` 没有形成预期的单文件隔离，并在沙箱内触发 LR Machine 回环端口 `EPERM`；定向 Vitest 应直接使用 `pnpm exec vitest run \u003cpath\u003e`。此外，测试文件不在生产 `tsconfig.json` 的 include 中，单靠 `pnpm build` 不能类型检查测试代码；TypeScript 6 在显式文件与当前配置并存时还要求 `--ignoreConfig`，因此契约证据需要额外的严格 `tsc --noEmit`。"},{"label":"得到的可复用原则","value":"Core 契约只表达消费者真正依赖的不变量，不替供应商协议保存原始形状。取消是控制流错误，不是 finish 事件；Provider 失败应抛结构化错误而非伪造成功结束。测试命令本身也是实验装置，若选择器或执行环境失真，结果就不能证明目标。"},{"label":"尚未理解","value":"OpenAI-compatible SSE 在 DeepSeek 实际响应中的 chunk 顺序、usage 出现位置、结束原因和错误正文有何差异；网络中止时 fetch、reader 与 `AbortSignal` 的具体交互仍需 P1.2 实验。"},{"label":"下一步","value":"进入 P1.2，先设计 OpenAI-compatible HTTP/SSE 适配边界与录制 Fixture，再实现真实流解析、错误归一化、超时和取消；Core 继续只依赖本次契约。"}],"raw":"- **第一性问题：** 远程模型协议和供应商字段都不稳定时，Core 最少需要认识什么，才能消费单轮文本流而不依赖任何 SDK？\n- **我的初始假设：** 一个只包含规范化消息、`AsyncIterable` 流、平台 `AbortSignal`、四类事件和现有结构化错误的契约，已经足以支撑 P1；Tool Calling、采样参数和供应商 chunk 都应推迟到真实问题出现后。\n- **最小实验：** 新增 `src/provider/model-provider.ts` 与公共出口，用测试内 `ScriptedModelProvider` 实现成功流、`ProviderError` 传播、请求前取消和消费期间取消；不加入网络请求、SDK、运行时校验器或生产 Mock。\n- **观察到的证据：** Mock 按 `start → text-delta* → usage? → finish` 产生确定序列，消费者可拼接文本并读取规范化 Token 用量；错误在异步迭代边界保持稳定 code、retryable 和 details；两类取消都产生 `UserInterruptedError`，中断后无后续事件。`pnpm build`、`pnpm lint`、`pnpm format:check` 全部通过；全量 `pnpm test` 为 21 个文件、76 个测试通过；契约测试另经 TypeScript 6 严格 `tsc --noEmit` 类型检查通过。\n- **假设哪里错了：** `pnpm test -- tests/provider/model-provider.test.ts` 没有形成预期的单文件隔离，并在沙箱内触发 LR Machine 回环端口 `EPERM`；定向 Vitest 应直接使用 `pnpm exec vitest run \u003cpath\u003e`。此外，测试文件不在生产 `tsconfig.json` 的 include 中，单靠 `pnpm build` 不能类型检查测试代码；TypeScript 6 在显式文件与当前配置并存时还要求 `--ignoreConfig`，因此契约证据需要额外的严格 `tsc --noEmit`。\n- **得到的可复用原则：** Core 契约只表达消费者真正依赖的不变量，不替供应商协议保存原始形状。取消是控制流错误，不是 finish 事件；Provider 失败应抛结构化错误而非伪造成功结束。测试命令本身也是实验装置，若选择器或执行环境失真，结果就不能证明目标。\n- **尚未理解：** OpenAI-compatible SSE 在 DeepSeek 实际响应中的 chunk 顺序、usage 出现位置、结束原因和错误正文有何差异；网络中止时 fetch、reader 与 `AbortSignal` 的具体交互仍需 P1.2 实验。\n- **下一步：** 进入 P1.2，先设计 OpenAI-compatible HTTP/SSE 适配边界与录制 Fixture，再实现真实流解析、错误归一化、超时和取消；Core 继续只依赖本次契约。"},{"date":"2026-07-29","title":"P0.10 DIY Provider Quickstart","taskId":"P0.10","fields":[{"label":"第一性问题","value":"用户知道自己的兼容接口信息，却不熟悉配置路径和 JSON 结构时，怎样降低配置摩擦，同时不把 API Key 写入文件或偷偷修改 Shell？"},{"label":"我的初始假设","value":"Quickstart 应只负责完全自定义的 Base URL、Model 和 Timeout；Provider type 固定为 openai-compatible。秘密仍由当前 Shell 环境负责，向导只能检查存在性并提供不回显的 zsh 输入方法。"},{"label":"最小实验","value":"增加 `--quickstart` 与 `--qs`，使用 readline/promises 读取 TTY，循环校验 HTTP(S) URL、非空模型和超时范围，预览后确认；通过私有临时文件和原子 rename 写入 JSON，再复用 Doctor 验证。"},{"label":"观察到的证据","value":"全量测试扩展到 17 个文件、63 个测试；真实 PTY 输入自定义 `https://gateway.example.com/v1`、`diy-model-v1` 和 45000 后，生成权限为 0600 的 JSON，文件无 apiKey，Doctor 全部通过。已有文件拒绝覆盖返回 130 且内容不变；非 TTY 返回 1；临时验收文件已删除。"},{"label":"假设哪里错了","value":"URL Schema 初版在字符串已不合法时仍执行 `new URL()`，原生 TypeError 越过配置错误边界；校验函数必须捕获并返回 false。Timeout 默认值初版依赖 Prompt 适配器填充，测试 Prompt 返回空字符串后核心无限重试；默认值属于业务规则，应由 Quickstart 核心负责。终端流类型也不能假设通用 Readable/Writable 一定有 `isTTY`，应显式声明可选 TTY 能力。"},{"label":"得到的可复用原则","value":"交互向导的价值是组织已有规则，不是建立第二套配置系统。输入校验、默认值、文件安全和 Doctor 必须复用现有领域边界。子进程不能永久修改父 Shell，因此秘密持久化必须保持诚实，不用“自动配置”掩盖系统限制。"},{"label":"尚未理解","value":"用户是否需要操作系统 Keychain 集成；当前没有真实需求证明应扩大秘密存储边界。Quickstart 也未验证 Provider 网络可用性，这仍属于 P1。"},{"label":"下一步","value":"建议创建包含 P0.10 的本地检查点提交，然后进入 P1.1 Provider 契约与 Mock 流式事件。"}],"raw":"- **第一性问题：** 用户知道自己的兼容接口信息，却不熟悉配置路径和 JSON 结构时，怎样降低配置摩擦，同时不把 API Key 写入文件或偷偷修改 Shell？\n- **我的初始假设：** Quickstart 应只负责完全自定义的 Base URL、Model 和 Timeout；Provider type 固定为 openai-compatible。秘密仍由当前 Shell 环境负责，向导只能检查存在性并提供不回显的 zsh 输入方法。\n- **最小实验：** 增加 `--quickstart` 与 `--qs`，使用 readline/promises 读取 TTY，循环校验 HTTP(S) URL、非空模型和超时范围，预览后确认；通过私有临时文件和原子 rename 写入 JSON，再复用 Doctor 验证。\n- **观察到的证据：** 全量测试扩展到 17 个文件、63 个测试；真实 PTY 输入自定义 `https://gateway.example.com/v1`、`diy-model-v1` 和 45000 后，生成权限为 0600 的 JSON，文件无 apiKey，Doctor 全部通过。已有文件拒绝覆盖返回 130 且内容不变；非 TTY 返回 1；临时验收文件已删除。\n- **假设哪里错了：** URL Schema 初版在字符串已不合法时仍执行 `new URL()`，原生 TypeError 越过配置错误边界；校验函数必须捕获并返回 false。Timeout 默认值初版依赖 Prompt 适配器填充，测试 Prompt 返回空字符串后核心无限重试；默认值属于业务规则，应由 Quickstart 核心负责。终端流类型也不能假设通用 Readable/Writable 一定有 `isTTY`，应显式声明可选 TTY 能力。\n- **得到的可复用原则：** 交互向导的价值是组织已有规则，不是建立第二套配置系统。输入校验、默认值、文件安全和 Doctor 必须复用现有领域边界。子进程不能永久修改父 Shell，因此秘密持久化必须保持诚实，不用“自动配置”掩盖系统限制。\n- **尚未理解：** 用户是否需要操作系统 Keychain 集成；当前没有真实需求证明应扩大秘密存储边界。Quickstart 也未验证 Provider 网络可用性，这仍属于 P1。\n- **下一步：** 建议创建包含 P0.10 的本地检查点提交，然后进入 P1.1 Provider 契约与 Mock 流式事件。"},{"date":"2026-07-29","title":"P0.9 阶段复盘","taskId":"P0.9","fields":[{"label":"第一性问题","value":"验收命令全部通过后，还需要什么证据证明我们理解了这一阶段，而不是只会重复命令？"},{"label":"我的初始假设","value":"阶段复盘必须把交付、失败、错误假设、架构原则、技术债、下一阶段和明确不做的内容放进同一份可审查记录。"},{"label":"最小实验","value":"使用 `docs/reviews/P0-review.md` 逐项映射 P0.1–P0.8 的证据，回答 CLI/Core 分离、用户错误与 Debug 信息、为何不做 TUI/Monorepo/插件等问题，并公开剩余风险。"},{"label":"观察到的证据","value":"P0 Review 状态为 Accepted，包含 8 项验收矩阵、质量与安全证据、一次完整失败根因、三道必须回答的问题、技术债、下一阶段非目标和进入 P1 的判断；Markdown 内部链接检查 13 个文件、0 个失效本地链接。"},{"label":"假设哪里错了","value":"初次最终快照显示 9 个任务完成但只有 8 个验证，原因是把 P0.8 与 P0.9 合并成一个学习日志标题，机器只能索引首个任务号。阶段证据也需要与任务保持一一对应，不能只在人类语义上“差不多”。"},{"label":"得到的可复用原则","value":"阶段复盘不是总结文案，而是把散落证据组织成可审查的进入条件。机器状态和人类叙述必须指向同一事实；若索引显示缺口，应修正证据结构而不是修改统计。"},{"label":"尚未理解","value":"P1 第一次真实网络调用会推翻哪些 Provider、错误和配置假设；P0 只能证明进入实验的地基可靠。"},{"label":"下一步","value":"建议先创建 P0 本地 Git 检查点，再开始 P1.1 Provider 契约与 Mock 事件测试。"}],"raw":"- **第一性问题：** 验收命令全部通过后，还需要什么证据证明我们理解了这一阶段，而不是只会重复命令？\n- **我的初始假设：** 阶段复盘必须把交付、失败、错误假设、架构原则、技术债、下一阶段和明确不做的内容放进同一份可审查记录。\n- **最小实验：** 使用 `docs/reviews/P0-review.md` 逐项映射 P0.1–P0.8 的证据，回答 CLI/Core 分离、用户错误与 Debug 信息、为何不做 TUI/Monorepo/插件等问题，并公开剩余风险。\n- **观察到的证据：** P0 Review 状态为 Accepted，包含 8 项验收矩阵、质量与安全证据、一次完整失败根因、三道必须回答的问题、技术债、下一阶段非目标和进入 P1 的判断；Markdown 内部链接检查 13 个文件、0 个失效本地链接。\n- **假设哪里错了：** 初次最终快照显示 9 个任务完成但只有 8 个验证，原因是把 P0.8 与 P0.9 合并成一个学习日志标题，机器只能索引首个任务号。阶段证据也需要与任务保持一一对应，不能只在人类语义上“差不多”。\n- **得到的可复用原则：** 阶段复盘不是总结文案，而是把散落证据组织成可审查的进入条件。机器状态和人类叙述必须指向同一事实；若索引显示缺口，应修正证据结构而不是修改统计。\n- **尚未理解：** P1 第一次真实网络调用会推翻哪些 Provider、错误和配置假设；P0 只能证明进入实验的地基可靠。\n- **下一步：** 建议先创建 P0 本地 Git 检查点，再开始 P1.1 Provider 契约与 Mock 事件测试。"},{"date":"2026-07-29","title":"P0.8 阶段验收","taskId":"P0.8","fields":[{"label":"第一性问题","value":"“做完了”由谁宣布，怎样区分代码看起来能跑、测试通过、用户路径成立和安全边界真正有证据？"},{"label":"我的初始假设","value":"阶段完成不能依赖模型或开发者主观声明；每个验收条件必须绑定命令退出码、真实 CLI 输出、静态检查、文档资产或明确人工审计。"},{"label":"最小实验","value":"在受控临时配置路径下运行全量构建、51 个测试、Lint、格式、Diff、help、version、未知参数、Doctor 成功与缺 Key 失败路径；审计 Git 跟踪、忽略规则、秘密文件、配置示例和文档一致性，并写实验记录与阶段复盘。"},{"label":"观察到的证据","value":"所有质量命令退出 0；help/version 分别退出 0，未知参数退出 1，Doctor 完整环境退出 0，缺 API Key 退出 2。Word 路线文档未被跟踪且被忽略，没有真实 `.env` 或疑似凭证，失败输出无测试密钥和 Stack。P0.1–P0.8 均有代码、测试、文档或命令证据。"},{"label":"假设哪里错了","value":"“生成了 dist 且命令能跑”曾被误认为构建成功，但真实 build 退出码为失败；阶段验收必须以命令状态和绑定证据为准。另一个现实是技术门槛通过不等于仓库已经形成可回滚基线，当前 P0 变更仍需用户决定是否创建本地检查点提交。"},{"label":"得到的可复用原则","value":"完成是一组独立证据的交集：行为、自动化、静态检查、安全、文档和恢复能力缺一不可。警告、失败与未验证项必须公开记录，不能被“总体通过”掩盖。"},{"label":"尚未理解","value":"DeepSeek 的真实网络与协议行为；这是 P1 唯一应新增的主要不确定性。P0 的抽象是否足够，将由第一次真实 Provider 调用检验。"},{"label":"下一步","value":"用户确认本地 P0 检查点策略后，进入 P1.1 定义 `ModelProvider`、内部请求/事件和 DeepSeek 适配边界。"}],"raw":"- **第一性问题：** “做完了”由谁宣布，怎样区分代码看起来能跑、测试通过、用户路径成立和安全边界真正有证据？\n- **我的初始假设：** 阶段完成不能依赖模型或开发者主观声明；每个验收条件必须绑定命令退出码、真实 CLI 输出、静态检查、文档资产或明确人工审计。\n- **最小实验：** 在受控临时配置路径下运行全量构建、51 个测试、Lint、格式、Diff、help、version、未知参数、Doctor 成功与缺 Key 失败路径；审计 Git 跟踪、忽略规则、秘密文件、配置示例和文档一致性，并写实验记录与阶段复盘。\n- **观察到的证据：** 所有质量命令退出 0；help/version 分别退出 0，未知参数退出 1，Doctor 完整环境退出 0，缺 API Key 退出 2。Word 路线文档未被跟踪且被忽略，没有真实 `.env` 或疑似凭证，失败输出无测试密钥和 Stack。P0.1–P0.8 均有代码、测试、文档或命令证据。\n- **假设哪里错了：** “生成了 dist 且命令能跑”曾被误认为构建成功，但真实 build 退出码为失败；阶段验收必须以命令状态和绑定证据为准。另一个现实是技术门槛通过不等于仓库已经形成可回滚基线，当前 P0 变更仍需用户决定是否创建本地检查点提交。\n- **得到的可复用原则：** 完成是一组独立证据的交集：行为、自动化、静态检查、安全、文档和恢复能力缺一不可。警告、失败与未验证项必须公开记录，不能被“总体通过”掩盖。\n- **尚未理解：** DeepSeek 的真实网络与协议行为；这是 P1 唯一应新增的主要不确定性。P0 的抽象是否足够，将由第一次真实 Provider 调用检验。\n- **下一步：** 用户确认本地 P0 检查点策略后，进入 P1.1 定义 `ModelProvider`、内部请求/事件和 DeepSeek 适配边界。"},{"date":"2026-07-29","title":"P0.7 ADR-0001 TypeScript-first","taskId":"P0.7","fields":[{"label":"第一性问题","value":"首版语言应该优化最终理论性能，还是优化当前最稀缺的资源——对 Agent 核心机制的理解速度与可验证反馈？"},{"label":"我的初始假设","value":"在 Agent Loop、工具协议和权限边界尚未稳定前，TypeScript 能提供足够类型约束并保持实验速度；Rust 的低层能力只有在真实系统问题出现后才产生净收益。"},{"label":"最小实验","value":"不重新争论抽象语言偏好，而是回看 P0 已完成的 CLI、配置、错误和 Doctor，记录 TypeScript 实际抓到的问题、没有解决的问题、候选语言代价和可观察的迁移信号。"},{"label":"观察到的证据","value":"严格 TypeScript 已发现 Node 类型未启用、错误构建仍产出文件、可选字段缺失与 undefined 不同等真实问题；同时 15 个测试文件和 51 个测试能够快速验证 CLI、配置和错误边界。当前没有性能、内存、沙箱或分发问题证明需要 Rust。"},{"label":"假设哪里错了","value":"“选择 TypeScript 是因为简单，未来自然会重写 Rust”不是有效架构判断。迁移不是成长仪式，只有当具体模块出现 Node 无法满足的约束，并且稳定边界使迁移范围可定义时，重写才可能值得。"},{"label":"得到的可复用原则","value":"技术选择应优化当前瓶颈，并预先定义重新评估信号。保留选择权不等于提前支付多语言复杂度；最好的可迁移性来自清晰边界和测试，而不是同时维护两套实现。"},{"label":"尚未理解","value":"P3 的 Shell 和权限机制是否会暴露 Node 的系统控制边界，以及未来单文件分发是否成为真实需求；在证据出现前保持观察。"},{"label":"下一步","value":"P0.8 执行阶段总验收，检查 P0 的功能、测试、文档、安全边界和真实命令证据，再决定是否进入 P1。"}],"raw":"- **第一性问题：** 首版语言应该优化最终理论性能，还是优化当前最稀缺的资源——对 Agent 核心机制的理解速度与可验证反馈？\n- **我的初始假设：** 在 Agent Loop、工具协议和权限边界尚未稳定前，TypeScript 能提供足够类型约束并保持实验速度；Rust 的低层能力只有在真实系统问题出现后才产生净收益。\n- **最小实验：** 不重新争论抽象语言偏好，而是回看 P0 已完成的 CLI、配置、错误和 Doctor，记录 TypeScript 实际抓到的问题、没有解决的问题、候选语言代价和可观察的迁移信号。\n- **观察到的证据：** 严格 TypeScript 已发现 Node 类型未启用、错误构建仍产出文件、可选字段缺失与 undefined 不同等真实问题；同时 15 个测试文件和 51 个测试能够快速验证 CLI、配置和错误边界。当前没有性能、内存、沙箱或分发问题证明需要 Rust。\n- **假设哪里错了：** “选择 TypeScript 是因为简单，未来自然会重写 Rust”不是有效架构判断。迁移不是成长仪式，只有当具体模块出现 Node 无法满足的约束，并且稳定边界使迁移范围可定义时，重写才可能值得。\n- **得到的可复用原则：** 技术选择应优化当前瓶颈，并预先定义重新评估信号。保留选择权不等于提前支付多语言复杂度；最好的可迁移性来自清晰边界和测试，而不是同时维护两套实现。\n- **尚未理解：** P3 的 Shell 和权限机制是否会暴露 Node 的系统控制边界，以及未来单文件分发是否成为真实需求；在证据出现前保持观察。\n- **下一步：** P0.8 执行阶段总验收，检查 P0 的功能、测试、文档、安全边界和真实命令证据，再决定是否进入 P1。"},{"date":"2026-07-29","title":"P0.6 kfc doctor 健康检查","taskId":"P0.6","fields":[{"label":"第一性问题","value":"在真正消耗模型费用和引入网络不确定性之前，怎样证明本地运行时、配置来源和秘密存在性已经满足调用前提？"},{"label":"我的初始假设","value":"Doctor 应是只读、本地、确定性的诊断命令。配置文件不存在只是警告，因为环境变量可能完整；缺少必填配置才是失败。它只能显示 API Key 是否存在，不能显示值、长度或片段，也不应为了“检查”而调用 DeepSeek。"},{"label":"最小实验","value":"增加 `doctor` 子命令、异步 CLI 运行器、Doctor 报告模型和真实环境适配器；检查 Node 22+、配置路径、Base URL、Model 与 API Key，并复用统一安全错误展示处理未知失败。"},{"label":"观察到的证据","value":"全量 Vitest 15 个文件、51 个测试通过；严格构建、Lint 和格式检查通过。使用不存在的临时配置路径与受控 DeepSeek 环境变量运行真实 CLI，完整配置返回 0，报告 `deepseek-v4-flash` 和 `API Key present`；移除 API Key 后只报告 `KFC_API_KEY is required` 并返回 2，输出中没有测试密钥。"},{"label":"假设哪里错了","value":"自动化进程第一次尝试裸 `kfc` 时找不到命令，而用户交互终端已经可以使用。根因是 Codex 进程的 PATH 没有继承用户刚更新的全局 Shell 环境，不是 Doctor 代码错误；仓库验收改用等价的 `pnpm kfc doctor`，没有擅自修改或重启用户环境。"},{"label":"得到的可复用原则","value":"健康检查必须区分“警告但仍可运行”和“阻断性失败”。诊断命令只验证自己有权确定的事实；本地 Doctor 不应伪装成网络或模型可用性测试。测试环境与用户终端环境不同，定位失败时必须先确认执行上下文。"},{"label":"尚未理解","value":"DeepSeek API Key 是否有效、端点是否可达、模型是否可用，以及流式和 Tool Calling 是否符合预期；这些必须由 P1 真实调用验证，不能由 Doctor 猜测。"},{"label":"下一步","value":"P0.7 补齐 ADR-0001，系统记录为什么首版选择 TypeScript，以及在什么真实信号下重新评估 Rust Core。"}],"raw":"- **第一性问题：** 在真正消耗模型费用和引入网络不确定性之前，怎样证明本地运行时、配置来源和秘密存在性已经满足调用前提？\n- **我的初始假设：** Doctor 应是只读、本地、确定性的诊断命令。配置文件不存在只是警告，因为环境变量可能完整；缺少必填配置才是失败。它只能显示 API Key 是否存在，不能显示值、长度或片段，也不应为了“检查”而调用 DeepSeek。\n- **最小实验：** 增加 `doctor` 子命令、异步 CLI 运行器、Doctor 报告模型和真实环境适配器；检查 Node 22+、配置路径、Base URL、Model 与 API Key，并复用统一安全错误展示处理未知失败。\n- **观察到的证据：** 全量 Vitest 15 个文件、51 个测试通过；严格构建、Lint 和格式检查通过。使用不存在的临时配置路径与受控 DeepSeek 环境变量运行真实 CLI，完整配置返回 0，报告 `deepseek-v4-flash` 和 `API Key present`；移除 API Key 后只报告 `KFC_API_KEY is required` 并返回 2，输出中没有测试密钥。\n- **假设哪里错了：** 自动化进程第一次尝试裸 `kfc` 时找不到命令，而用户交互终端已经可以使用。根因是 Codex 进程的 PATH 没有继承用户刚更新的全局 Shell 环境，不是 Doctor 代码错误；仓库验收改用等价的 `pnpm kfc doctor`，没有擅自修改或重启用户环境。\n- **得到的可复用原则：** 健康检查必须区分“警告但仍可运行”和“阻断性失败”。诊断命令只验证自己有权确定的事实；本地 Doctor 不应伪装成网络或模型可用性测试。测试环境与用户终端环境不同，定位失败时必须先确认执行上下文。\n- **尚未理解：** DeepSeek API Key 是否有效、端点是否可达、模型是否可用，以及流式和 Tool Calling 是否符合预期；这些必须由 P1 真实调用验证，不能由 Doctor 猜测。\n- **下一步：** P0.7 补齐 ADR-0001，系统记录为什么首版选择 TypeScript，以及在什么真实信号下重新评估 Rust Core。"},{"date":"2026-07-29","title":"P0.5 统一错误边界","taskId":"P0.5","fields":[{"label":"第一性问题","value":"错误既要驱动程序决策，又要帮助用户修复问题，还不能泄露未知异常、Provider 响应或密钥；这三种目标如何共存？"},{"label":"我的初始假设","value":"错误应分成稳定的机器字段与明确的安全展示字段。category、code、exitCode 和 retryable 用于控制流；message/details 用于用户；debugDetails 必须显式提供并按敏感键脱敏；cause 不进入标准序列化。"},{"label":"最小实验","value":"实现 `KfcError`、`ProviderError`、`UserInterruptedError`、未知错误归一化和 CLI 展示器，让现有 `ConfigError` 继承统一基类；暂不接入真实 Provider 和日志系统。"},{"label":"观察到的证据","value":"全量 Vitest 14 个文件、43 个测试通过；ConfigError 成为 KfcError，Provider 六类错误具有固定退出码和重试属性，用户中断使用退出码 130。公开 JSON 不包含 debugDetails、cause 或 stack；Debug 展示保留 requestId 等安全字段并递归隐藏 API Key、Authorization 和 Token；未知 Error 的原始 message 与 stack 不被输出。"},{"label":"假设哪里错了","value":"在 `exactOptionalPropertyTypes` 下，“字段缺失”与“字段存在但值为 undefined”不同。ProviderError 初版把未提供的 details、debugDetails 和 cause 显式传成 undefined，严格编译失败；正确做法是只在真实存在时把字段展开给基类，而不是放宽类型约束。"},{"label":"得到的可复用原则","value":"错误输出本身就是安全边界。统一错误不是把所有失败变成同一句话，而是统一机器契约、保留用户下一步行动所需的差异。未知信息默认不可信，不能因为开启 debug 就自动打印原始 Error。"},{"label":"尚未理解","value":"DeepSeek 认证、限流、超时、上下文超限和服务异常的真实 HTTP/响应形状如何映射；P1 必须用真实响应或脱敏 Fixture 验证。受控 Stack 与持久化日志也尚未设计。"},{"label":"下一步","value":"P0.6 实现 `kfc doctor`，首次把配置加载、统一错误和 CLI 展示串成一个用户可见的诊断闭环。"}],"raw":"- **第一性问题：** 错误既要驱动程序决策，又要帮助用户修复问题，还不能泄露未知异常、Provider 响应或密钥；这三种目标如何共存？\n- **我的初始假设：** 错误应分成稳定的机器字段与明确的安全展示字段。category、code、exitCode 和 retryable 用于控制流；message/details 用于用户；debugDetails 必须显式提供并按敏感键脱敏；cause 不进入标准序列化。\n- **最小实验：** 实现 `KfcError`、`ProviderError`、`UserInterruptedError`、未知错误归一化和 CLI 展示器，让现有 `ConfigError` 继承统一基类；暂不接入真实 Provider 和日志系统。\n- **观察到的证据：** 全量 Vitest 14 个文件、43 个测试通过；ConfigError 成为 KfcError，Provider 六类错误具有固定退出码和重试属性，用户中断使用退出码 130。公开 JSON 不包含 debugDetails、cause 或 stack；Debug 展示保留 requestId 等安全字段并递归隐藏 API Key、Authorization 和 Token；未知 Error 的原始 message 与 stack 不被输出。\n- **假设哪里错了：** 在 `exactOptionalPropertyTypes` 下，“字段缺失”与“字段存在但值为 undefined”不同。ProviderError 初版把未提供的 details、debugDetails 和 cause 显式传成 undefined，严格编译失败；正确做法是只在真实存在时把字段展开给基类，而不是放宽类型约束。\n- **得到的可复用原则：** 错误输出本身就是安全边界。统一错误不是把所有失败变成同一句话，而是统一机器契约、保留用户下一步行动所需的差异。未知信息默认不可信，不能因为开启 debug 就自动打印原始 Error。\n- **尚未理解：** DeepSeek 认证、限流、超时、上下文超限和服务异常的真实 HTTP/响应形状如何映射；P1 必须用真实响应或脱敏 Fixture 验证。受控 Stack 与持久化日志也尚未设计。\n- **下一步：** P0.6 实现 `kfc doctor`，首次把配置加载、统一错误和 CLI 展示串成一个用户可见的诊断闭环。"},{"date":"2026-07-29","title":"DEC-002 首个真实 Provider 选择","taskId":null,"fields":[{"label":"第一性问题","value":"首个模型服务应该只是最容易调用，还是应该帮助暴露 Provider 抽象中的真实差异？"},{"label":"我的初始假设","value":"首个目标应支持 OpenAI-compatible 基础协议，同时在角色、参数、Thinking 与工具调用上存在足够真实差异，迫使我们验证边界而不是假设兼容。"},{"label":"最小实验","value":"暂不发起网络请求，只核验官方接口、当前模型名称和兼容差异，并记录可替换配置、代价与重新评估条件。"},{"label":"观察到的证据","value":"截至 2026-07-29，DeepSeek 官方 OpenAI 格式 Base URL 为 `https://api.deepseek.com`，当前首选目标记录为 `deepseek-v4-flash`；配置示例、TODO 和 ADR 已同步，API Key 仍保持环境变量专用。"},{"label":"假设哪里错了","value":"“OpenAI-compatible 就可以无差别替换”过于粗糙；兼容主要解决接入形状，不能自动保证角色、Token 参数、Thinking、流式事件和 Tool Calling 行为一致。"},{"label":"得到的可复用原则","value":"选择首个集成对象时，应优先最大化学习到的边界，而不是最大化表面上的顺利。外部模型名称只能存在于配置与带核验日期的决策记录中，不能进入 Core 类型。"},{"label":"尚未理解","value":"DeepSeek V4 Flash 的真实流式事件、错误响应、Thinking 与 Tool Calling 轨迹；必须等 P1 用真实请求和 Fixture 验证。"},{"label":"下一步","value":"继续 P0.5 统一错误边界，再通过 P0.6 `kfc doctor` 检查 DeepSeek 配置，P1 才发起真实模型调用。"}],"raw":"- **第一性问题：** 首个模型服务应该只是最容易调用，还是应该帮助暴露 Provider 抽象中的真实差异？\n- **我的初始假设：** 首个目标应支持 OpenAI-compatible 基础协议，同时在角色、参数、Thinking 与工具调用上存在足够真实差异，迫使我们验证边界而不是假设兼容。\n- **最小实验：** 暂不发起网络请求，只核验官方接口、当前模型名称和兼容差异，并记录可替换配置、代价与重新评估条件。\n- **观察到的证据：** 截至 2026-07-29，DeepSeek 官方 OpenAI 格式 Base URL 为 `https://api.deepseek.com`，当前首选目标记录为 `deepseek-v4-flash`；配置示例、TODO 和 ADR 已同步，API Key 仍保持环境变量专用。\n- **假设哪里错了：** “OpenAI-compatible 就可以无差别替换”过于粗糙；兼容主要解决接入形状，不能自动保证角色、Token 参数、Thinking、流式事件和 Tool Calling 行为一致。\n- **得到的可复用原则：** 选择首个集成对象时，应优先最大化学习到的边界，而不是最大化表面上的顺利。外部模型名称只能存在于配置与带核验日期的决策记录中，不能进入 Core 类型。\n- **尚未理解：** DeepSeek V4 Flash 的真实流式事件、错误响应、Thinking 与 Tool Calling 轨迹；必须等 P1 用真实请求和 Fixture 验证。\n- **下一步：** 继续 P0.5 统一错误边界，再通过 P0.6 `kfc doctor` 检查 DeepSeek 配置，P1 才发起真实模型调用。"},{"date":"2026-07-29","title":"P0.4 配置边界","taskId":"P0.4","fields":[{"label":"第一性问题","value":"模型地址、模型名称和密钥从哪里来，多个来源冲突时听谁的，配置失败时怎样提供证据而不泄露秘密？"},{"label":"我的初始假设","value":"普通配置与密钥不应拥有相同生命周期；首版使用“环境变量 \u003e 用户配置文件 \u003e 默认值”，API Key 只允许来自环境变量，所有文件读取和环境输入都必须可注入测试。"},{"label":"最小实验","value":"使用 Zod 定义配置文件与最终配置 Schema，实现 XDG/用户目录路径解析、可选文件读取、环境覆盖、60 秒默认超时、结构化 `ConfigError` 和 `redactConfig`，不接入 CLI 或模型网络调用。"},{"label":"观察到的证据","value":"全量 Vitest 11 个文件、31 个测试通过；环境变量单独加载、文件与环境合并、环境覆盖、缺失文件、非法 JSON、非法 URL、超时范围、文件内 API Key 拒绝和脱敏均有测试。编译后模块使用虚拟路径完成显式泄露检查，脱敏对象和结构化错误均不包含测试密钥，也未读取真实 `~/.config/kfc`。"},{"label":"假设哪里错了","value":"初版错误归一化把“缺少 base URL”和“提供了非法 URL”都映射成“URL 非法”，抹平了用户应采取的不同修复动作。Zod 已提供 `invalid_type` 与 `invalid_format`，边界层应保留有决策价值的差异，而不是为了统一而过度统一。"},{"label":"得到的可复用原则","value":"配置优先级必须显式且可测试；秘密配置需要比普通配置更严格的来源与输出策略。测试通过依赖注入控制文件系统和环境，而不是触碰开发者真实主目录。结构化错误的价值在于告诉调用方下一步能做什么。"},{"label":"尚未理解","value":"配置错误如何与 Provider 错误、用户中断共享统一基类，以及哪些信息进入用户输出、哪些只进入调试日志；这属于 P0.5 的错误边界。"},{"label":"下一步","value":"P0.5 定义统一 `KfcError`，让 CLI 能依据错误类别决定消息、退出码和调试信息，同时保持密钥脱敏。"}],"raw":"- **第一性问题：** 模型地址、模型名称和密钥从哪里来，多个来源冲突时听谁的，配置失败时怎样提供证据而不泄露秘密？\n- **我的初始假设：** 普通配置与密钥不应拥有相同生命周期；首版使用“环境变量 \u003e 用户配置文件 \u003e 默认值”，API Key 只允许来自环境变量，所有文件读取和环境输入都必须可注入测试。\n- **最小实验：** 使用 Zod 定义配置文件与最终配置 Schema，实现 XDG/用户目录路径解析、可选文件读取、环境覆盖、60 秒默认超时、结构化 `ConfigError` 和 `redactConfig`，不接入 CLI 或模型网络调用。\n- **观察到的证据：** 全量 Vitest 11 个文件、31 个测试通过；环境变量单独加载、文件与环境合并、环境覆盖、缺失文件、非法 JSON、非法 URL、超时范围、文件内 API Key 拒绝和脱敏均有测试。编译后模块使用虚拟路径完成显式泄露检查，脱敏对象和结构化错误均不包含测试密钥，也未读取真实 `~/.config/kfc`。\n- **假设哪里错了：** 初版错误归一化把“缺少 base URL”和“提供了非法 URL”都映射成“URL 非法”，抹平了用户应采取的不同修复动作。Zod 已提供 `invalid_type` 与 `invalid_format`，边界层应保留有决策价值的差异，而不是为了统一而过度统一。\n- **得到的可复用原则：** 配置优先级必须显式且可测试；秘密配置需要比普通配置更严格的来源与输出策略。测试通过依赖注入控制文件系统和环境，而不是触碰开发者真实主目录。结构化错误的价值在于告诉调用方下一步能做什么。\n- **尚未理解：** 配置错误如何与 Provider 错误、用户中断共享统一基类，以及哪些信息进入用户输出、哪些只进入调试日志；这属于 P0.5 的错误边界。\n- **下一步：** P0.5 定义统一 `KfcError`，让 CLI 能依据错误类别决定消息、退出码和调试信息，同时保持密钥脱敏。"},{"date":"2026-07-29","title":"LR.5 核心代码复习层","taskId":null,"fields":[{"label":"第一性问题","value":"学习快照如果只有结论和 API 名称，却没有当时真正运行的核心代码，能否支持日后还原机制与复习调用链？"},{"label":"我的初始假设","value":"当前源码规模很小，自动归档受限的 `src/**/*.ts` 比手工维护“代码摘录”更可靠；实时页面和离线快照必须继续共用同一数据模型。"},{"label":"最小实验","value":"新增源码采集器，只读取普通 TypeScript 文件并忽略声明文件、符号链接和其他目录；记录相对路径、职责、分组、总行数、展示行数和截断状态，在 Dashboard 中提供折叠、行号、横向代码滚动与复制。"},{"label":"观察到的证据","value":"页面自动归档 6 个核心源码文件、共 127 行，`src/cli/parse-args.ts` 的 48 行可以完整展开和复制；LR Machine 5 个测试文件、9 个测试通过；桌面端与 390px 窄屏浏览器验收通过，无控制台错误和整页横向溢出。"},{"label":"假设哪里错了","value":"首次浏览器检查连接到了仍在 `4310` 运行的旧服务，说明修改源码不会让既有 Node 进程自动刷新，验收必须确认服务实例版本。移动端初版还因代码行的 `max-content` 宽度泄漏到页面而产生横向溢出；正确修复是约束代码容器，让长行只在 `\u003cpre\u003e` 内滚动，而不是全局隐藏页面溢出。"},{"label":"得到的可复用原则","value":"学习证据应同时保存目标、认知、验证和实际代码；源码采集必须采用白名单与上限。内部横向滚动是代码阅读需求，整页横向滚动则是布局错误，两者不能混淆。"},{"label":"尚未理解","value":"何时需要从“归档全部 src”升级为按任务标注核心文件，以及语法高亮、代码差异和调用链标注是否带来足够学习收益；在源码规模和复习痛点出现前不增加复杂度。"},{"label":"下一步","value":"回到 P0.4 配置边界；完成配置实现后，新快照将自动包含相关核心代码。"}],"raw":"- **第一性问题：** 学习快照如果只有结论和 API 名称，却没有当时真正运行的核心代码，能否支持日后还原机制与复习调用链？\n- **我的初始假设：** 当前源码规模很小，自动归档受限的 `src/**/*.ts` 比手工维护“代码摘录”更可靠；实时页面和离线快照必须继续共用同一数据模型。\n- **最小实验：** 新增源码采集器，只读取普通 TypeScript 文件并忽略声明文件、符号链接和其他目录；记录相对路径、职责、分组、总行数、展示行数和截断状态，在 Dashboard 中提供折叠、行号、横向代码滚动与复制。\n- **观察到的证据：** 页面自动归档 6 个核心源码文件、共 127 行，`src/cli/parse-args.ts` 的 48 行可以完整展开和复制；LR Machine 5 个测试文件、9 个测试通过；桌面端与 390px 窄屏浏览器验收通过，无控制台错误和整页横向溢出。\n- **假设哪里错了：** 首次浏览器检查连接到了仍在 `4310` 运行的旧服务，说明修改源码不会让既有 Node 进程自动刷新，验收必须确认服务实例版本。移动端初版还因代码行的 `max-content` 宽度泄漏到页面而产生横向溢出；正确修复是约束代码容器，让长行只在 `\u003cpre\u003e` 内滚动，而不是全局隐藏页面溢出。\n- **得到的可复用原则：** 学习证据应同时保存目标、认知、验证和实际代码；源码采集必须采用白名单与上限。内部横向滚动是代码阅读需求，整页横向滚动则是布局错误，两者不能混淆。\n- **尚未理解：** 何时需要从“归档全部 src”升级为按任务标注核心文件，以及语法高亮、代码差异和调用链标注是否带来足够学习收益；在源码规模和复习痛点出现前不增加复杂度。\n- **下一步：** 回到 P0.4 配置边界；完成配置实现后，新快照将自动包含相关核心代码。"},{"date":"2026-07-29","title":"P0.3 建立最小 CLI 入口","taskId":"P0.3","fields":[{"label":"第一性问题","value":"CLI 输入、程序决策和终端输出为什么必须分离，怎样用最小机制把参数稳定地转换为可验证行为？"},{"label":"我的初始假设","value":"当前只有 help 和 version 两个选项，Node.js 内置 `util.parseArgs` 足够；无需提前引入 Commander。参数解析应返回结构化命令，运行器通过注入的版本和 I/O 执行，入口文件只连接 `process`。"},{"label":"最小实验","value":"先写 help、version、未知选项和未实现位置参数的测试，再实现纯 `parseCliArgs`、`runCli`、帮助文本、包版本读取和带 shebang 的 `src/cli.ts`。"},{"label":"观察到的证据","value":"全量 Vitest 7 个文件、18 个测试全部通过，其中新增 10 个 CLI 行为测试；`pnpm build`、Lint 和格式检查通过；编译后的 `pnpm kfc --help` 与 `--version` 返回退出码 0，`--unknown` 输出简明错误且返回退出码 1，不包含调用栈，也不读取配置或访问网络。"},{"label":"假设哪里错了","value":"安装 `@types/node` 不代表 TypeScript 会自动启用 Node 类型，仍需在 `tsconfig.json` 声明 `types: [\"node\"]`。第一次失败构建还发现 TypeScript 默认可能在有错误时继续写入 `dist`，造成“产物能运行但构建已失败”的假象，因此加入 `noEmitOnError: true`。验收脚本也暴露 `status` 是 zsh 只读变量，这属于测试工具错误而非产品错误。TODO 推进到 P0.4 后，LR Machine 集成测试因写死“当前任务必须是 P0.3”而失败，说明测试应约束稳定的数据契约，而不是冻结必然变化的业务内容。"},{"label":"得到的可复用原则","value":"最外层入口应该尽可能薄：环境输入在边缘读取，核心行为使用普通数据和依赖注入，最后显式返回退出码。任何失败构建都不应产生可被误用的新产物。框架只有在内置机制无法控制复杂度时才值得引入。"},{"label":"尚未理解","value":"当子命令、共享选项和帮助层级增长时，`util.parseArgs` 的维护成本会在什么信号下超过引入 CLI 框架的成本；在真实复杂度出现前不做迁移。"},{"label":"下一步","value":"P0.4 建立配置边界，明确环境变量与用户配置的来源、优先级、校验和密钥脱敏。"}],"raw":"- **第一性问题：** CLI 输入、程序决策和终端输出为什么必须分离，怎样用最小机制把参数稳定地转换为可验证行为？\n- **我的初始假设：** 当前只有 help 和 version 两个选项，Node.js 内置 `util.parseArgs` 足够；无需提前引入 Commander。参数解析应返回结构化命令，运行器通过注入的版本和 I/O 执行，入口文件只连接 `process`。\n- **最小实验：** 先写 help、version、未知选项和未实现位置参数的测试，再实现纯 `parseCliArgs`、`runCli`、帮助文本、包版本读取和带 shebang 的 `src/cli.ts`。\n- **观察到的证据：** 全量 Vitest 7 个文件、18 个测试全部通过，其中新增 10 个 CLI 行为测试；`pnpm build`、Lint 和格式检查通过；编译后的 `pnpm kfc --help` 与 `--version` 返回退出码 0，`--unknown` 输出简明错误且返回退出码 1，不包含调用栈，也不读取配置或访问网络。\n- **假设哪里错了：** 安装 `@types/node` 不代表 TypeScript 会自动启用 Node 类型，仍需在 `tsconfig.json` 声明 `types: [\"node\"]`。第一次失败构建还发现 TypeScript 默认可能在有错误时继续写入 `dist`，造成“产物能运行但构建已失败”的假象，因此加入 `noEmitOnError: true`。验收脚本也暴露 `status` 是 zsh 只读变量，这属于测试工具错误而非产品错误。TODO 推进到 P0.4 后，LR Machine 集成测试因写死“当前任务必须是 P0.3”而失败，说明测试应约束稳定的数据契约，而不是冻结必然变化的业务内容。\n- **得到的可复用原则：** 最外层入口应该尽可能薄：环境输入在边缘读取，核心行为使用普通数据和依赖注入，最后显式返回退出码。任何失败构建都不应产生可被误用的新产物。框架只有在内置机制无法控制复杂度时才值得引入。\n- **尚未理解：** 当子命令、共享选项和帮助层级增长时，`util.parseArgs` 的维护成本会在什么信号下超过引入 CLI 框架的成本；在真实复杂度出现前不做迁移。\n- **下一步：** P0.4 建立配置边界，明确环境变量与用户配置的来源、优先级、校验和密钥脱敏。"},{"date":"2026-07-29","title":"LR.1 学习日志展示机器","taskId":null,"fields":[{"label":"第一性问题","value":"如何同时回答“项目现在是什么状态”和“过去某次开发结束时是什么状态”，并让进度、笔记与代码证据保持一致？"},{"label":"我的初始假设","value":"只维护静态网页会失去实时性，只维护动态页面会失去历史；需要共享同一数据模型的实时服务与不可变 HTML 快照。"},{"label":"最小实验","value":"使用 Node.js 内置 HTTP 和文件系统建立只读服务，采集 `TODO.md`、学习日志、愿景、包命令、TypeScript 导出和固定 Git 状态；同一渲染器生成实时页面与自包含 HTML。"},{"label":"观察到的证据","value":"LR Machine 专项测试 4 个文件、6 个测试全部通过；桌面端和 390px 窄屏均完成 Playwright 验收，无控制台错误和页面横向溢出；路径穿越请求被拒绝；页面展示 8 个阶段、2 条既有学习记录和 1 个真实导出 API。"},{"label":"假设哪里错了","value":"“能运行 Python 就能直接运行 Playwright”不成立；系统默认 `python3` 没有 Playwright，而 Anaconda Python 已具备该模块；端口测试在受限沙箱内返回 `EPERM`，根因是执行环境禁止监听。首次快照还发现 pnpm 会把参数分隔符 `--` 传给脚本，生成器必须先归一化 CLI 参数，不能假设业务参数从第一个位置直接开始。"},{"label":"得到的可复用原则","value":"当前状态应从真实项目文件派生，历史状态应以不可变快照保存；两者必须复用同一采集器和渲染器，否则迟早分裂。浏览器接口保持只读，生成快照只能由本地显式命令触发。"},{"label":"尚未理解","value":"随着 API 和笔记增长，单页信息密度、快照数量和 TypeScript AST 描述深度应在什么信号下升级；在真实需求出现前不引入数据库和前端框架。"},{"label":"下一步","value":"回到 P0.3，实现最小 CLI 入口，并在完成后按固定流程生成下一份 HTML 快照。"}],"raw":"- **第一性问题：** 如何同时回答“项目现在是什么状态”和“过去某次开发结束时是什么状态”，并让进度、笔记与代码证据保持一致？\n- **我的初始假设：** 只维护静态网页会失去实时性，只维护动态页面会失去历史；需要共享同一数据模型的实时服务与不可变 HTML 快照。\n- **最小实验：** 使用 Node.js 内置 HTTP 和文件系统建立只读服务，采集 `TODO.md`、学习日志、愿景、包命令、TypeScript 导出和固定 Git 状态；同一渲染器生成实时页面与自包含 HTML。\n- **观察到的证据：** LR Machine 专项测试 4 个文件、6 个测试全部通过；桌面端和 390px 窄屏均完成 Playwright 验收，无控制台错误和页面横向溢出；路径穿越请求被拒绝；页面展示 8 个阶段、2 条既有学习记录和 1 个真实导出 API。\n- **假设哪里错了：** “能运行 Python 就能直接运行 Playwright”不成立；系统默认 `python3` 没有 Playwright，而 Anaconda Python 已具备该模块；端口测试在受限沙箱内返回 `EPERM`，根因是执行环境禁止监听。首次快照还发现 pnpm 会把参数分隔符 `--` 传给脚本，生成器必须先归一化 CLI 参数，不能假设业务参数从第一个位置直接开始。\n- **得到的可复用原则：** 当前状态应从真实项目文件派生，历史状态应以不可变快照保存；两者必须复用同一采集器和渲染器，否则迟早分裂。浏览器接口保持只读，生成快照只能由本地显式命令触发。\n- **尚未理解：** 随着 API 和笔记增长，单页信息密度、快照数量和 TypeScript AST 描述深度应在什么信号下升级；在真实需求出现前不引入数据库和前端框架。\n- **下一步：** 回到 P0.3，实现最小 CLI 入口，并在完成后按固定流程生成下一份 HTML 快照。"},{"date":"2026-07-29","title":"P0.2 初始化工程","taskId":"P0.2","fields":[{"label":"第一性问题","value":"一个尚无 Agent 功能的仓库，至少需要哪些能力才能安全实验？"},{"label":"我的初始假设","value":"需要可重复安装、编译、自动验证、静态检查和统一格式；这些能力应与业务功能分离。"},{"label":"最小实验","value":"建立 Node.js 22+、pnpm、严格 TypeScript、Vitest、ESLint 和 Prettier 配置，仅加入一个无业务含义的导出及 Smoke Test。"},{"label":"观察到的证据","value":"Node.js `v24.14.0`、pnpm `10.11.0`；`pnpm build`、`pnpm test`、`pnpm lint`、`pnpm format:check` 全部退出码为 0；Vitest 通过 1 个测试。"},{"label":"假设哪里错了","value":"“直接安装最新版就最稳”是错误的。初次安装得到 TypeScript `7.0.2`，超出 `typescript-eslint 8.65.0` 声明的 `\u003c6.1.0` 范围；根据约束交集调整为 TypeScript `6.0.3` 后消除直接兼容性问题。"},{"label":"得到的可复用原则","value":"依赖选择不是追逐最大版本号，而是寻找全部约束的交集；安装成功只是现象，构建、测试和静态检查通过才是证据。"},{"label":"尚未理解","value":"CLI 参数解析应如何与核心逻辑分离；Vitest 的 Rolldown 依赖仍报告一个不影响当前 macOS 验证的可选 WASI peer warning，后续升级依赖时重新检查。"},{"label":"下一步","value":"P0.3 实现 `kfc --help` 和 `kfc --version`，先定义 CLI 边界再选择参数解析方式。"}],"raw":"- **第一性问题：** 一个尚无 Agent 功能的仓库，至少需要哪些能力才能安全实验？\n- **我的初始假设：** 需要可重复安装、编译、自动验证、静态检查和统一格式；这些能力应与业务功能分离。\n- **最小实验：** 建立 Node.js 22+、pnpm、严格 TypeScript、Vitest、ESLint 和 Prettier 配置，仅加入一个无业务含义的导出及 Smoke Test。\n- **观察到的证据：** Node.js `v24.14.0`、pnpm `10.11.0`；`pnpm build`、`pnpm test`、`pnpm lint`、`pnpm format:check` 全部退出码为 0；Vitest 通过 1 个测试。\n- **假设哪里错了：** “直接安装最新版就最稳”是错误的。初次安装得到 TypeScript `7.0.2`，超出 `typescript-eslint 8.65.0` 声明的 `\u003c6.1.0` 范围；根据约束交集调整为 TypeScript `6.0.3` 后消除直接兼容性问题。\n- **得到的可复用原则：** 依赖选择不是追逐最大版本号，而是寻找全部约束的交集；安装成功只是现象，构建、测试和静态检查通过才是证据。\n- **尚未理解：** CLI 参数解析应如何与核心逻辑分离；Vitest 的 Rolldown 依赖仍报告一个不影响当前 macOS 验证的可选 WASI peer warning，后续升级依赖时重新检查。\n- **下一步：** P0.3 实现 `kfc --help` 和 `kfc --version`，先定义 CLI 边界再选择参数解析方式。"},{"date":"2026-07-29","title":"P0.1 定义项目范围","taskId":"P0.1","fields":[{"label":"第一性问题","value":"既然已经有成熟编程 Agent，为什么仍要亲手实现 KFC？"},{"label":"我的初始假设","value":"仅会使用现成 Agent 不足以形成独立开发能力；需要亲手理解 MCP、Skills、会话、沙箱、Hooks、权限、分支和命令系统背后的机制。"},{"label":"最小实验","value":"不写代码，先把项目目的、首版边界和“真正学会”的判定标准写成可检查的约束。"},{"label":"观察到的证据","value":"`docs/vision.md` 已明确 KFC Mini v0.1.0 的唯一核心闭环、首版非目标和七项学习标准。"},{"label":"假设哪里错了","value":"暂无技术假设被实验推翻；但已确认“接近成熟产品”不是首版成功标准，建立可解释、可验证的因果理解才是。"},{"label":"得到的可复用原则","value":"在实现之前先定义问题、非目标和完成证据，可以降低范围膨胀，并让后续技术选择具有判断依据。"},{"label":"尚未理解","value":"CLI、Provider、Agent Loop、权限和验证机制应如何形成最小且稳定的边界。"},{"label":"下一步","value":"P0.2 初始化 TypeScript 工程，只建立支持运行、测试和诊断所需的最小工具链。"}],"raw":"- **第一性问题：** 既然已经有成熟编程 Agent，为什么仍要亲手实现 KFC？\n- **我的初始假设：** 仅会使用现成 Agent 不足以形成独立开发能力；需要亲手理解 MCP、Skills、会话、沙箱、Hooks、权限、分支和命令系统背后的机制。\n- **最小实验：** 不写代码，先把项目目的、首版边界和“真正学会”的判定标准写成可检查的约束。\n- **观察到的证据：** `docs/vision.md` 已明确 KFC Mini v0.1.0 的唯一核心闭环、首版非目标和七项学习标准。\n- **假设哪里错了：** 暂无技术假设被实验推翻；但已确认“接近成熟产品”不是首版成功标准，建立可解释、可验证的因果理解才是。\n- **得到的可复用原则：** 在实现之前先定义问题、非目标和完成证据，可以降低范围膨胀，并让后续技术选择具有判断依据。\n- **尚未理解：** CLI、Provider、Agent Loop、权限和验证机制应如何形成最小且稳定的边界。\n- **下一步：** P0.2 初始化 TypeScript 工程，只建立支持运行、测试和诊断所需的最小工具链。"}],"visionMarkdown":"# KFlow Code Vision\n\n**状态：** P0 范围定义  \n**日期：** 2026-07-29\n\n## 为什么做 KFC\n\n成熟的编程 Agent 已经能够完成大量开发任务，但仅仅会使用它们，无法回答其行为为何可靠、为何失败，以及怎样修改其边界。KFlow Code（KFC）的目的不是复制某个产品的外观，而是通过亲手实现关键机制，将编程 Agent 从黑盒还原为一个可解释、可验证、可演进的工程系统。\n\n项目长期希望理解并实现 MCP、Skills、会话、沙箱、Hooks、权限机制、Git 分支以及 `/xxxx` 命令等能力。最终目标是形成对 Agent 开发的独立理解，能够自行开发 Agent、完成真实开发任务，并更灵活地利用 Agent 参与工程工作。\n\nKFC 可以暂时不如成熟产品，但必须能够持续吸收优秀实现、解释设计差异，并通过实验不断迭代。\n\n## KFC Mini v0.1.0 的核心闭环\n\n首版只验证以下最小闭环：\n\n\u003e 接收任务 → 调用模型 → 读取代码 → 修改代码 → 执行测试 → 根据证据判断是否完成\n\n这个闭环必须具备明确的状态、错误边界、终止条件、权限约束和验证证据。任何不能帮助验证该闭环的功能都不进入首版。\n\n## 首版明确不做\n\n- MCP、Skills 和 Hooks\n- Subagents、多模型及多 Provider\n- TUI、IDE 插件和复杂交互界面\n- 云端同步与跨设备会话\n- 自动 Git 分支及 Worktree 管理\n- 完整的斜杠命令系统\n\n这些能力不是永远不做，而是在核心闭环稳定、真实需求出现后再逐项引入。抽象必须由已经发生的问题换取，不能由想象预支。\n\n## 怎样才算学会\n\n掌握一个机制，必须同时做到：\n\n1. **能解释**：不用术语遮掩，说清它解决的真实问题。\n2. **能还原**：不照搬成熟项目，独立完成最小实现。\n3. **能验证**：覆盖正常、异常和边界路径。\n4. **能取舍**：说明选择、代价和重新评估条件。\n5. **能调试**：依据状态、事件、日志和证据定位失败。\n6. **能迁移**：在其他项目中重新实现或组合该机制。\n7. **能比较**：读懂优秀实现，并解释设计差异背后的约束。\n\n每个阶段至少沉淀四类证据：可运行实现、自动化测试与真实任务记录、学习笔记、架构决策或阶段复盘。\n\n## 项目原则\n\n- 先提出第一性问题，再选择技术和抽象。\n- 一次只引入一个主要架构概念。\n- 代码完成不等于任务完成；完成必须有可复现证据。\n- 先写自己的假设，再借助 AI 审查和补充反例。\n- 先做单 Agent 的可靠闭环，再增加扩展能力。\n- 失败、错误假设和重构原因都属于学习成果，必须记录。\n","commands":[{"name":"build","command":"tsc -p tsconfig.json","description":"Compile production TypeScript with strict checks"},{"name":"test","command":"vitest run","description":"Run deterministic automated tests"},{"name":"lint","command":"eslint .","description":"Run static analysis"},{"name":"format","command":"prettier --write .","description":"Rewrite supported files using Prettier"},{"name":"format:check","command":"prettier --check .","description":"Verify formatting without modifying files"},{"name":"learning:serve","command":"node lr-machine/server.mjs","description":"Start the local LR Machine dashboard"},{"name":"learning:snapshot","command":"node lr-machine/generate-snapshot.mjs","description":"Archive the current learning state as HTML"},{"name":"learning:test","command":"vitest run lr-machine/tests","description":"Run LR Machine focused tests"},{"name":"kfc","command":"node dist/cli.js","description":"Project command"}],"api":[{"name":"createHelpText","kind":"function","path":"src/cli/help.ts","line":1,"signature":"export function createHelpText(): string { return `KFlow Code (KFC) A learning-first, verifiable coding agent. Usage: kfc [options] kfc \u003ccommand\u003e Commands: doctor Check runtime and provider configuration Options: --quick"},{"name":"readPackageVersion","kind":"function","path":"src/cli/package-version.ts","line":7,"signature":"export function readPackageVersion( packageUrl = new URL(\"../../package.json\", import.meta.url), ): string { const metadata = JSON.parse( readFileSync(packageUrl, \"utf8\"), ) as PackageMetadata; if (typeof metadata.versio"},{"name":"CliCommand","kind":"type","path":"src/cli/parse-args.ts","line":3,"signature":"export type CliCommand = | { type: \"help\" } | { type: \"version\" } | { type: \"doctor\" } | { type: \"quickstart\" } | { type: \"error\"; message: string };"},{"name":"parseCliArgs","kind":"function","path":"src/cli/parse-args.ts","line":23,"signature":"export function parseCliArgs(args: readonly string[]): CliCommand { try { const { values, positionals } = parseArgs({ args: [...args], options: { help: { type: \"boolean\", short: \"h\" }, version: { type: \"boolean\", short: "},{"name":"CliEnvironment","kind":"interface","path":"src/cli/run-cli.ts","line":8,"signature":"export interface CliEnvironment { version: string; runDoctor(): Promise\u003cDoctorReport\u003e; runQuickstart(): Promise\u003cQuickstartResult\u003e; writeStdout(text: string): void; writeStderr(text: string): void; }"},{"name":"runCli","kind":"function","path":"src/cli/run-cli.ts","line":16,"signature":"export async function runCli( args: readonly string[], environment: CliEnvironment, ): Promise\u003cnumber\u003e { const command = parseCliArgs(args); switch (command.type) { case \"help\": environment.writeStdout(createHelpText());"},{"name":"ConfigPathOptions","kind":"interface","path":"src/config/config-path.ts","line":4,"signature":"export interface ConfigPathOptions { homeDirectory?: string; currentDirectory?: string; }"},{"name":"resolveConfigPath","kind":"function","path":"src/config/config-path.ts","line":23,"signature":"export function resolveConfigPath( env: NodeJS.ProcessEnv = process.env, options: ConfigPathOptions = {}, ): string { const homeDirectory = options.homeDirectory ?? homedir(); const currentDirectory = options.currentDire"},{"name":"resolveCredentialsPath","kind":"function","path":"src/config/config-path.ts","line":40,"signature":"export function resolveCredentialsPath( env: NodeJS.ProcessEnv = process.env, configPath = resolveConfigPath(env), options: ConfigPathOptions = {}, ): string { const currentDirectory = options.currentDirectory ?? process"},{"name":"ProviderConfig","kind":"interface","path":"src/config/config.ts","line":3,"signature":"export interface ProviderConfig { type: \"openai-compatible\"; baseUrl: string; model: string; apiKey: string; timeoutMs: number; }"},{"name":"KfcConfig","kind":"interface","path":"src/config/config.ts","line":11,"signature":"export interface KfcConfig { provider: ProviderConfig; }"},{"name":"ConfigIssue","kind":"interface","path":"src/config/config.ts","line":15,"signature":"export interface ConfigIssue { path: string; message: string; }"},{"name":"ConfigErrorCode","kind":"type","path":"src/config/config.ts","line":20,"signature":"export type ConfigErrorCode = | \"CONFIG_FILE_READ_FAILED\" | \"CONFIG_FILE_INVALID\" | \"CREDENTIALS_FILE_READ_FAILED\" | \"CREDENTIALS_FILE_INVALID\" | \"CONFIG_INVALID\";"},{"name":"ConfigError","kind":"class","path":"src/config/config.ts","line":27,"signature":"export class ConfigError extends KfcError { readonly issues: readonly ConfigIssue[]; constructor( code: ConfigErrorCode, message: string, issues: readonly ConfigIssue[] = [], ) { super({ category: \"config\", code, message"},{"name":"credentialsFileSchema","kind":"constant","path":"src/config/credentials.ts","line":5,"signature":"export const credentialsFileSchema = z .object({ provider: z .object({ baseUrl: providerBaseUrlSchema, apiKey: z.string().trim().min(1), }) .strict(), }) .strict();"},{"name":"CredentialsFileData","kind":"type","path":"src/config/credentials.ts","line":16,"signature":"export type CredentialsFileData = z.infer\u003ctypeof credentialsFileSchema\u003e;"},{"name":"LoadConfigOptions","kind":"interface","path":"src/config/load-config.ts","line":15,"signature":"export interface LoadConfigOptions { env?: NodeJS.ProcessEnv; configPath?: string; credentialsPath?: string; readTextFile?: (path: string) =\u003e Promise\u003cstring\u003e; readCredentialsTextFile?: (path: string) =\u003e Promise\u003cstring\u003e; "},{"name":"loadConfig","kind":"function","path":"src/config/load-config.ts","line":143,"signature":"export async function loadConfig( options: LoadConfigOptions = {}, ): Promise\u003cKfcConfig\u003e { const env = options.env ?? process.env; const configPath = options.configPath ?? resolveConfigPath(env); const credentialsPath = "},{"name":"RedactedKfcConfig","kind":"type","path":"src/config/redact-config.ts","line":3,"signature":"export type RedactedKfcConfig = Omit\u003cKfcConfig, \"provider\"\u003e \u0026 { provider: Omit\u003cKfcConfig[\"provider\"], \"apiKey\"\u003e \u0026 { apiKey: \"[REDACTED]\" }; };"},{"name":"redactConfig","kind":"function","path":"src/config/redact-config.ts","line":7,"signature":"export function redactConfig(config: KfcConfig): RedactedKfcConfig { return { ...config, provider: { ...config.provider, apiKey: \"[REDACTED]\", }, }; }"},{"name":"providerTimeoutSchema","kind":"constant","path":"src/config/schema.ts","line":3,"signature":"export const providerTimeoutSchema = z.number().int().min(1000).max(300000);"},{"name":"providerBaseUrlSchema","kind":"constant","path":"src/config/schema.ts","line":5,"signature":"export const providerBaseUrlSchema = z .string() .trim() .url() .refine((value) =\u003e { try { const protocol = new URL(value).protocol; return protocol === \"http:\" || protocol === \"https:\"; } catch { return false; } });"},{"name":"providerModelSchema","kind":"constant","path":"src/config/schema.ts","line":18,"signature":"export const providerModelSchema = z.string().trim().min(1);"},{"name":"configFileSchema","kind":"constant","path":"src/config/schema.ts","line":20,"signature":"export const configFileSchema = z .object({ provider: z .object({ type: z.literal(\"openai-compatible\").optional(), baseUrl: providerBaseUrlSchema.optional(), model: providerModelSchema.optional(), timeoutMs: providerTime"},{"name":"finalConfigSchema","kind":"constant","path":"src/config/schema.ts","line":34,"signature":"export const finalConfigSchema = z.object({ provider: z.object({ type: z.literal(\"openai-compatible\"), baseUrl: providerBaseUrlSchema, model: providerModelSchema, apiKey: z.string().trim().min(1), timeoutMs: providerTime"},{"name":"ConfigFileData","kind":"type","path":"src/config/schema.ts","line":44,"signature":"export type ConfigFileData = z.infer\u003ctypeof configFileSchema\u003e;"},{"name":"createDoctorDependencies","kind":"function","path":"src/doctor/create-doctor-dependencies.ts","line":32,"signature":"export function createDoctorDependencies( env: NodeJS.ProcessEnv = process.env, ): DoctorDependencies { const configPath = resolveConfigPath(env); const credentialsPath = resolveCredentialsPath(env, configPath); return {"},{"name":"DoctorCheckStatus","kind":"type","path":"src/doctor/doctor.ts","line":3,"signature":"export type DoctorCheckStatus = \"pass\" | \"warn\" | \"fail\";"},{"name":"DoctorCheck","kind":"interface","path":"src/doctor/doctor.ts","line":5,"signature":"export interface DoctorCheck { status: DoctorCheckStatus; label: string; detail: string; }"},{"name":"DoctorReport","kind":"interface","path":"src/doctor/doctor.ts","line":11,"signature":"export interface DoctorReport { exitCode: number; checks: readonly DoctorCheck[]; }"},{"name":"DoctorDependencies","kind":"interface","path":"src/doctor/doctor.ts","line":16,"signature":"export interface DoctorDependencies { nodeVersion: string; configPath: string; credentialsPath: string; homeDirectory: string; configFileExists(path: string): Promise\u003cboolean\u003e; credentialsFileExists(path: string): Promis"},{"name":"formatConfigPathForDisplay","kind":"function","path":"src/doctor/doctor.ts","line":50,"signature":"export function formatConfigPathForDisplay( configPath: string, homeDirectory: string, ): string { if (configPath === homeDirectory) return \"~\"; const prefix = homeDirectory.endsWith(\"/\") ? homeDirectory : `${homeDirecto"},{"name":"runDoctor","kind":"function","path":"src/doctor/doctor.ts","line":82,"signature":"export async function runDoctor( dependencies: DoctorDependencies, ): Promise\u003cDoctorReport\u003e { const checks: DoctorCheck[] = [nodeCheck(dependencies.nodeVersion)]; const displayConfigPath = formatConfigPathForDisplay( dep"},{"name":"formatDoctorReport","kind":"function","path":"src/doctor/doctor.ts","line":135,"signature":"export function formatDoctorReport(report: DoctorReport): string { const symbols: Record\u003cDoctorCheckStatus, string\u003e = { pass: \"✓\", warn: \"!\", fail: \"✗\", }; const labelWidth = report.checks.reduce( (width, check) =\u003e Math."},{"name":"createDoctorDependencies","kind":"re-export","path":"src/doctor/index.ts","line":1,"signature":"export { createDoctorDependencies } from \"./create-doctor-dependencies.js\";"},{"name":"formatConfigPathForDisplay","kind":"re-export","path":"src/doctor/index.ts","line":2,"signature":"export { formatConfigPathForDisplay, formatDoctorReport, runDoctor, } from \"./doctor.js\";"},{"name":"formatDoctorReport","kind":"re-export","path":"src/doctor/index.ts","line":2,"signature":"export { formatConfigPathForDisplay, formatDoctorReport, runDoctor, } from \"./doctor.js\";"},{"name":"runDoctor","kind":"re-export","path":"src/doctor/index.ts","line":2,"signature":"export { formatConfigPathForDisplay, formatDoctorReport, runDoctor, } from \"./doctor.js\";"},{"name":"DoctorCheck","kind":"re-export","path":"src/doctor/index.ts","line":7,"signature":"export type { DoctorCheck, DoctorCheckStatus, DoctorDependencies, DoctorReport, } from \"./doctor.js\";"},{"name":"DoctorCheckStatus","kind":"re-export","path":"src/doctor/index.ts","line":7,"signature":"export type { DoctorCheck, DoctorCheckStatus, DoctorDependencies, DoctorReport, } from \"./doctor.js\";"},{"name":"DoctorDependencies","kind":"re-export","path":"src/doctor/index.ts","line":7,"signature":"export type { DoctorCheck, DoctorCheckStatus, DoctorDependencies, DoctorReport, } from \"./doctor.js\";"},{"name":"DoctorReport","kind":"re-export","path":"src/doctor/index.ts","line":7,"signature":"export type { DoctorCheck, DoctorCheckStatus, DoctorDependencies, DoctorReport, } from \"./doctor.js\";"},{"name":"ErrorPresentationOptions","kind":"interface","path":"src/errors/error-presentation.ts","line":3,"signature":"export interface ErrorPresentationOptions { debug?: boolean; }"},{"name":"ErrorPresentation","kind":"interface","path":"src/errors/error-presentation.ts","line":7,"signature":"export interface ErrorPresentation { exitCode: number; text: string; }"},{"name":"normalizeUnknownError","kind":"function","path":"src/errors/error-presentation.ts","line":58,"signature":"export function normalizeUnknownError(error: unknown): KfcError { if (error instanceof KfcError) { return error; } return new KfcError({ category: \"internal\", code: \"INTERNAL_ERROR\", message: \"Unexpected internal error\","},{"name":"formatErrorForCli","kind":"function","path":"src/errors/error-presentation.ts","line":76,"signature":"export function formatErrorForCli( error: unknown, options: ErrorPresentationOptions = {}, ): ErrorPresentation { const normalized = normalizeUnknownError(error); const lines = [ `Error [${normalized.code}]: ${normalized"},{"name":"formatErrorForCli","kind":"re-export","path":"src/errors/index.ts","line":1,"signature":"export { formatErrorForCli, normalizeUnknownError, } from \"./error-presentation.js\";"},{"name":"normalizeUnknownError","kind":"re-export","path":"src/errors/index.ts","line":1,"signature":"export { formatErrorForCli, normalizeUnknownError, } from \"./error-presentation.js\";"},{"name":"ErrorPresentation","kind":"re-export","path":"src/errors/index.ts","line":5,"signature":"export type { ErrorPresentation, ErrorPresentationOptions, } from \"./error-presentation.js\";"},{"name":"ErrorPresentationOptions","kind":"re-export","path":"src/errors/index.ts","line":5,"signature":"export type { ErrorPresentation, ErrorPresentationOptions, } from \"./error-presentation.js\";"},{"name":"KfcError","kind":"re-export","path":"src/errors/index.ts","line":9,"signature":"export { KfcError } from \"./kfc-error.js\";"},{"name":"KfcErrorCategory","kind":"re-export","path":"src/errors/index.ts","line":10,"signature":"export type { KfcErrorCategory, KfcErrorCode, KfcErrorOptions, } from \"./kfc-error.js\";"},{"name":"KfcErrorCode","kind":"re-export","path":"src/errors/index.ts","line":10,"signature":"export type { KfcErrorCategory, KfcErrorCode, KfcErrorOptions, } from \"./kfc-error.js\";"},{"name":"KfcErrorOptions","kind":"re-export","path":"src/errors/index.ts","line":10,"signature":"export type { KfcErrorCategory, KfcErrorCode, KfcErrorOptions, } from \"./kfc-error.js\";"},{"name":"ProviderError","kind":"re-export","path":"src/errors/index.ts","line":15,"signature":"export { ProviderError } from \"./provider-error.js\";"},{"name":"ProviderErrorCode","kind":"re-export","path":"src/errors/index.ts","line":16,"signature":"export type { ProviderErrorCode, ProviderErrorOptions, } from \"./provider-error.js\";"},{"name":"ProviderErrorOptions","kind":"re-export","path":"src/errors/index.ts","line":16,"signature":"export type { ProviderErrorCode, ProviderErrorOptions, } from \"./provider-error.js\";"},{"name":"UserInterruptedError","kind":"re-export","path":"src/errors/index.ts","line":20,"signature":"export { UserInterruptedError } from \"./user-interrupted-error.js\";"},{"name":"KfcErrorCategory","kind":"type","path":"src/errors/kfc-error.ts","line":1,"signature":"export type KfcErrorCategory = \"config\" | \"provider\" | \"user_interrupted\" | \"internal\";"},{"name":"KfcErrorCode","kind":"type","path":"src/errors/kfc-error.ts","line":4,"signature":"export type KfcErrorCode = | \"CONFIG_FILE_READ_FAILED\" | \"CONFIG_FILE_INVALID\" | \"CREDENTIALS_FILE_READ_FAILED\" | \"CREDENTIALS_FILE_INVALID\" | \"CONFIG_INVALID\" | \"PROVIDER_AUTHENTICATION_FAILED\" | \"PROVIDER_RATE_LIMITED\""},{"name":"KfcErrorOptions","kind":"interface","path":"src/errors/kfc-error.ts","line":19,"signature":"export interface KfcErrorOptions { category: KfcErrorCategory; code: KfcErrorCode; message: string; exitCode: number; retryable: boolean; details?: Readonly\u003cRecord\u003cstring, unknown\u003e\u003e; debugDetails?: Readonly\u003cRecord\u003cstring"},{"name":"KfcError","kind":"class","path":"src/errors/kfc-error.ts","line":30,"signature":"export class KfcError extends Error { readonly category: KfcErrorCategory; readonly code: KfcErrorCode; readonly exitCode: number; readonly retryable: boolean; readonly details: Readonly\u003cRecord\u003cstring, unknown\u003e\u003e | undefi"},{"name":"ProviderErrorCode","kind":"type","path":"src/errors/provider-error.ts","line":3,"signature":"export type ProviderErrorCode = Extract\u003c KfcErrorCode, | \"PROVIDER_AUTHENTICATION_FAILED\" | \"PROVIDER_RATE_LIMITED\" | \"PROVIDER_TIMEOUT\" | \"PROVIDER_CONTEXT_LIMIT\" | \"PROVIDER_SERVICE_UNAVAILABLE\" | \"PROVIDER_INVALID_RES"},{"name":"ProviderErrorOptions","kind":"interface","path":"src/errors/provider-error.ts","line":13,"signature":"export interface ProviderErrorOptions { details?: Readonly\u003cRecord\u003cstring, unknown\u003e\u003e; debugDetails?: Readonly\u003cRecord\u003cstring, unknown\u003e\u003e; cause?: unknown; }"},{"name":"ProviderError","kind":"class","path":"src/errors/provider-error.ts","line":25,"signature":"export class ProviderError extends KfcError { constructor( code: ProviderErrorCode, message: string, options: ProviderErrorOptions = {}, ) { super({ category: \"provider\", code, message, exitCode: 3, retryable: RETRYABLE_"},{"name":"UserInterruptedError","kind":"class","path":"src/errors/user-interrupted-error.ts","line":3,"signature":"export class UserInterruptedError extends KfcError { constructor(message = \"Operation cancelled by user\") { super({ category: \"user_interrupted\", code: \"USER_INTERRUPTED\", message, exitCode: 130, retryable: false, }); th"},{"name":"ConfigError","kind":"re-export","path":"src/index.ts","line":1,"signature":"export { ConfigError } from \"./config/config.js\";"},{"name":"ConfigErrorCode","kind":"re-export","path":"src/index.ts","line":2,"signature":"export type { ConfigErrorCode, ConfigIssue, KfcConfig, ProviderConfig, } from \"./config/config.js\";"},{"name":"ConfigIssue","kind":"re-export","path":"src/index.ts","line":2,"signature":"export type { ConfigErrorCode, ConfigIssue, KfcConfig, ProviderConfig, } from \"./config/config.js\";"},{"name":"KfcConfig","kind":"re-export","path":"src/index.ts","line":2,"signature":"export type { ConfigErrorCode, ConfigIssue, KfcConfig, ProviderConfig, } from \"./config/config.js\";"},{"name":"ProviderConfig","kind":"re-export","path":"src/index.ts","line":2,"signature":"export type { ConfigErrorCode, ConfigIssue, KfcConfig, ProviderConfig, } from \"./config/config.js\";"},{"name":"resolveConfigPath","kind":"re-export","path":"src/index.ts","line":8,"signature":"export { resolveConfigPath, resolveCredentialsPath, } from \"./config/config-path.js\";"},{"name":"resolveCredentialsPath","kind":"re-export","path":"src/index.ts","line":8,"signature":"export { resolveConfigPath, resolveCredentialsPath, } from \"./config/config-path.js\";"},{"name":"loadConfig","kind":"re-export","path":"src/index.ts","line":12,"signature":"export { loadConfig } from \"./config/load-config.js\";"},{"name":"redactConfig","kind":"re-export","path":"src/index.ts","line":13,"signature":"export { redactConfig } from \"./config/redact-config.js\";"},{"name":"RedactedKfcConfig","kind":"re-export","path":"src/index.ts","line":14,"signature":"export type { RedactedKfcConfig } from \"./config/redact-config.js\";"},{"name":"*","kind":"re-export","path":"src/index.ts","line":15,"signature":"export * from \"./doctor/index.js\";"},{"name":"*","kind":"re-export","path":"src/index.ts","line":16,"signature":"export * from \"./errors/index.js\";"},{"name":"*","kind":"re-export","path":"src/index.ts","line":17,"signature":"export * from \"./quickstart/index.js\";"},{"name":"*","kind":"re-export","path":"src/index.ts","line":18,"signature":"export * from \"./provider/index.js\";"},{"name":"projectName","kind":"constant","path":"src/index.ts","line":20,"signature":"export const projectName = \"kflow-code\";"},{"name":"ModelFinishReason","kind":"re-export","path":"src/provider/index.ts","line":1,"signature":"export type { ModelFinishReason, ModelMessage, ModelMessageRole, ModelProvider, ModelRequest, ModelStreamEvent, ModelStreamOptions, ModelTokenUsage, } from \"./model-provider.js\";"},{"name":"ModelMessage","kind":"re-export","path":"src/provider/index.ts","line":1,"signature":"export type { ModelFinishReason, ModelMessage, ModelMessageRole, ModelProvider, ModelRequest, ModelStreamEvent, ModelStreamOptions, ModelTokenUsage, } from \"./model-provider.js\";"},{"name":"ModelMessageRole","kind":"re-export","path":"src/provider/index.ts","line":1,"signature":"export type { ModelFinishReason, ModelMessage, ModelMessageRole, ModelProvider, ModelRequest, ModelStreamEvent, ModelStreamOptions, ModelTokenUsage, } from \"./model-provider.js\";"},{"name":"ModelProvider","kind":"re-export","path":"src/provider/index.ts","line":1,"signature":"export type { ModelFinishReason, ModelMessage, ModelMessageRole, ModelProvider, ModelRequest, ModelStreamEvent, ModelStreamOptions, ModelTokenUsage, } from \"./model-provider.js\";"},{"name":"ModelRequest","kind":"re-export","path":"src/provider/index.ts","line":1,"signature":"export type { ModelFinishReason, ModelMessage, ModelMessageRole, ModelProvider, ModelRequest, ModelStreamEvent, ModelStreamOptions, ModelTokenUsage, } from \"./model-provider.js\";"},{"name":"ModelStreamEvent","kind":"re-export","path":"src/provider/index.ts","line":1,"signature":"export type { ModelFinishReason, ModelMessage, ModelMessageRole, ModelProvider, ModelRequest, ModelStreamEvent, ModelStreamOptions, ModelTokenUsage, } from \"./model-provider.js\";"},{"name":"ModelStreamOptions","kind":"re-export","path":"src/provider/index.ts","line":1,"signature":"export type { ModelFinishReason, ModelMessage, ModelMessageRole, ModelProvider, ModelRequest, ModelStreamEvent, ModelStreamOptions, ModelTokenUsage, } from \"./model-provider.js\";"},{"name":"ModelTokenUsage","kind":"re-export","path":"src/provider/index.ts","line":1,"signature":"export type { ModelFinishReason, ModelMessage, ModelMessageRole, ModelProvider, ModelRequest, ModelStreamEvent, ModelStreamOptions, ModelTokenUsage, } from \"./model-provider.js\";"},{"name":"ModelMessageRole","kind":"type","path":"src/provider/model-provider.ts","line":1,"signature":"export type ModelMessageRole = \"system\" | \"user\" | \"assistant\";"},{"name":"ModelMessage","kind":"interface","path":"src/provider/model-provider.ts","line":3,"signature":"export interface ModelMessage { readonly role: ModelMessageRole; readonly content: string; }"},{"name":"ModelRequest","kind":"interface","path":"src/provider/model-provider.ts","line":8,"signature":"export interface ModelRequest { readonly messages: readonly ModelMessage[]; }"},{"name":"ModelStreamOptions","kind":"interface","path":"src/provider/model-provider.ts","line":12,"signature":"export interface ModelStreamOptions { readonly signal?: AbortSignal; }"},{"name":"ModelFinishReason","kind":"type","path":"src/provider/model-provider.ts","line":16,"signature":"export type ModelFinishReason = \"stop\" | \"length\" | \"content-filter\" | \"unknown\";"},{"name":"ModelTokenUsage","kind":"interface","path":"src/provider/model-provider.ts","line":19,"signature":"export interface ModelTokenUsage { readonly inputTokens: number; readonly outputTokens: number; readonly totalTokens: number; }"},{"name":"ModelStreamEvent","kind":"type","path":"src/provider/model-provider.ts","line":25,"signature":"export type ModelStreamEvent = | { readonly type: \"start\" } | { readonly type: \"text-delta\"; readonly delta: string } | { readonly type: \"usage\"; readonly usage: ModelTokenUsage } | { readonly type: \"finish\"; readonly re"},{"name":"ModelProvider","kind":"interface","path":"src/provider/model-provider.ts","line":31,"signature":"export interface ModelProvider { stream( request: ModelRequest, options?: ModelStreamOptions, ): AsyncIterable\u003cModelStreamEvent\u003e; }"},{"name":"createQuickstartDependencies","kind":"function","path":"src/quickstart/create-quickstart-dependencies.ts","line":36,"signature":"export function createQuickstartDependencies( env: NodeJS.ProcessEnv = process.env, ): QuickstartDependencies { const configPath = resolveConfigPath(env); const credentialsPath = resolveCredentialsPath(env, configPath); "},{"name":"createQuickstartDependencies","kind":"re-export","path":"src/quickstart/index.ts","line":1,"signature":"export { createQuickstartDependencies } from \"./create-quickstart-dependencies.js\";"},{"name":"runQuickstart","kind":"re-export","path":"src/quickstart/index.ts","line":2,"signature":"export { runQuickstart } from \"./quickstart.js\";"},{"name":"QuickstartDependencies","kind":"re-export","path":"src/quickstart/index.ts","line":3,"signature":"export type { QuickstartDependencies, QuickstartPrompt, QuickstartResult, } from \"./quickstart.js\";"},{"name":"QuickstartPrompt","kind":"re-export","path":"src/quickstart/index.ts","line":3,"signature":"export type { QuickstartDependencies, QuickstartPrompt, QuickstartResult, } from \"./quickstart.js\";"},{"name":"QuickstartResult","kind":"re-export","path":"src/quickstart/index.ts","line":3,"signature":"export type { QuickstartDependencies, QuickstartPrompt, QuickstartResult, } from \"./quickstart.js\";"},{"name":"createTerminalPrompt","kind":"re-export","path":"src/quickstart/index.ts","line":8,"signature":"export { createTerminalPrompt } from \"./terminal-prompt.js\";"},{"name":"writeConfigAtomically","kind":"re-export","path":"src/quickstart/index.ts","line":9,"signature":"export { writeConfigAtomically } from \"./write-config.js\";"},{"name":"QuickstartFileConfig","kind":"re-export","path":"src/quickstart/index.ts","line":10,"signature":"export type { QuickstartFileConfig } from \"./write-config.js\";"},{"name":"writeCredentialsAtomically","kind":"re-export","path":"src/quickstart/index.ts","line":11,"signature":"export { writeCredentialsAtomically } from \"./write-credentials.js\";"},{"name":"QuickstartPrompt","kind":"interface","path":"src/quickstart/quickstart.ts","line":14,"signature":"export interface QuickstartPrompt { readonly isInteractive: boolean; ask(label: string, defaultValue?: string): Promise\u003cstring\u003e; askSecret(label: string): Promise\u003cstring\u003e; confirm(label: string, defaultValue?: boolean): "},{"name":"QuickstartResult","kind":"interface","path":"src/quickstart/quickstart.ts","line":23,"signature":"export interface QuickstartResult { exitCode: number; text: string; }"},{"name":"QuickstartDependencies","kind":"interface","path":"src/quickstart/quickstart.ts","line":28,"signature":"export interface QuickstartDependencies { prompt: QuickstartPrompt; configPath: string; credentialsPath: string; homeDirectory: string; configFileExists(path: string): Promise\u003cboolean\u003e; credentialsFileExists(path: string"},{"name":"runQuickstart","kind":"function","path":"src/quickstart/quickstart.ts","line":79,"signature":"export async function runQuickstart( dependencies: QuickstartDependencies, ): Promise\u003cQuickstartResult\u003e { const { prompt } = dependencies; try { if (!prompt.isInteractive) { return { exitCode: 1, text: \"Error: Quickstart"},{"name":"createTerminalPrompt","kind":"function","path":"src/quickstart/terminal-prompt.ts","line":76,"signature":"export function createTerminalPrompt( input: TtyReadable = stdin, output: TtyWritable = stdout, ): QuickstartPrompt { return { isInteractive: Boolean(input.isTTY \u0026\u0026 output.isTTY), async ask(label: string, defaultValue?: "},{"name":"quickstartFileConfigSchema","kind":"constant","path":"src/quickstart/write-config.ts","line":13,"signature":"export const quickstartFileConfigSchema = z .object({ provider: z .object({ type: z.literal(\"openai-compatible\"), baseUrl: providerBaseUrlSchema, model: providerModelSchema, timeoutMs: providerTimeoutSchema, }) .strict()"},{"name":"QuickstartFileConfig","kind":"type","path":"src/quickstart/write-config.ts","line":26,"signature":"export type QuickstartFileConfig = z.infer\u003ctypeof quickstartFileConfigSchema\u003e;"},{"name":"writeConfigAtomically","kind":"function","path":"src/quickstart/write-config.ts","line":28,"signature":"export async function writeConfigAtomically( configPath: string, config: unknown, ): Promise\u003cvoid\u003e { const validated = quickstartFileConfigSchema.safeParse(config); if (!validated.success) { throw new ConfigError( \"CONFI"},{"name":"writeCredentialsAtomically","kind":"function","path":"src/quickstart/write-credentials.ts","line":11,"signature":"export async function writeCredentialsAtomically( credentialsPath: string, credentials: unknown, ): Promise\u003cvoid\u003e { const validated = credentialsFileSchema.safeParse(credentials); if (!validated.success) { throw new Conf"}],"sourceFiles":[{"path":"src/cli.ts","group":"CLI 执行链","description":"进程适配入口：连接 argv、stdout、stderr、版本和退出码。","content":"#!/usr/bin/env node\n\nimport { readPackageVersion } from \"./cli/package-version.js\";\nimport { runCli } from \"./cli/run-cli.js\";\nimport { createDoctorDependencies } from \"./doctor/create-doctor-dependencies.js\";\nimport { runDoctor } from \"./doctor/doctor.js\";\nimport { createQuickstartDependencies } from \"./quickstart/create-quickstart-dependencies.js\";\nimport { runQuickstart } from \"./quickstart/quickstart.js\";\n\ntry {\n  process.exitCode = await runCli(process.argv.slice(2), {\n    version: readPackageVersion(),\n    runDoctor: () =\u003e runDoctor(createDoctorDependencies()),\n    runQuickstart: () =\u003e runQuickstart(createQuickstartDependencies()),\n    writeStdout: (text) =\u003e process.stdout.write(text),\n    writeStderr: (text) =\u003e process.stderr.write(text),\n  });\n} catch {\n  process.stderr.write(\"Error: Unable to initialize KFC.\\n\");\n  process.exitCode = 1;\n}\n","lineCount":22,"shownLineCount":22,"truncated":false},{"path":"src/cli/help.ts","group":"输出与元数据","description":"集中生成 CLI 帮助文本，避免入口文件承担展示细节。","content":"export function createHelpText(): string {\n  return `KFlow Code (KFC)\nA learning-first, verifiable coding agent.\n\nUsage:\n  kfc [options]\n  kfc \u003ccommand\u003e\n\nCommands:\n  doctor            Check runtime and provider configuration\n\nOptions:\n  --quickstart      Interactively configure an OpenAI-compatible Provider\n  --qs              Alias for --quickstart\n  -h, --help        Show this help message\n  -v, --version     Print the installed version\n`;\n}\n","lineCount":19,"shownLineCount":19,"truncated":false},{"path":"src/cli/package-version.ts","group":"输出与元数据","description":"从 package.json 读取并验证唯一版本来源。","content":"import { readFileSync } from \"node:fs\";\n\ninterface PackageMetadata {\n  version?: unknown;\n}\n\nexport function readPackageVersion(\n  packageUrl = new URL(\"../../package.json\", import.meta.url),\n): string {\n  const metadata = JSON.parse(\n    readFileSync(packageUrl, \"utf8\"),\n  ) as PackageMetadata;\n  if (typeof metadata.version !== \"string\" || metadata.version.length === 0) {\n    throw new Error(\"package.json does not contain a valid version\");\n  }\n  return metadata.version;\n}\n","lineCount":18,"shownLineCount":18,"truncated":false},{"path":"src/cli/parse-args.ts","group":"CLI 执行链","description":"将原始参数字符串转换为 help、version 或 error 等结构化命令。","content":"import { parseArgs } from \"node:util\";\n\nexport type CliCommand =\n  | { type: \"help\" }\n  | { type: \"version\" }\n  | { type: \"doctor\" }\n  | { type: \"quickstart\" }\n  | { type: \"error\"; message: string };\n\nfunction normalizeParseError(error: unknown): string {\n  if (!(error instanceof Error)) {\n    return \"Unable to parse command-line arguments\";\n  }\n\n  const unknownOption = error.message.match(/Unknown option ['\"]([^'\"]+)['\"]/i);\n  if (unknownOption?.[1]) {\n    return `Unknown option: ${unknownOption[1]}`;\n  }\n\n  return error.message.replace(/^TypeError \\[[^\\]]+\\]:\\s*/, \"\");\n}\n\nexport function parseCliArgs(args: readonly string[]): CliCommand {\n  try {\n    const { values, positionals } = parseArgs({\n      args: [...args],\n      options: {\n        help: { type: \"boolean\", short: \"h\" },\n        version: { type: \"boolean\", short: \"v\" },\n        quickstart: { type: \"boolean\" },\n        qs: { type: \"boolean\" },\n      },\n      allowPositionals: true,\n      strict: true,\n    });\n\n    if (values.help) return { type: \"help\" };\n    if (values.version) return { type: \"version\" };\n    if (values.quickstart || values.qs) {\n      if (positionals.length \u003e 0) {\n        return {\n          type: \"error\",\n          message: `Unexpected argument: ${positionals[0]}`,\n        };\n      }\n      return { type: \"quickstart\" };\n    }\n    if (positionals.length === 0) return { type: \"help\" };\n    if (positionals.length === 1 \u0026\u0026 positionals[0] === \"doctor\") {\n      return { type: \"doctor\" };\n    }\n    return {\n      type: \"error\",\n      message: `Unexpected argument: ${positionals[0]}`,\n    };\n  } catch (error) {\n    return { type: \"error\", message: normalizeParseError(error) };\n  }\n}\n","lineCount":60,"shownLineCount":60,"truncated":false},{"path":"src/cli/run-cli.ts","group":"CLI 执行链","description":"执行结构化命令，通过注入的环境输出文本并返回退出码。","content":"import type { DoctorReport } from \"../doctor/doctor.js\";\nimport { formatDoctorReport } from \"../doctor/doctor.js\";\nimport { formatErrorForCli } from \"../errors/error-presentation.js\";\nimport type { QuickstartResult } from \"../quickstart/quickstart.js\";\nimport { createHelpText } from \"./help.js\";\nimport { parseCliArgs } from \"./parse-args.js\";\n\nexport interface CliEnvironment {\n  version: string;\n  runDoctor(): Promise\u003cDoctorReport\u003e;\n  runQuickstart(): Promise\u003cQuickstartResult\u003e;\n  writeStdout(text: string): void;\n  writeStderr(text: string): void;\n}\n\nexport async function runCli(\n  args: readonly string[],\n  environment: CliEnvironment,\n): Promise\u003cnumber\u003e {\n  const command = parseCliArgs(args);\n\n  switch (command.type) {\n    case \"help\":\n      environment.writeStdout(createHelpText());\n      return 0;\n    case \"version\":\n      environment.writeStdout(`${environment.version}\\n`);\n      return 0;\n    case \"doctor\":\n      try {\n        const report = await environment.runDoctor();\n        environment.writeStdout(formatDoctorReport(report));\n        return report.exitCode;\n      } catch (error) {\n        const presentation = formatErrorForCli(error);\n        environment.writeStderr(presentation.text);\n        return presentation.exitCode;\n      }\n    case \"quickstart\":\n      try {\n        const result = await environment.runQuickstart();\n        const write =\n          result.exitCode === 0\n            ? environment.writeStdout\n            : environment.writeStderr;\n        write(result.text);\n        return result.exitCode;\n      } catch (error) {\n        const presentation = formatErrorForCli(error);\n        environment.writeStderr(presentation.text);\n        return presentation.exitCode;\n      }\n    case \"error\":\n      environment.writeStderr(\n        `Error: ${command.message}\\nRun 'kfc --help' for usage.\\n`,\n      );\n      return 1;\n  }\n}\n","lineCount":60,"shownLineCount":60,"truncated":false},{"path":"src/config/config-path.ts","group":"CONFIG 模块","description":"根据显式路径、XDG 和用户目录确定配置文件位置。","content":"import { homedir } from \"node:os\";\nimport { dirname, isAbsolute, join, resolve } from \"node:path\";\n\nexport interface ConfigPathOptions {\n  homeDirectory?: string;\n  currentDirectory?: string;\n}\n\nfunction nonEmpty(value: string | undefined): string | undefined {\n  const trimmed = value?.trim();\n  return trimmed ? trimmed : undefined;\n}\n\nfunction resolveOptionalPath(\n  value: string | undefined,\n  currentDirectory: string,\n): string | undefined {\n  const path = nonEmpty(value);\n  if (!path) return undefined;\n  return isAbsolute(path) ? path : resolve(currentDirectory, path);\n}\n\nexport function resolveConfigPath(\n  env: NodeJS.ProcessEnv = process.env,\n  options: ConfigPathOptions = {},\n): string {\n  const homeDirectory = options.homeDirectory ?? homedir();\n  const currentDirectory = options.currentDirectory ?? process.cwd();\n  const explicitPath = resolveOptionalPath(\n    env.KFC_CONFIG_PATH,\n    currentDirectory,\n  );\n  if (explicitPath) return explicitPath;\n\n  const configHome =\n    nonEmpty(env.XDG_CONFIG_HOME) ?? join(homeDirectory, \".config\");\n  return join(configHome, \"kfc\", \"config.json\");\n}\n\nexport function resolveCredentialsPath(\n  env: NodeJS.ProcessEnv = process.env,\n  configPath = resolveConfigPath(env),\n  options: ConfigPathOptions = {},\n): string {\n  const currentDirectory = options.currentDirectory ?? process.cwd();\n  const explicitPath = resolveOptionalPath(\n    env.KFC_CREDENTIALS_PATH,\n    currentDirectory,\n  );\n  return explicitPath ?? join(dirname(configPath), \"credentials.json\");\n}\n","lineCount":52,"shownLineCount":52,"truncated":false},{"path":"src/config/config.ts","group":"CONFIG 模块","description":"定义最终配置、结构化问题和配置错误的领域类型。","content":"import { KfcError } from \"../errors/kfc-error.js\";\n\nexport interface ProviderConfig {\n  type: \"openai-compatible\";\n  baseUrl: string;\n  model: string;\n  apiKey: string;\n  timeoutMs: number;\n}\n\nexport interface KfcConfig {\n  provider: ProviderConfig;\n}\n\nexport interface ConfigIssue {\n  path: string;\n  message: string;\n}\n\nexport type ConfigErrorCode =\n  | \"CONFIG_FILE_READ_FAILED\"\n  | \"CONFIG_FILE_INVALID\"\n  | \"CREDENTIALS_FILE_READ_FAILED\"\n  | \"CREDENTIALS_FILE_INVALID\"\n  | \"CONFIG_INVALID\";\n\nexport class ConfigError extends KfcError {\n  readonly issues: readonly ConfigIssue[];\n\n  constructor(\n    code: ConfigErrorCode,\n    message: string,\n    issues: readonly ConfigIssue[] = [],\n  ) {\n    super({\n      category: \"config\",\n      code,\n      message,\n      exitCode: 2,\n      retryable: false,\n      details: { issues },\n    });\n    this.name = \"ConfigError\";\n    this.issues = issues;\n  }\n}\n","lineCount":47,"shownLineCount":47,"truncated":false},{"path":"src/config/credentials.ts","group":"CONFIG 模块","description":"KFC 当前源码模块；职责会随真实实现逐步明确。","content":"import { z } from \"zod\";\n\nimport { providerBaseUrlSchema } from \"./schema.js\";\n\nexport const credentialsFileSchema = z\n  .object({\n    provider: z\n      .object({\n        baseUrl: providerBaseUrlSchema,\n        apiKey: z.string().trim().min(1),\n      })\n      .strict(),\n  })\n  .strict();\n\nexport type CredentialsFileData = z.infer\u003ctypeof credentialsFileSchema\u003e;\n","lineCount":17,"shownLineCount":17,"truncated":false},{"path":"src/config/load-config.ts","group":"CONFIG 模块","description":"读取可选文件、合并环境变量与默认值并返回校验后的配置。","content":"import { readFile } from \"node:fs/promises\";\n\nimport { type ConfigIssue, ConfigError, type KfcConfig } from \"./config.js\";\nimport {\n  type CredentialsFileData,\n  credentialsFileSchema,\n} from \"./credentials.js\";\nimport { resolveConfigPath, resolveCredentialsPath } from \"./config-path.js\";\nimport {\n  type ConfigFileData,\n  configFileSchema,\n  finalConfigSchema,\n} from \"./schema.js\";\n\nexport interface LoadConfigOptions {\n  env?: NodeJS.ProcessEnv;\n  configPath?: string;\n  credentialsPath?: string;\n  readTextFile?: (path: string) =\u003e Promise\u003cstring\u003e;\n  readCredentialsTextFile?: (path: string) =\u003e Promise\u003cstring\u003e;\n}\n\nfunction envText(env: NodeJS.ProcessEnv, name: string): string | undefined {\n  const value = env[name]?.trim();\n  return value ? value : undefined;\n}\n\nfunction errorCode(error: unknown): string | undefined {\n  if (typeof error === \"object\" \u0026\u0026 error !== null \u0026\u0026 \"code\" in error) {\n    return String(error.code);\n  }\n  return undefined;\n}\n\nfunction fileIssues(error: {\n  issues: readonly { path: PropertyKey[]; message: string }[];\n}): ConfigIssue[] {\n  return error.issues.map((issue) =\u003e ({\n    path: issue.path.map(String).join(\".\") || \"config\",\n    message: issue.message,\n  }));\n}\n\nfunction finalIssueMessage(path: string): string {\n  const messages: Record\u003cstring, string\u003e = {\n    \"provider.apiKey\": \"Provider API Key is required\",\n    \"provider.baseUrl\": \"Provider base URL is required\",\n    \"provider.model\": \"Provider model is required\",\n    \"provider.timeoutMs\": \"Provider timeout must be between 1000 and 300000 ms\",\n  };\n  return messages[path] ?? \"Configuration value is invalid\";\n}\n\nfunction finalIssues(error: {\n  issues: readonly { path: PropertyKey[]; code: string }[];\n}): ConfigIssue[] {\n  return error.issues.map((issue) =\u003e {\n    const path = issue.path.map(String).join(\".\") || \"config\";\n    let message = finalIssueMessage(path);\n    if (path === \"provider.baseUrl\" \u0026\u0026 issue.code !== \"invalid_type\") {\n      message = \"Provider base URL must be a valid URL\";\n    }\n    return { path, message };\n  });\n}\n\nasync function readOptionalJson\u003cT\u003e(\n  path: string,\n  readTextFile: (path: string) =\u003e Promise\u003cstring\u003e,\n  options: {\n    readErrorCode: \"CONFIG_FILE_READ_FAILED\" | \"CREDENTIALS_FILE_READ_FAILED\";\n    invalidErrorCode: \"CONFIG_FILE_INVALID\" | \"CREDENTIALS_FILE_INVALID\";\n    readMessage: string;\n    invalidJsonMessage: string;\n    invalidSchemaMessage: string;\n    parse(value: unknown):\n      | { success: true; data: T }\n      | {\n          success: false;\n          error: {\n            issues: readonly { path: PropertyKey[]; message: string }[];\n          };\n        };\n  },\n): Promise\u003cT | null\u003e {\n  let content: string;\n  try {\n    content = await readTextFile(path);\n  } catch (error) {\n    if (errorCode(error) === \"ENOENT\") return null;\n    throw new ConfigError(options.readErrorCode, options.readMessage);\n  }\n\n  let parsed: unknown;\n  try {\n    parsed = JSON.parse(content);\n  } catch {\n    throw new ConfigError(options.invalidErrorCode, options.invalidJsonMessage);\n  }\n\n  const result = options.parse(parsed);\n  if (!result.success) {\n    throw new ConfigError(\n      options.invalidErrorCode,\n      options.invalidSchemaMessage,\n      fileIssues(result.error),\n    );\n  }\n  return result.data;\n}\n\nasync function readConfigFile(\n  path: string,\n  reader: (path: string) =\u003e Promise\u003cstring\u003e,\n): Promise\u003cConfigFileData\u003e {\n  return (\n    (await readOptionalJson(path, reader, {\n      readErrorCode: \"CONFIG_FILE_READ_FAILED\",\n      invalidErrorCode: \"CONFIG_FILE_INVALID\",\n      readMessage: \"Unable to read configuration file\",\n      invalidJsonMessage: \"Configuration file contains invalid JSON\",\n      invalidSchemaMessage:\n        \"Configuration file does not match the expected schema\",\n      parse: (value) =\u003e configFileSchema.safeParse(value),\n    })) ?? {}\n  );\n}\n\nasync function readCredentialsFile(\n  path: string,\n  reader: (path: string) =\u003e Promise\u003cstring\u003e,\n): Promise\u003cCredentialsFileData | null\u003e {\n  return readOptionalJson(path, reader, {\n    readErrorCode: \"CREDENTIALS_FILE_READ_FAILED\",\n    invalidErrorCode: \"CREDENTIALS_FILE_INVALID\",\n    readMessage: \"Unable to read credentials file\",\n    invalidJsonMessage: \"Credentials file contains invalid JSON\",\n    invalidSchemaMessage: \"Credentials file does not match the expected schema\",\n    parse: (value) =\u003e credentialsFileSchema.safeParse(value),\n  });\n}\n\nexport async function loadConfig(\n  options: LoadConfigOptions = {},\n): Promise\u003cKfcConfig\u003e {\n  const env = options.env ?? process.env;\n  const configPath = options.configPath ?? resolveConfigPath(env);\n  const credentialsPath =\n    options.credentialsPath ?? resolveCredentialsPath(env, configPath);\n  const readConfigText =\n    options.readTextFile ?? ((path: string) =\u003e readFile(path, \"utf8\"));\n  const readCredentialsText =\n    options.readCredentialsTextFile ??\n    ((path: string) =\u003e readFile(path, \"utf8\"));\n  const file = await readConfigFile(configPath, readConfigText);\n  const timeoutText = envText(env, \"KFC_TIMEOUT_MS\");\n  const baseUrl = envText(env, \"KFC_BASE_URL\") ?? file.provider?.baseUrl;\n  const environmentApiKey = envText(env, \"KFC_API_KEY\");\n  const credentials = environmentApiKey\n    ? null\n    : await readCredentialsFile(credentialsPath, readCredentialsText);\n\n  if (credentials \u0026\u0026 baseUrl \u0026\u0026 credentials.provider.baseUrl !== baseUrl) {\n    throw new ConfigError(\n      \"CONFIG_INVALID\",\n      \"Stored credentials do not match the active Provider\",\n      [\n        {\n          path: \"provider.apiKey\",\n          message: \"Stored credentials do not match Provider base URL\",\n        },\n      ],\n    );\n  }\n\n  const candidate = {\n    provider: {\n      type: \"openai-compatible\" as const,\n      baseUrl,\n      model: envText(env, \"KFC_MODEL\") ?? file.provider?.model,\n      apiKey: environmentApiKey ?? credentials?.provider.apiKey,\n      timeoutMs:\n        timeoutText === undefined\n          ? (file.provider?.timeoutMs ?? 60000)\n          : Number(timeoutText),\n    },\n  };\n\n  const result = finalConfigSchema.safeParse(candidate);\n  if (!result.success) {\n    throw new ConfigError(\n      \"CONFIG_INVALID\",\n      \"Configuration is incomplete or invalid\",\n      finalIssues(result.error),\n    );\n  }\n\n  return result.data;\n}\n","lineCount":200,"shownLineCount":200,"truncated":false},{"path":"src/config/redact-config.ts","group":"CONFIG 模块","description":"在配置离开安全边界前替换 API Key。","content":"import type { KfcConfig } from \"./config.js\";\n\nexport type RedactedKfcConfig = Omit\u003cKfcConfig, \"provider\"\u003e \u0026 {\n  provider: Omit\u003cKfcConfig[\"provider\"], \"apiKey\"\u003e \u0026 { apiKey: \"[REDACTED]\" };\n};\n\nexport function redactConfig(config: KfcConfig): RedactedKfcConfig {\n  return {\n    ...config,\n    provider: {\n      ...config.provider,\n      apiKey: \"[REDACTED]\",\n    },\n  };\n}\n","lineCount":16,"shownLineCount":16,"truncated":false},{"path":"src/config/schema.ts","group":"CONFIG 模块","description":"使用 Zod 描述配置文件与最终合并结果的有效形状。","content":"import { z } from \"zod\";\n\nexport const providerTimeoutSchema = z.number().int().min(1000).max(300000);\n\nexport const providerBaseUrlSchema = z\n  .string()\n  .trim()\n  .url()\n  .refine((value) =\u003e {\n    try {\n      const protocol = new URL(value).protocol;\n      return protocol === \"http:\" || protocol === \"https:\";\n    } catch {\n      return false;\n    }\n  });\n\nexport const providerModelSchema = z.string().trim().min(1);\n\nexport const configFileSchema = z\n  .object({\n    provider: z\n      .object({\n        type: z.literal(\"openai-compatible\").optional(),\n        baseUrl: providerBaseUrlSchema.optional(),\n        model: providerModelSchema.optional(),\n        timeoutMs: providerTimeoutSchema.optional(),\n      })\n      .strict()\n      .optional(),\n  })\n  .strict();\n\nexport const finalConfigSchema = z.object({\n  provider: z.object({\n    type: z.literal(\"openai-compatible\"),\n    baseUrl: providerBaseUrlSchema,\n    model: providerModelSchema,\n    apiKey: z.string().trim().min(1),\n    timeoutMs: providerTimeoutSchema,\n  }),\n});\n\nexport type ConfigFileData = z.infer\u003ctypeof configFileSchema\u003e;\n","lineCount":45,"shownLineCount":45,"truncated":false},{"path":"src/doctor/create-doctor-dependencies.ts","group":"DOCTOR 诊断","description":"连接真实 Node 版本、用户目录、配置文件访问和配置加载器。","content":"import { access } from \"node:fs/promises\";\nimport { homedir } from \"node:os\";\n\nimport { ConfigError } from \"../config/config.js\";\nimport {\n  resolveConfigPath,\n  resolveCredentialsPath,\n} from \"../config/config-path.js\";\nimport { loadConfig } from \"../config/load-config.js\";\nimport type { DoctorDependencies } from \"./doctor.js\";\n\nfunction errorCode(error: unknown): string | undefined {\n  if (typeof error === \"object\" \u0026\u0026 error !== null \u0026\u0026 \"code\" in error) {\n    return String(error.code);\n  }\n  return undefined;\n}\n\nasync function fileExists(path: string): Promise\u003cboolean\u003e {\n  try {\n    await access(path);\n    return true;\n  } catch (error) {\n    if (errorCode(error) === \"ENOENT\") return false;\n    throw new ConfigError(\n      \"CONFIG_FILE_READ_FAILED\",\n      \"Unable to access setup file\",\n    );\n  }\n}\n\nexport function createDoctorDependencies(\n  env: NodeJS.ProcessEnv = process.env,\n): DoctorDependencies {\n  const configPath = resolveConfigPath(env);\n  const credentialsPath = resolveCredentialsPath(env, configPath);\n  return {\n    nodeVersion: process.version,\n    configPath,\n    credentialsPath,\n    homeDirectory: homedir(),\n    configFileExists: fileExists,\n    credentialsFileExists: fileExists,\n    loadConfig: () =\u003e loadConfig({ env, configPath, credentialsPath }),\n  };\n}\n","lineCount":47,"shownLineCount":47,"truncated":false},{"path":"src/doctor/doctor.ts","group":"DOCTOR 诊断","description":"生成本地运行时与配置健康检查，并格式化通过、警告和失败状态。","content":"import { ConfigError, type KfcConfig } from \"../config/config.js\";\n\nexport type DoctorCheckStatus = \"pass\" | \"warn\" | \"fail\";\n\nexport interface DoctorCheck {\n  status: DoctorCheckStatus;\n  label: string;\n  detail: string;\n}\n\nexport interface DoctorReport {\n  exitCode: number;\n  checks: readonly DoctorCheck[];\n}\n\nexport interface DoctorDependencies {\n  nodeVersion: string;\n  configPath: string;\n  credentialsPath: string;\n  homeDirectory: string;\n  configFileExists(path: string): Promise\u003cboolean\u003e;\n  credentialsFileExists(path: string): Promise\u003cboolean\u003e;\n  loadConfig(): Promise\u003cKfcConfig\u003e;\n}\n\nconst ISSUE_LABELS: Readonly\u003cRecord\u003cstring, string\u003e\u003e = {\n  \"provider.baseUrl\": \"Base URL\",\n  \"provider.model\": \"Model\",\n  \"provider.apiKey\": \"API Key\",\n  \"provider.timeoutMs\": \"Timeout\",\n};\n\nfunction nodeMajor(version: string): number | null {\n  const match = version.match(/^v?(\\d+)/);\n  return match?.[1] ? Number(match[1]) : null;\n}\n\nfunction nodeCheck(version: string): DoctorCheck {\n  const major = nodeMajor(version);\n  if (major !== null \u0026\u0026 major \u003e= 22) {\n    return { status: \"pass\", label: \"Node.js\", detail: version };\n  }\n  return {\n    status: \"fail\",\n    label: \"Node.js\",\n    detail: `${version}; requires Node.js 22 or newer`,\n  };\n}\n\nexport function formatConfigPathForDisplay(\n  configPath: string,\n  homeDirectory: string,\n): string {\n  if (configPath === homeDirectory) return \"~\";\n  const prefix = homeDirectory.endsWith(\"/\")\n    ? homeDirectory\n    : `${homeDirectory}/`;\n  return configPath.startsWith(prefix)\n    ? `~/${configPath.slice(prefix.length)}`\n    : configPath;\n}\n\nfunction configChecks(config: KfcConfig): DoctorCheck[] {\n  return [\n    { status: \"pass\", label: \"Base URL\", detail: config.provider.baseUrl },\n    { status: \"pass\", label: \"Model\", detail: config.provider.model },\n    { status: \"pass\", label: \"API Key\", detail: \"present\" },\n  ];\n}\n\nfunction configErrorChecks(error: ConfigError): DoctorCheck[] {\n  if (error.issues.length === 0) {\n    return [{ status: \"fail\", label: \"Configuration\", detail: error.message }];\n  }\n  return error.issues.map((issue) =\u003e ({\n    status: \"fail\",\n    label: ISSUE_LABELS[issue.path] ?? issue.path,\n    detail: issue.message,\n  }));\n}\n\nexport async function runDoctor(\n  dependencies: DoctorDependencies,\n): Promise\u003cDoctorReport\u003e {\n  const checks: DoctorCheck[] = [nodeCheck(dependencies.nodeVersion)];\n  const displayConfigPath = formatConfigPathForDisplay(\n    dependencies.configPath,\n    dependencies.homeDirectory,\n  );\n  const displayCredentialsPath = formatConfigPathForDisplay(\n    dependencies.credentialsPath,\n    dependencies.homeDirectory,\n  );\n  const [configExists, credentialsExist] = await Promise.all([\n    dependencies.configFileExists(dependencies.configPath),\n    dependencies.credentialsFileExists(dependencies.credentialsPath),\n  ]);\n  checks.push(\n    configExists\n      ? { status: \"pass\", label: \"Config file\", detail: displayConfigPath }\n      : {\n          status: \"warn\",\n          label: \"Config file\",\n          detail: `${displayConfigPath} not found; using environment/defaults`,\n        },\n    credentialsExist\n      ? {\n          status: \"pass\",\n          label: \"Credentials\",\n          detail: displayCredentialsPath,\n        }\n      : {\n          status: \"warn\",\n          label: \"Credentials\",\n          detail: `${displayCredentialsPath} not found; using environment`,\n        },\n  );\n\n  let configFailed = false;\n  try {\n    checks.push(...configChecks(await dependencies.loadConfig()));\n  } catch (error) {\n    if (!(error instanceof ConfigError)) throw error;\n    configFailed = true;\n    checks.push(...configErrorChecks(error));\n  }\n\n  const nodeFailed = checks[0]?.status === \"fail\";\n  return {\n    checks,\n    exitCode: configFailed ? 2 : nodeFailed ? 1 : 0,\n  };\n}\n\nexport function formatDoctorReport(report: DoctorReport): string {\n  const symbols: Record\u003cDoctorCheckStatus, string\u003e = {\n    pass: \"✓\",\n    warn: \"!\",\n    fail: \"✗\",\n  };\n  const labelWidth = report.checks.reduce(\n    (width, check) =\u003e Math.max(width, check.label.length),\n    0,\n  );\n  const lines = report.checks.map(\n    (check) =\u003e\n      `${symbols[check.status]} ${check.label.padEnd(labelWidth)}  ${check.detail}`,\n  );\n  return `KFC Doctor\\n\\n${lines.join(\"\\n\")}\\n`;\n}\n","lineCount":151,"shownLineCount":151,"truncated":false},{"path":"src/doctor/index.ts","group":"DOCTOR 诊断","description":"集中导出 Doctor 报告、依赖和格式化接口。","content":"export { createDoctorDependencies } from \"./create-doctor-dependencies.js\";\nexport {\n  formatConfigPathForDisplay,\n  formatDoctorReport,\n  runDoctor,\n} from \"./doctor.js\";\nexport type {\n  DoctorCheck,\n  DoctorCheckStatus,\n  DoctorDependencies,\n  DoctorReport,\n} from \"./doctor.js\";\n","lineCount":13,"shownLineCount":13,"truncated":false},{"path":"src/errors/error-presentation.ts","group":"ERROR 边界","description":"归一化未知异常并生成默认安全、Debug 脱敏的 CLI 输出。","content":"import { KfcError } from \"./kfc-error.js\";\n\nexport interface ErrorPresentationOptions {\n  debug?: boolean;\n}\n\nexport interface ErrorPresentation {\n  exitCode: number;\n  text: string;\n}\n\nconst SENSITIVE_KEY =\n  /api[-_]?key|authorization|token|secret|password|credential/i;\n\nfunction sanitizeDebugValue(\n  value: unknown,\n  key: string | undefined,\n  seen: WeakSet\u003cobject\u003e,\n): unknown {\n  if (key \u0026\u0026 SENSITIVE_KEY.test(key)) {\n    return \"[REDACTED]\";\n  }\n  if (value instanceof Error) {\n    return { name: value.name };\n  }\n  if (Array.isArray(value)) {\n    return value.map((item) =\u003e sanitizeDebugValue(item, undefined, seen));\n  }\n  if (typeof value === \"object\" \u0026\u0026 value !== null) {\n    if (seen.has(value)) return \"[CIRCULAR]\";\n    seen.add(value);\n    return Object.fromEntries(\n      Object.entries(value).map(([childKey, childValue]) =\u003e [\n        childKey,\n        sanitizeDebugValue(childValue, childKey, seen),\n      ]),\n    );\n  }\n  if (typeof value === \"bigint\") {\n    return value.toString();\n  }\n  return value;\n}\n\nfunction publicIssueLines(error: KfcError): string[] {\n  const issues = error.details?.issues;\n  if (!Array.isArray(issues)) return [];\n\n  return issues.flatMap((issue) =\u003e {\n    if (typeof issue !== \"object\" || issue === null) return [];\n    const path = \"path\" in issue ? String(issue.path) : \"config\";\n    const message =\n      \"message\" in issue ? String(issue.message) : \"Invalid value\";\n    return [`  - ${path}: ${message}`];\n  });\n}\n\nexport function normalizeUnknownError(error: unknown): KfcError {\n  if (error instanceof KfcError) {\n    return error;\n  }\n\n  return new KfcError({\n    category: \"internal\",\n    code: \"INTERNAL_ERROR\",\n    message: \"Unexpected internal error\",\n    exitCode: 1,\n    retryable: false,\n    debugDetails: {\n      originalType: error instanceof Error ? error.name : typeof error,\n    },\n    cause: error,\n  });\n}\n\nexport function formatErrorForCli(\n  error: unknown,\n  options: ErrorPresentationOptions = {},\n): ErrorPresentation {\n  const normalized = normalizeUnknownError(error);\n  const lines = [\n    `Error [${normalized.code}]: ${normalized.message}`,\n    ...publicIssueLines(normalized),\n  ];\n\n  if (options.debug) {\n    const debug = {\n      category: normalized.category,\n      exitCode: normalized.exitCode,\n      retryable: normalized.retryable,\n      details: sanitizeDebugValue(\n        normalized.debugDetails ?? {},\n        undefined,\n        new WeakSet(),\n      ),\n    };\n    lines.push(\"Debug:\", JSON.stringify(debug, null, 2));\n  }\n\n  return {\n    exitCode: normalized.exitCode,\n    text: `${lines.join(\"\\n\")}\\n`,\n  };\n}\n","lineCount":105,"shownLineCount":105,"truncated":false},{"path":"src/errors/index.ts","group":"ERROR 边界","description":"集中导出统一错误模块的公共接口。","content":"export {\n  formatErrorForCli,\n  normalizeUnknownError,\n} from \"./error-presentation.js\";\nexport type {\n  ErrorPresentation,\n  ErrorPresentationOptions,\n} from \"./error-presentation.js\";\nexport { KfcError } from \"./kfc-error.js\";\nexport type {\n  KfcErrorCategory,\n  KfcErrorCode,\n  KfcErrorOptions,\n} from \"./kfc-error.js\";\nexport { ProviderError } from \"./provider-error.js\";\nexport type {\n  ProviderErrorCode,\n  ProviderErrorOptions,\n} from \"./provider-error.js\";\nexport { UserInterruptedError } from \"./user-interrupted-error.js\";\n","lineCount":21,"shownLineCount":21,"truncated":false},{"path":"src/errors/kfc-error.ts","group":"ERROR 边界","description":"定义跨模块稳定的错误类别、代码、退出码、重试属性和安全序列化。","content":"export type KfcErrorCategory =\n  \"config\" | \"provider\" | \"user_interrupted\" | \"internal\";\n\nexport type KfcErrorCode =\n  | \"CONFIG_FILE_READ_FAILED\"\n  | \"CONFIG_FILE_INVALID\"\n  | \"CREDENTIALS_FILE_READ_FAILED\"\n  | \"CREDENTIALS_FILE_INVALID\"\n  | \"CONFIG_INVALID\"\n  | \"PROVIDER_AUTHENTICATION_FAILED\"\n  | \"PROVIDER_RATE_LIMITED\"\n  | \"PROVIDER_TIMEOUT\"\n  | \"PROVIDER_CONTEXT_LIMIT\"\n  | \"PROVIDER_SERVICE_UNAVAILABLE\"\n  | \"PROVIDER_INVALID_RESPONSE\"\n  | \"USER_INTERRUPTED\"\n  | \"INTERNAL_ERROR\";\n\nexport interface KfcErrorOptions {\n  category: KfcErrorCategory;\n  code: KfcErrorCode;\n  message: string;\n  exitCode: number;\n  retryable: boolean;\n  details?: Readonly\u003cRecord\u003cstring, unknown\u003e\u003e;\n  debugDetails?: Readonly\u003cRecord\u003cstring, unknown\u003e\u003e;\n  cause?: unknown;\n}\n\nexport class KfcError extends Error {\n  readonly category: KfcErrorCategory;\n  readonly code: KfcErrorCode;\n  readonly exitCode: number;\n  readonly retryable: boolean;\n  readonly details: Readonly\u003cRecord\u003cstring, unknown\u003e\u003e | undefined;\n  readonly debugDetails: Readonly\u003cRecord\u003cstring, unknown\u003e\u003e | undefined;\n\n  constructor(options: KfcErrorOptions) {\n    super(\n      options.message,\n      options.cause === undefined ? undefined : { cause: options.cause },\n    );\n    this.name = \"KfcError\";\n    this.category = options.category;\n    this.code = options.code;\n    this.exitCode = options.exitCode;\n    this.retryable = options.retryable;\n    this.details = options.details;\n    this.debugDetails = options.debugDetails;\n  }\n\n  toJSON(): object {\n    return {\n      name: this.name,\n      category: this.category,\n      code: this.code,\n      message: this.message,\n      exitCode: this.exitCode,\n      retryable: this.retryable,\n      details: this.details,\n    };\n  }\n}\n","lineCount":64,"shownLineCount":64,"truncated":false},{"path":"src/errors/provider-error.ts","group":"ERROR 边界","description":"描述 Provider 失败并根据错误码确定是否值得重试。","content":"import { type KfcErrorCode, KfcError } from \"./kfc-error.js\";\n\nexport type ProviderErrorCode = Extract\u003c\n  KfcErrorCode,\n  | \"PROVIDER_AUTHENTICATION_FAILED\"\n  | \"PROVIDER_RATE_LIMITED\"\n  | \"PROVIDER_TIMEOUT\"\n  | \"PROVIDER_CONTEXT_LIMIT\"\n  | \"PROVIDER_SERVICE_UNAVAILABLE\"\n  | \"PROVIDER_INVALID_RESPONSE\"\n\u003e;\n\nexport interface ProviderErrorOptions {\n  details?: Readonly\u003cRecord\u003cstring, unknown\u003e\u003e;\n  debugDetails?: Readonly\u003cRecord\u003cstring, unknown\u003e\u003e;\n  cause?: unknown;\n}\n\nconst RETRYABLE_CODES = new Set\u003cProviderErrorCode\u003e([\n  \"PROVIDER_RATE_LIMITED\",\n  \"PROVIDER_TIMEOUT\",\n  \"PROVIDER_SERVICE_UNAVAILABLE\",\n]);\n\nexport class ProviderError extends KfcError {\n  constructor(\n    code: ProviderErrorCode,\n    message: string,\n    options: ProviderErrorOptions = {},\n  ) {\n    super({\n      category: \"provider\",\n      code,\n      message,\n      exitCode: 3,\n      retryable: RETRYABLE_CODES.has(code),\n      ...(options.details === undefined ? {} : { details: options.details }),\n      ...(options.debugDetails === undefined\n        ? {}\n        : { debugDetails: options.debugDetails }),\n      ...(options.cause === undefined ? {} : { cause: options.cause }),\n    });\n    this.name = \"ProviderError\";\n  }\n}\n","lineCount":46,"shownLineCount":46,"truncated":false},{"path":"src/errors/user-interrupted-error.ts","group":"ERROR 边界","description":"把用户取消建模为退出码 130 的显式领域状态。","content":"import { KfcError } from \"./kfc-error.js\";\n\nexport class UserInterruptedError extends KfcError {\n  constructor(message = \"Operation cancelled by user\") {\n    super({\n      category: \"user_interrupted\",\n      code: \"USER_INTERRUPTED\",\n      message,\n      exitCode: 130,\n      retryable: false,\n    });\n    this.name = \"UserInterruptedError\";\n  }\n}\n","lineCount":15,"shownLineCount":15,"truncated":false},{"path":"src/index.ts","group":"模块入口","description":"供其他程序导入 KFC 能力的包入口。","content":"export { ConfigError } from \"./config/config.js\";\nexport type {\n  ConfigErrorCode,\n  ConfigIssue,\n  KfcConfig,\n  ProviderConfig,\n} from \"./config/config.js\";\nexport {\n  resolveConfigPath,\n  resolveCredentialsPath,\n} from \"./config/config-path.js\";\nexport { loadConfig } from \"./config/load-config.js\";\nexport { redactConfig } from \"./config/redact-config.js\";\nexport type { RedactedKfcConfig } from \"./config/redact-config.js\";\nexport * from \"./doctor/index.js\";\nexport * from \"./errors/index.js\";\nexport * from \"./quickstart/index.js\";\nexport * from \"./provider/index.js\";\n\nexport const projectName = \"kflow-code\";\n","lineCount":21,"shownLineCount":21,"truncated":false},{"path":"src/provider/index.ts","group":"PROVIDER 模块","description":"KFC 当前源码模块；职责会随真实实现逐步明确。","content":"export type {\n  ModelFinishReason,\n  ModelMessage,\n  ModelMessageRole,\n  ModelProvider,\n  ModelRequest,\n  ModelStreamEvent,\n  ModelStreamOptions,\n  ModelTokenUsage,\n} from \"./model-provider.js\";\n","lineCount":11,"shownLineCount":11,"truncated":false},{"path":"src/provider/model-provider.ts","group":"PROVIDER 模块","description":"KFC 当前源码模块；职责会随真实实现逐步明确。","content":"export type ModelMessageRole = \"system\" | \"user\" | \"assistant\";\n\nexport interface ModelMessage {\n  readonly role: ModelMessageRole;\n  readonly content: string;\n}\n\nexport interface ModelRequest {\n  readonly messages: readonly ModelMessage[];\n}\n\nexport interface ModelStreamOptions {\n  readonly signal?: AbortSignal;\n}\n\nexport type ModelFinishReason =\n  \"stop\" | \"length\" | \"content-filter\" | \"unknown\";\n\nexport interface ModelTokenUsage {\n  readonly inputTokens: number;\n  readonly outputTokens: number;\n  readonly totalTokens: number;\n}\n\nexport type ModelStreamEvent =\n  | { readonly type: \"start\" }\n  | { readonly type: \"text-delta\"; readonly delta: string }\n  | { readonly type: \"usage\"; readonly usage: ModelTokenUsage }\n  | { readonly type: \"finish\"; readonly reason: ModelFinishReason };\n\nexport interface ModelProvider {\n  stream(\n    request: ModelRequest,\n    options?: ModelStreamOptions,\n  ): AsyncIterable\u003cModelStreamEvent\u003e;\n}\n","lineCount":37,"shownLineCount":37,"truncated":false},{"path":"src/quickstart/create-quickstart-dependencies.ts","group":"QUICKSTART 引导","description":"连接配置路径、TTY、文件访问、原子写入和现有 Doctor。","content":"import { access } from \"node:fs/promises\";\nimport { homedir } from \"node:os\";\n\nimport { ConfigError } from \"../config/config.js\";\nimport {\n  resolveConfigPath,\n  resolveCredentialsPath,\n} from \"../config/config-path.js\";\nimport { createDoctorDependencies } from \"../doctor/create-doctor-dependencies.js\";\nimport { runDoctor } from \"../doctor/doctor.js\";\nimport type { QuickstartDependencies } from \"./quickstart.js\";\nimport { createTerminalPrompt } from \"./terminal-prompt.js\";\nimport { writeConfigAtomically } from \"./write-config.js\";\nimport { writeCredentialsAtomically } from \"./write-credentials.js\";\n\nfunction errorCode(error: unknown): string | undefined {\n  if (typeof error === \"object\" \u0026\u0026 error !== null \u0026\u0026 \"code\" in error) {\n    return String(error.code);\n  }\n  return undefined;\n}\n\nasync function fileExists(path: string): Promise\u003cboolean\u003e {\n  try {\n    await access(path);\n    return true;\n  } catch (error) {\n    if (errorCode(error) === \"ENOENT\") return false;\n    throw new ConfigError(\n      \"CONFIG_FILE_READ_FAILED\",\n      \"Unable to access setup file\",\n    );\n  }\n}\n\nexport function createQuickstartDependencies(\n  env: NodeJS.ProcessEnv = process.env,\n): QuickstartDependencies {\n  const configPath = resolveConfigPath(env);\n  const credentialsPath = resolveCredentialsPath(env, configPath);\n  return {\n    prompt: createTerminalPrompt(),\n    configPath,\n    credentialsPath,\n    homeDirectory: homedir(),\n    configFileExists: fileExists,\n    credentialsFileExists: fileExists,\n    writeConfig: (config) =\u003e writeConfigAtomically(configPath, config),\n    writeCredentials: (credentials) =\u003e\n      writeCredentialsAtomically(credentialsPath, credentials),\n    runDoctor: () =\u003e runDoctor(createDoctorDependencies(env)),\n  };\n}\n","lineCount":54,"shownLineCount":54,"truncated":false},{"path":"src/quickstart/index.ts","group":"QUICKSTART 引导","description":"集中导出 Quickstart 的公共接口。","content":"export { createQuickstartDependencies } from \"./create-quickstart-dependencies.js\";\nexport { runQuickstart } from \"./quickstart.js\";\nexport type {\n  QuickstartDependencies,\n  QuickstartPrompt,\n  QuickstartResult,\n} from \"./quickstart.js\";\nexport { createTerminalPrompt } from \"./terminal-prompt.js\";\nexport { writeConfigAtomically } from \"./write-config.js\";\nexport type { QuickstartFileConfig } from \"./write-config.js\";\nexport { writeCredentialsAtomically } from \"./write-credentials.js\";\n","lineCount":12,"shownLineCount":12,"truncated":false},{"path":"src/quickstart/quickstart.ts","group":"QUICKSTART 引导","description":"组织纯 DIY Provider 输入、预览、确认、写入和 Doctor 复用流程。","content":"import type { CredentialsFileData } from \"../config/credentials.js\";\nimport {\n  providerBaseUrlSchema,\n  providerModelSchema,\n  providerTimeoutSchema,\n} from \"../config/schema.js\";\nimport type { DoctorReport } from \"../doctor/doctor.js\";\nimport {\n  formatConfigPathForDisplay,\n  formatDoctorReport,\n} from \"../doctor/doctor.js\";\nimport type { QuickstartFileConfig } from \"./write-config.js\";\n\nexport interface QuickstartPrompt {\n  readonly isInteractive: boolean;\n  ask(label: string, defaultValue?: string): Promise\u003cstring\u003e;\n  askSecret(label: string): Promise\u003cstring\u003e;\n  confirm(label: string, defaultValue?: boolean): Promise\u003cboolean\u003e;\n  write(text: string): void;\n  close(): void;\n}\n\nexport interface QuickstartResult {\n  exitCode: number;\n  text: string;\n}\n\nexport interface QuickstartDependencies {\n  prompt: QuickstartPrompt;\n  configPath: string;\n  credentialsPath: string;\n  homeDirectory: string;\n  configFileExists(path: string): Promise\u003cboolean\u003e;\n  credentialsFileExists(path: string): Promise\u003cboolean\u003e;\n  writeConfig(config: QuickstartFileConfig): Promise\u003cvoid\u003e;\n  writeCredentials(credentials: CredentialsFileData): Promise\u003cvoid\u003e;\n  runDoctor(): Promise\u003cDoctorReport\u003e;\n}\n\nasync function askBaseUrl(prompt: QuickstartPrompt): Promise\u003cstring\u003e {\n  while (true) {\n    const answer = await prompt.ask(\"Base URL\");\n    const result = providerBaseUrlSchema.safeParse(answer);\n    if (result.success) return result.data;\n    prompt.write(\n      \"✗ Base URL must use http:// or https:// and be a valid URL.\\n\",\n    );\n  }\n}\n\nasync function askModel(prompt: QuickstartPrompt): Promise\u003cstring\u003e {\n  while (true) {\n    const answer = await prompt.ask(\"Model\");\n    const result = providerModelSchema.safeParse(answer);\n    if (result.success) return result.data;\n    prompt.write(\"✗ Model is required.\\n\");\n  }\n}\n\nasync function askTimeout(prompt: QuickstartPrompt): Promise\u003cnumber\u003e {\n  while (true) {\n    const answer = (\n      await prompt.ask(\"Timeout in milliseconds\", \"60000\")\n    ).trim();\n    const result = providerTimeoutSchema.safeParse(Number(answer || \"60000\"));\n    if (result.success) return result.data;\n    prompt.write(\"✗ Timeout must be between 1000 and 300000 ms.\\n\");\n  }\n}\n\nasync function askApiKey(prompt: QuickstartPrompt): Promise\u003cstring\u003e {\n  while (true) {\n    const apiKey = (await prompt.askSecret(\"Provider API Key\")).trim();\n    if (apiKey) return apiKey;\n    prompt.write(\"✗ API Key is required.\\n\");\n  }\n}\n\nexport async function runQuickstart(\n  dependencies: QuickstartDependencies,\n): Promise\u003cQuickstartResult\u003e {\n  const { prompt } = dependencies;\n  try {\n    if (!prompt.isInteractive) {\n      return {\n        exitCode: 1,\n        text: \"Error: Quickstart requires an interactive terminal.\\n\",\n      };\n    }\n\n    const displayConfigPath = formatConfigPathForDisplay(\n      dependencies.configPath,\n      dependencies.homeDirectory,\n    );\n    const displayCredentialsPath = formatConfigPathForDisplay(\n      dependencies.credentialsPath,\n      dependencies.homeDirectory,\n    );\n    prompt.write(\n      `KFC Quickstart\\n\\nProvider type: openai-compatible\\nConfig path: ${displayConfigPath}\\nCredentials path: ${displayCredentialsPath}\\n\\n`,\n    );\n\n    const [configExists, credentialsExist] = await Promise.all([\n      dependencies.configFileExists(dependencies.configPath),\n      dependencies.credentialsFileExists(dependencies.credentialsPath),\n    ]);\n    if (configExists || credentialsExist) {\n      const overwrite = await prompt.confirm(\n        \"Existing config or credentials found. Overwrite setup files?\",\n        false,\n      );\n      if (!overwrite) {\n        return { exitCode: 130, text: \"Quickstart cancelled.\\n\" };\n      }\n    }\n\n    const config: QuickstartFileConfig = {\n      provider: {\n        type: \"openai-compatible\",\n        baseUrl: await askBaseUrl(prompt),\n        model: await askModel(prompt),\n        timeoutMs: await askTimeout(prompt),\n      },\n    };\n\n    prompt.write(\n      `\\nConfiguration preview:\\n${JSON.stringify(config, null, 2)}\\n\\n` +\n        `API Key will be stored as plaintext in ${displayCredentialsPath} with mode 0600.\\n`,\n    );\n    if (\n      !(await prompt.confirm(\n        \"Write configuration and plaintext credentials?\",\n        false,\n      ))\n    ) {\n      return { exitCode: 130, text: \"Quickstart cancelled.\\n\" };\n    }\n\n    const apiKey = await askApiKey(prompt);\n    const credentials: CredentialsFileData = {\n      provider: {\n        baseUrl: config.provider.baseUrl,\n        apiKey,\n      },\n    };\n\n    await dependencies.writeConfig(config);\n    await dependencies.writeCredentials(credentials);\n    const report = await dependencies.runDoctor();\n    return {\n      exitCode: report.exitCode,\n      text:\n        `✓ Provider configuration saved to ${displayConfigPath}\\n` +\n        `✓ Provider credentials saved to ${displayCredentialsPath}\\n\\n` +\n        formatDoctorReport(report),\n    };\n  } finally {\n    prompt.close();\n  }\n}\n","lineCount":161,"shownLineCount":161,"truncated":false},{"path":"src/quickstart/terminal-prompt.ts","group":"QUICKSTART 引导","description":"使用 readline/promises 把真实 TTY 输入输出适配为可测试 Prompt。","content":"import { stdin, stdout } from \"node:process\";\nimport { createInterface } from \"node:readline/promises\";\nimport type { Readable, Writable } from \"node:stream\";\n\nimport { UserInterruptedError } from \"../errors/user-interrupted-error.js\";\nimport type { QuickstartPrompt } from \"./quickstart.js\";\n\ntype TtyReadable = Readable \u0026 {\n  isTTY?: boolean;\n  isRaw?: boolean;\n  setRawMode?(mode: boolean): void;\n};\ntype TtyWritable = Writable \u0026 { isTTY?: boolean };\n\nasync function question(\n  input: TtyReadable,\n  output: TtyWritable,\n  text: string,\n): Promise\u003cstring\u003e {\n  const readline = createInterface({ input, output });\n  try {\n    return await readline.question(text);\n  } finally {\n    readline.close();\n  }\n}\n\nasync function hiddenQuestion(\n  input: TtyReadable,\n  output: TtyWritable,\n  label: string,\n): Promise\u003cstring\u003e {\n  if (!input.isTTY || typeof input.setRawMode !== \"function\") {\n    throw new Error(\"Secret input requires a TTY with raw mode support\");\n  }\n\n  output.write(`${label}: `);\n  const wasRaw = Boolean(input.isRaw);\n  const wasPaused = input.isPaused();\n  return new Promise((resolvePromise, reject) =\u003e {\n    let value = \"\";\n\n    const cleanup = () =\u003e {\n      input.off(\"data\", onData);\n      input.setRawMode?.(wasRaw);\n      if (wasPaused) input.pause();\n      output.write(\"\\n\");\n    };\n\n    const onData = (chunk: Buffer | string) =\u003e {\n      for (const character of String(chunk)) {\n        if (character === \"\\u0003\") {\n          cleanup();\n          reject(new UserInterruptedError());\n          return;\n        }\n        if (character === \"\\r\" || character === \"\\n\") {\n          cleanup();\n          resolvePromise(value);\n          return;\n        }\n        if (character === \"\\u007f\" || character === \"\\b\") {\n          value = value.slice(0, -1);\n          continue;\n        }\n        if (character \u003e= \" \") value += character;\n      }\n    };\n\n    input.setRawMode?.(true);\n    input.resume();\n    input.on(\"data\", onData);\n  });\n}\n\nexport function createTerminalPrompt(\n  input: TtyReadable = stdin,\n  output: TtyWritable = stdout,\n): QuickstartPrompt {\n  return {\n    isInteractive: Boolean(input.isTTY \u0026\u0026 output.isTTY),\n    async ask(label: string, defaultValue?: string): Promise\u003cstring\u003e {\n      const suffix = defaultValue === undefined ? \"\" : ` [${defaultValue}]`;\n      const answer = (\n        await question(input, output, `${label}${suffix}: `)\n      ).trim();\n      return answer || defaultValue || \"\";\n    },\n    askSecret: (label: string) =\u003e hiddenQuestion(input, output, label),\n    async confirm(label: string, defaultValue = false): Promise\u003cboolean\u003e {\n      const hint = defaultValue ? \"Y/n\" : \"y/N\";\n      while (true) {\n        const answer = (await question(input, output, `${label} [${hint}] `))\n          .trim()\n          .toLowerCase();\n        if (!answer) return defaultValue;\n        if (answer === \"y\" || answer === \"yes\") return true;\n        if (answer === \"n\" || answer === \"no\") return false;\n        output.write(\"Please answer yes or no.\\n\");\n      }\n    },\n    write(text: string): void {\n      output.write(text);\n    },\n    close(): void {},\n  };\n}\n","lineCount":108,"shownLineCount":108,"truncated":false},{"path":"src/quickstart/write-config.ts","group":"QUICKSTART 引导","description":"校验非秘密配置并通过 0600 临时文件与原子 rename 安全写入。","content":"import { mkdir, rename, unlink, writeFile } from \"node:fs/promises\";\nimport { randomUUID } from \"node:crypto\";\nimport { basename, dirname, resolve } from \"node:path\";\n\nimport { ConfigError } from \"../config/config.js\";\nimport {\n  providerBaseUrlSchema,\n  providerModelSchema,\n  providerTimeoutSchema,\n} from \"../config/schema.js\";\nimport { z } from \"zod\";\n\nexport const quickstartFileConfigSchema = z\n  .object({\n    provider: z\n      .object({\n        type: z.literal(\"openai-compatible\"),\n        baseUrl: providerBaseUrlSchema,\n        model: providerModelSchema,\n        timeoutMs: providerTimeoutSchema,\n      })\n      .strict(),\n  })\n  .strict();\n\nexport type QuickstartFileConfig = z.infer\u003ctypeof quickstartFileConfigSchema\u003e;\n\nexport async function writeConfigAtomically(\n  configPath: string,\n  config: unknown,\n): Promise\u003cvoid\u003e {\n  const validated = quickstartFileConfigSchema.safeParse(config);\n  if (!validated.success) {\n    throw new ConfigError(\n      \"CONFIG_FILE_INVALID\",\n      \"Quickstart configuration is invalid or contains unsupported fields\",\n    );\n  }\n\n  const directory = dirname(configPath);\n  await mkdir(directory, { recursive: true, mode: 0o700 });\n  const temporaryPath = resolve(\n    directory,\n    `.${basename(configPath)}.${process.pid}.${randomUUID()}.tmp`,\n  );\n\n  try {\n    await writeFile(\n      temporaryPath,\n      `${JSON.stringify(validated.data, null, 2)}\\n`,\n      {\n        encoding: \"utf8\",\n        flag: \"wx\",\n        mode: 0o600,\n      },\n    );\n    await rename(temporaryPath, configPath);\n  } catch (error) {\n    await unlink(temporaryPath).catch(() =\u003e {});\n    throw error;\n  }\n}\n","lineCount":63,"shownLineCount":63,"truncated":false},{"path":"src/quickstart/write-credentials.ts","group":"QUICKSTART 模块","description":"KFC 当前源码模块；职责会随真实实现逐步明确。","content":"import { randomUUID } from \"node:crypto\";\nimport { mkdir, rename, unlink, writeFile } from \"node:fs/promises\";\nimport { basename, dirname, resolve } from \"node:path\";\n\nimport {\n  type CredentialsFileData,\n  credentialsFileSchema,\n} from \"../config/credentials.js\";\nimport { ConfigError } from \"../config/config.js\";\n\nexport async function writeCredentialsAtomically(\n  credentialsPath: string,\n  credentials: unknown,\n): Promise\u003cvoid\u003e {\n  const validated = credentialsFileSchema.safeParse(credentials);\n  if (!validated.success) {\n    throw new ConfigError(\n      \"CREDENTIALS_FILE_INVALID\",\n      \"Quickstart credentials are invalid\",\n    );\n  }\n\n  const directory = dirname(credentialsPath);\n  await mkdir(directory, { recursive: true, mode: 0o700 });\n  const temporaryPath = resolve(\n    directory,\n    `.${basename(credentialsPath)}.${process.pid}.${randomUUID()}.tmp`,\n  );\n\n  try {\n    await writeFile(\n      temporaryPath,\n      `${JSON.stringify(validated.data satisfies CredentialsFileData, null, 2)}\\n`,\n      { encoding: \"utf8\", flag: \"wx\", mode: 0o600 },\n    );\n    await rename(temporaryPath, credentialsPath);\n  } catch (error) {\n    await unlink(temporaryPath).catch(() =\u003e {});\n    throw error;\n  }\n}\n","lineCount":42,"shownLineCount":42,"truncated":false}],"git":{"branch":"main","head":"c0bae94","changes":[{"state":"M","path":"gitignore"},{"state":"M","path":"AGENTS.md"},{"state":"M","path":"README.md"},{"state":"M","path":"TODO.md"},{"state":"M","path":"docs/learning-log.md"},{"state":"M","path":"docs/specs/2026-07-29-lr-machine-design.md"},{"state":"M","path":"eslint.config.mjs"},{"state":"M","path":"lr-machine/lib/collect-project-data.mjs"},{"state":"M","path":"lr-machine/lib/render-page.mjs"},{"state":"M","path":"lr-machine/public/app.js"},{"state":"M","path":"lr-machine/public/styles.css"},{"state":"M","path":"lr-machine/tests/server.test.mjs"},{"state":"M","path":"lr-machine/tests/snapshot.test.mjs"},{"state":"M","path":"package.json"},{"state":"M","path":"pnpm-lock.yaml"},{"state":"M","path":"src/index.ts"},{"state":"M","path":"tsconfig.json"},{"state":"??","path":".env.example"},{"state":"??","path":"docs/configuration.md"},{"state":"??","path":"docs/decisions/"},{"state":"??","path":"docs/doctor.md"},{"state":"??","path":"docs/errors.md"},{"state":"??","path":"docs/experiments/"},{"state":"??","path":"docs/quickstart.md"},{"state":"??","path":"docs/reviews/"},{"state":"??","path":"docs/specs/2026-07-29-p1-1-model-provider-contract-design.md"},{"state":"??","path":"lr-machine/lib/collect-source-files.mjs"},{"state":"??","path":"lr-machine/snapshots/2026-07-29-194826-p0-3-cli.html"},{"state":"??","path":"lr-machine/snapshots/2026-07-29-195137-p0-3-cli-final.html"},{"state":"??","path":"lr-machine/snapshots/2026-07-29-202652-p0-3.html"},{"state":"??","path":"lr-machine/snapshots/2026-07-29-210026-p0-4.html"},{"state":"??","path":"lr-machine/snapshots/2026-07-29-210518-dec-002-deepseek-provider.html"},{"state":"??","path":"lr-machine/snapshots/2026-07-29-211233-p0-5.html"},{"state":"??","path":"lr-machine/snapshots/2026-07-29-212305-p0-6-kfc-doctor.html"},{"state":"??","path":"lr-machine/snapshots/2026-07-29-213259-p0-7-adr-typescript-first.html"},{"state":"??","path":"lr-machine/snapshots/2026-07-29-214055-p0-final-accepted.html"},{"state":"??","path":"lr-machine/snapshots/2026-07-29-214137-p0-final-accepted-verified.html"},{"state":"??","path":"lr-machine/snapshots/2026-07-29-220045-p0-10-diy-provider-quickstart.html"},{"state":"??","path":"lr-machine/snapshots/2026-07-29-220205-p0-10-diy-quickstart-verified.html"},{"state":"??","path":"lr-machine/snapshots/2026-07-29-234841-p1-1-provider-contract.html"},{"state":"??","path":"lr-machine/snapshots/2026-07-29-234950-p1-1-provider-contract-verified.html"},{"state":"??","path":"lr-machine/tests/collect-source-files.test.mjs"},{"state":"??","path":"src/cli.ts"},{"state":"??","path":"src/cli/"},{"state":"??","path":"src/config/"},{"state":"??","path":"src/doctor/"},{"state":"??","path":"src/errors/"},{"state":"??","path":"src/provider/"},{"state":"??","path":"src/quickstart/"},{"state":"??","path":"tests/cli/"},{"state":"??","path":"tests/config/"},{"state":"??","path":"tests/doctor/"},{"state":"??","path":"tests/errors/"},{"state":"??","path":"tests/provider/"},{"state":"??","path":"tests/quickstart/"}],"commits":[{"hash":"c0bae94","subject":"chore: sync local updates","date":"2026-07-29"},{"hash":"657d526","subject":"chore: update gitignore for local env and artifacts","date":"2026-07-29"},{"hash":"6a9c741","subject":"chore: initial commit","date":"2026-07-29"}]},"snapshots":[{"name":"2026-07-29-234950-p1-1-provider-contract-verified.html","modifiedAt":"2026-07-29T15:49:50.203Z"},{"name":"2026-07-29-234841-p1-1-provider-contract.html","modifiedAt":"2026-07-29T15:48:42.103Z"},{"name":"2026-07-29-220205-p0-10-diy-quickstart-verified.html","modifiedAt":"2026-07-29T14:02:05.341Z"},{"name":"2026-07-29-220045-p0-10-diy-provider-quickstart.html","modifiedAt":"2026-07-29T14:00:45.301Z"},{"name":"2026-07-29-214137-p0-final-accepted-verified.html","modifiedAt":"2026-07-29T13:41:37.576Z"},{"name":"2026-07-29-214055-p0-final-accepted.html","modifiedAt":"2026-07-29T13:40:56.173Z"},{"name":"2026-07-29-213259-p0-7-adr-typescript-first.html","modifiedAt":"2026-07-29T13:33:00.019Z"},{"name":"2026-07-29-212305-p0-6-kfc-doctor.html","modifiedAt":"2026-07-29T13:23:05.391Z"},{"name":"2026-07-29-211233-p0-5.html","modifiedAt":"2026-07-29T13:12:34.138Z"},{"name":"2026-07-29-210518-dec-002-deepseek-provider.html","modifiedAt":"2026-07-29T13:05:18.978Z"},{"name":"2026-07-29-210026-p0-4.html","modifiedAt":"2026-07-29T13:00:26.665Z"},{"name":"2026-07-29-202652-p0-3.html","modifiedAt":"2026-07-29T12:26:52.973Z"},{"name":"2026-07-29-195137-p0-3-cli-final.html","modifiedAt":"2026-07-29T11:51:37.810Z"},{"name":"2026-07-29-194826-p0-3-cli.html","modifiedAt":"2026-07-29T11:48:26.548Z"},{"name":"2026-07-29-193804-lr-machine.html","modifiedAt":"2026-07-29T11:38:04.664Z"}]}</script>
+  <script>(() => {
+  "use strict";
+
+  const byId = (id) => document.getElementById(id);
+  const escapeHtml = (value) =>
+    String(value ?? "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
+
+  const renderInline = (value) =>
+    escapeHtml(value)
+      .replace(/`([^`]+)`/g, "<code>$1</code>")
+      .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+
+  function renderMarkdown(markdown) {
+    const lines = String(markdown ?? "").split(/\r?\n/);
+    const output = [];
+    let inCode = false;
+    let code = [];
+    let listOpen = false;
+
+    const closeList = () => {
+      if (listOpen) output.push("</ul>");
+      listOpen = false;
+    };
+
+    for (const line of lines) {
+      if (line.trim().startsWith("```")) {
+        closeList();
+        if (inCode) {
+          output.push(`<pre><code>${escapeHtml(code.join("\n"))}</code></pre>`);
+          code = [];
+        }
+        inCode = !inCode;
+        continue;
+      }
+      if (inCode) {
+        code.push(line);
+        continue;
+      }
+      const heading = line.match(/^(#{1,4})\s+(.+)$/);
+      if (heading) {
+        closeList();
+        const level = Math.min(heading[1].length + 2, 6);
+        output.push(`<h${level}>${renderInline(heading[2])}</h${level}>`);
+        continue;
+      }
+      const bullet = line.match(/^[-*]\s+(.+)$/);
+      if (bullet) {
+        if (!listOpen) output.push("<ul>");
+        listOpen = true;
+        output.push(`<li>${renderInline(bullet[1])}</li>`);
+        continue;
+      }
+      closeList();
+      if (line.trim()) output.push(`<p>${renderInline(line.trim())}</p>`);
+    }
+
+    closeList();
+    if (inCode)
+      output.push(`<pre><code>${escapeHtml(code.join("\n"))}</code></pre>`);
+    return output.join("");
+  }
+
+  const formatDate = (value) => {
+    try {
+      return new Intl.DateTimeFormat("zh-CN", {
+        timeZone: "Asia/Shanghai",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+      }).format(new Date(value));
+    } catch {
+      return String(value ?? "");
+    }
+  };
+
+  function renderPhases(data) {
+    const activeId = data.progress.currentTask?.id?.split(".")[0] ?? "P0";
+    byId("phaseRail").innerHTML = data.progress.phases
+      .map((phase) => {
+        const state =
+          phase.verified === phase.total && phase.total > 0
+            ? "verified"
+            : phase.completed > 0
+              ? "active"
+              : "pending";
+        const active = phase.id.includes(activeId) ? "is-current" : "";
+        return `<a class="phase-item ${state} ${active}" href="#learning">
+          <span class="phase-node"></span>
+          <span><strong>${escapeHtml(phase.id)}</strong><small>${escapeHtml(phase.title || "阶段")}</small></span>
+          <em>${phase.verified}/${phase.total}</em>
+        </a>`;
+      })
+      .join("");
+  }
+
+  function renderCurrent(data) {
+    const current = data.progress.currentTask ?? {
+      id: "—",
+      text: "TODO.md 尚未定义当前任务",
+    };
+    byId("currentTaskId").textContent = current.id ?? "UNNUMBERED";
+    const cleanText = current.text.replace(/^P\d+(?:\.\d+)?\s*/i, "");
+    const [heading, ...rest] = cleanText.split("：");
+    byId("currentHeading").textContent = heading || cleanText;
+    byId("currentTaskText").textContent =
+      rest.join("：") || "遵循 TODO 中定义的验收边界推进。";
+
+    const totals = data.progress.totals;
+    byId("completionPercent").textContent = `${totals.completionPercent}%`;
+    byId("progressRing").style.setProperty(
+      "--progress",
+      `${Math.max(0, Math.min(100, totals.completionPercent)) * 3.6}deg`,
+    );
+    byId("completedCount").textContent =
+      `${totals.completed} / ${totals.total}`;
+    byId("verifiedCount").textContent = `${totals.verified} / ${totals.total}`;
+  }
+
+  function renderLearning(data) {
+    byId("learningTimeline").innerHTML = data.learningEntries.length
+      ? data.learningEntries
+          .slice(0, 8)
+          .map((entry, index) => {
+            const keyFields = entry.fields.slice(0, 4);
+            return `<article class="log-entry" style="--delay:${index * 55}ms">
+              <div class="log-marker"><span>${escapeHtml(entry.taskId ?? "LOG")}</span></div>
+              <div class="log-card">
+                <header><time>${escapeHtml(entry.date)}</time><h3>${escapeHtml(entry.title)}</h3></header>
+                <dl>${keyFields
+                  .map(
+                    (field) =>
+                      `<div><dt>${escapeHtml(field.label)}</dt><dd>${renderInline(field.value)}</dd></div>`,
+                  )
+                  .join("")}</dl>
+              </div>
+            </article>`;
+          })
+          .join("")
+      : '<p class="empty-state">尚无学习记录。完成任务后先写证据，再生成快照。</p>';
+  }
+
+  function renderCommands(data) {
+    byId("commandList").innerHTML = data.commands
+      .map(
+        (item) => `<article class="command-card">
+          <div><span class="terminal-prompt">$</span><code>pnpm ${escapeHtml(item.name)}</code></div>
+          <p>${escapeHtml(item.description)}</p>
+          <small>${escapeHtml(item.command)}</small>
+        </article>`,
+      )
+      .join("");
+  }
+
+  function renderApi(data) {
+    byId("apiList").innerHTML = data.api.length
+      ? data.api
+          .map(
+            (item) => `<article class="api-card">
+              <span class="api-kind">${escapeHtml(item.kind)}</span>
+              <div><strong>${escapeHtml(item.name)}</strong><code>${escapeHtml(item.path)}:${item.line}</code></div>
+              <p>${escapeHtml(item.signature)}</p>
+            </article>`,
+          )
+          .join("")
+      : '<p class="empty-state">尚无公开导出。API 只在代码真实存在后出现。</p>';
+  }
+
+  function renderCodeLines(content) {
+    return String(content ?? "")
+      .split(/\r?\n/)
+      .map(
+        (line, index) =>
+          `<span class="code-line"><i>${index + 1}</i><code>${escapeHtml(line) || " "}</code></span>`,
+      )
+      .join("");
+  }
+
+  async function copySource(text, button) {
+    try {
+      if (navigator.clipboard?.writeText && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        const textarea = document.createElement("textarea");
+        textarea.value = text;
+        textarea.setAttribute("readonly", "");
+        textarea.style.position = "fixed";
+        textarea.style.opacity = "0";
+        document.body.append(textarea);
+        textarea.select();
+        document.execCommand("copy");
+        textarea.remove();
+      }
+      const original = button.textContent;
+      button.textContent = "已复制";
+      setTimeout(() => {
+        button.textContent = original;
+      }, 1400);
+    } catch {
+      button.textContent = "复制失败";
+    }
+  }
+
+  function renderSource(data) {
+    const sourceFiles = data.sourceFiles ?? [];
+    byId("sourceFileCount").textContent = sourceFiles.length;
+    byId("sourceLineCount").textContent = sourceFiles.reduce(
+      (total, file) => total + file.lineCount,
+      0,
+    );
+
+    const groups = new Map();
+    sourceFiles.forEach((file, index) => {
+      const items = groups.get(file.group) ?? [];
+      items.push({ ...file, sourceIndex: index });
+      groups.set(file.group, items);
+    });
+
+    byId("sourceGroups").innerHTML = sourceFiles.length
+      ? [...groups.entries()]
+          .map(
+            ([group, files], groupIndex) => `<section class="source-group">
+              <header><span>${String(groupIndex + 1).padStart(2, "0")}</span><h3>${escapeHtml(group)}</h3><em>${files.length} FILES</em></header>
+              <div class="source-file-list">${files
+                .map(
+                  (
+                    file,
+                    fileIndex,
+                  ) => `<details class="source-file" ${groupIndex === 0 && fileIndex === 0 ? "open" : ""}>
+                    <summary>
+                      <span class="source-file-mark">TS</span>
+                      <span class="source-file-name"><strong>${escapeHtml(file.path)}</strong><small>${escapeHtml(file.description)}</small></span>
+                      <span class="source-file-meta">${file.lineCount} LINES${file.truncated ? " · TRUNCATED" : ""}</span>
+                      <button class="copy-source" type="button" data-source-index="${file.sourceIndex}">复制</button>
+                    </summary>
+                    <div class="code-frame">
+                      ${file.truncated ? `<p class="truncation-note">仅归档前 ${file.shownLineCount} 行；原文件共 ${file.lineCount} 行。</p>` : ""}
+                      <pre aria-label="${escapeHtml(file.path)} source code">${renderCodeLines(file.content)}</pre>
+                    </div>
+                  </details>`,
+                )
+                .join("")}</div>
+            </section>`,
+          )
+          .join("")
+      : '<p class="empty-state">尚无可归档的 TypeScript 核心源码。</p>';
+
+    document.querySelectorAll(".copy-source").forEach((button) => {
+      button.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        const index = Number(button.dataset.sourceIndex);
+        const file = sourceFiles[index];
+        if (file) copySource(file.content, button);
+      });
+    });
+  }
+
+  function renderGit(data) {
+    byId("gitBranch").textContent = data.git.branch;
+    byId("gitHead").textContent = data.git.head;
+    byId("changeList").innerHTML = data.git.changes.length
+      ? data.git.changes
+          .slice(0, 12)
+          .map(
+            (change) =>
+              `<div class="change-row"><span>${escapeHtml(change.state)}</span><code>${escapeHtml(change.path)}</code></div>`,
+          )
+          .join("")
+      : '<p class="empty-state compact">工作区干净。</p>';
+    byId("commitList").innerHTML = data.git.commits.length
+      ? data.git.commits
+          .map(
+            (commit) =>
+              `<div class="commit-row"><code>${escapeHtml(commit.hash)}</code><span>${escapeHtml(commit.subject)}</span><time>${escapeHtml(commit.date)}</time></div>`,
+          )
+          .join("")
+      : '<p class="empty-state compact">尚无提交记录。</p>';
+  }
+
+  function renderSnapshots(data) {
+    const isSnapshot = Boolean(data.snapshot);
+    byId("snapshotList").innerHTML = data.snapshots.length
+      ? data.snapshots
+          .slice(0, 12)
+          .map((snapshot) => {
+            const href = isSnapshot
+              ? "#"
+              : `/snapshots/${encodeURIComponent(snapshot.name)}`;
+            return `<a class="snapshot-card" href="${href}">
+              <span class="snapshot-stamp">HTML</span>
+              <strong>${escapeHtml(snapshot.name)}</strong>
+              <time>${formatDate(snapshot.modifiedAt)}</time>
+            </a>`;
+          })
+          .join("")
+      : '<p class="empty-state">第一份开发快照尚未生成。</p>';
+  }
+
+  function render(data) {
+    document.title = `${data.project.name} / Learning Machine`;
+    byId("projectName").textContent = data.project.name.toUpperCase();
+    byId("projectVersion").textContent = `VERSION ${data.project.version}`;
+    byId("modeLabel").textContent = data.snapshot
+      ? `归档快照 / ${data.snapshot.title}`
+      : `实时读取 / ${data.git.branch}@${data.git.head}`;
+    byId("refreshButton").hidden = Boolean(data.snapshot);
+    byId("generatedAt").textContent = `采样于 ${formatDate(data.generatedAt)}`;
+
+    byId("noteCount").textContent = data.learningEntries.length;
+    byId("apiCount").textContent = data.api.length;
+    byId("commandCount").textContent = data.commands.length;
+    byId("changeCount").textContent = data.git.changes.length;
+    byId("visionContent").innerHTML = renderMarkdown(data.visionMarkdown);
+
+    renderPhases(data);
+    renderCurrent(data);
+    renderLearning(data);
+    renderCommands(data);
+    renderApi(data);
+    renderSource(data);
+    renderGit(data);
+    renderSnapshots(data);
+
+    document.documentElement.classList.add("is-ready");
+  }
+
+  async function load() {
+    const embedded = byId("lr-data");
+    if (embedded) {
+      render(JSON.parse(embedded.textContent));
+      return;
+    }
+    const response = await fetch("/api/project", { cache: "no-store" });
+    if (!response.ok)
+      throw new Error(`Project data request failed: ${response.status}`);
+    render(await response.json());
+  }
+
+  byId("refreshButton").addEventListener("click", () => {
+    byId("modeLabel").textContent = "重新采样中…";
+    load().catch(showError);
+  });
+
+  function showError(error) {
+    byId("modeLabel").textContent = "采样失败";
+    byId("currentHeading").textContent = "无法读取项目数据";
+    byId("currentTaskText").textContent =
+      error instanceof Error ? error.message : String(error);
+    document.documentElement.classList.add("is-ready");
+  }
+
+  load().catch(showError);
+})();
+</script>
+</body>
+</html>

@@ -11,11 +11,12 @@ LR Machine is KFlow Code's local learning and progress display service. It answe
 - Present a “research notebook × engineering console” dashboard.
 - Generate offline HTML snapshots under `lr-machine/snapshots/`.
 - Show only implemented KFC commands and source exports; do not invent roadmap APIs.
+- Archive allowlisted `src/**/*.ts` core files with relative paths, responsibilities, line numbers, and explicit size truncation.
 - Never read `.env`, expose secrets or absolute paths, accept arbitrary filesystem paths, execute browser-provided commands, or mutate project files through HTTP.
 
 ## Data Flow
 
-Allowlisted repository files and fixed Git commands feed pure parsing and collection modules. The resulting serializable project model feeds both the live dashboard and the snapshot renderer. Live and archived pages therefore share one data model and one UI implementation.
+Allowlisted repository files and fixed Git commands feed pure parsing and collection modules. The resulting serializable project model, including allowlisted core source content, feeds both the live dashboard and the snapshot renderer. Live and archived pages therefore share one data model and one UI implementation.
 
 ## Completion Workflow
 

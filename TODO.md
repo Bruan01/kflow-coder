@@ -23,9 +23,9 @@
 
 - [x] 创建 `docs/vision.md`：项目目标、非目标、成功标准。
 - [x] 创建 `docs/learning-log.md`：持续追加学习记录。
-- [ ] 创建 `docs/decisions/`：保存 `ADR-XXXX-*.md`。
-- [ ] 创建 `docs/experiments/`：记录真实仓库任务及工具轨迹。
-- [ ] 创建 `docs/reviews/`：每阶段一份 `P0-review.md` 等复盘。
+- [x] 创建 `docs/decisions/`：保存 `ADR-XXXX-*.md`。
+- [x] 创建 `docs/experiments/`：记录真实仓库任务及工具轨迹。
+- [x] 创建 `docs/reviews/`：每阶段一份 `P0-review.md` 等复盘。
 
 ## 学习展示基础设施
 
@@ -33,6 +33,7 @@
 - [x] **LR.2 建立 HTML 快照**：每项开发任务结束时生成自包含、不可变的学习证据。
 - [x] **LR.3 建立安全边界**：服务仅监听本机、只读数据、拒绝路径穿越和浏览器写操作。
 - [x] **LR.4 完成浏览器验收**：验证桌面端、390px 窄屏、控制台和安全路由。
+- [x] **LR.5 归档核心代码**：在实时页面与离线快照中保存 `src/**/*.ts`、职责、行号和截断状态。
 
 每条学习记录使用以下结构：
 
@@ -55,13 +56,14 @@
 
 - [x] **P0.1 定义范围**：写 `docs/vision.md`，明确首版只做 CLI、单 Provider、单 Agent；不做 TUI、插件、MCP、多 Agent。
 - [x] **P0.2 初始化工程**：创建 Node.js 22+、TypeScript、pnpm 项目；加入 Vitest、ESLint、Prettier。
-- [ ] **P0.3 建立最小入口**：实现 `kfc --help` 与 `kfc --version`，分离 CLI 参数解析和核心逻辑。
-- [ ] **P0.4 配置边界**：用 Zod 校验环境变量和单 Provider 配置；禁止输出密钥。
-- [ ] **P0.5 错误边界**：定义 `KfcError`，区分配置错误、Provider 错误和用户中断。
-- [ ] **P0.6 健康检查**：实现 `kfc doctor`，检查 Node 版本、配置文件和 API Key 是否存在。
-- [ ] **P0.7 写首个 ADR**：`ADR-0001-typescript-first.md`，记录选择 TypeScript 的收益、代价和重新评估条件。
-- [ ] **P0.8 阶段验收**：运行 `pnpm build && pnpm lint && pnpm test`；记录命令、输出和一次失败案例。
-- [ ] **P0.9 阶段复盘**：完成 `docs/reviews/P0-review.md`，确认每项验收都有证据。
+- [x] **P0.3 建立最小入口**：实现 `kfc --help` 与 `kfc --version`，分离 CLI 参数解析和核心逻辑。
+- [x] **P0.4 配置边界**：用 Zod 校验环境变量和单 Provider 配置；禁止输出密钥。
+- [x] **P0.5 错误边界**：定义 `KfcError`，区分配置错误、Provider 错误和用户中断。
+- [x] **P0.6 健康检查**：实现 `kfc doctor`，检查 Node 版本、配置文件和 API Key 是否存在。
+- [x] **P0.7 写首个 ADR**：`ADR-0001-typescript-first.md`，记录选择 TypeScript 的收益、代价和重新评估条件。
+- [x] **P0.8 阶段验收**：运行 `pnpm build && pnpm lint && pnpm test`；记录命令、输出和一次失败案例。
+- [x] **P0.9 阶段复盘**：完成 `docs/reviews/P0-review.md`，确认每项验收都有证据。
+- [x] **P0.10 DIY Quickstart**：实现 `kfc --quickstart` / `--qs`，交互写入自定义 OpenAI-compatible 非秘密配置并复用 Doctor。
 
 **完成门槛：** 无 API Key 时错误清晰、无堆栈和密钥泄露；三个质量命令全部通过。
 
@@ -69,11 +71,14 @@
 
 **核心问题：如何把不稳定的远程模型变成边界清晰、可取消、可观测的依赖？**
 
-- [ ] 定义内部 `ModelProvider`、请求、事件和错误类型。
-- [ ] 只实现一个 OpenAI-compatible Provider，不让 CLI 依赖供应商 SDK 类型。
-- [ ] 实现流式输出、超时和 `AbortController` 中断。
-- [ ] 标准化认证、限流、超时、上下文超限和服务端错误。
-- [ ] 用 Mock Provider 测试流式事件、中断与失败，不调用真实 API。
+- [x] 定义内部 `ModelProvider`、请求、事件和错误类型。
+- [x] 只实现一个 OpenAI-compatible Provider，不让 CLI 依赖供应商 SDK 类型。
+- [ ] 首个真实回归目标使用 `deepseek-v4-flash`；供应商差异留在 Provider 适配层，不进入 Core。
+- [x] 实现流式输出、超时和 `AbortController` 中断。
+- [x] 标准化认证、额度、限流、超时、上下文超限和服务端错误。
+- [x] 用 Mock Provider 测试流式事件、中断与失败，不调用真实 API。
+- [x] 增加 `openai-responses` 协议适配器，继续复用内部 `ModelProvider` 契约。
+- [ ] 增加 `anthropic-messages` 协议适配器，验证跨协议边界。
 - [ ] 记录首 Token 延迟、总耗时和 Token 用量。
 - [ ] 完成真实 `kfc ask` 实验、ADR、学习日志和 P1 复盘。
 
@@ -154,4 +159,4 @@
 
 ## 当前唯一任务
 
-**P0.3 建立最小入口**：先理解 CLI 参数解析与核心逻辑为什么必须分离，再实现 `kfc --help` 和 `kfc --version`。不读取配置，不调用模型。
+**P1.4 Anthropic Messages Provider**：按独立协议适配器模式设计并实现 `anthropic-messages`，用第二种供应商协议验证现有消息、流事件、错误与终止契约是否仍然成立。

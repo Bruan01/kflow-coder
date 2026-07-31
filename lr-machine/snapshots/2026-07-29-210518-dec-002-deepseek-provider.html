@@ -1,0 +1,1986 @@
+<!doctype html>
+<html lang="zh-CN" data-mode="snapshot">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="description" content="KFlow Code learning progress, verified evidence, and API archive">
+  <title>KFlow / Learning Machine</title>
+  <style>:root {
+  --paper: #eee7d8;
+  --paper-bright: #f8f3e8;
+  --paper-deep: #dfd3bd;
+  --ink: #171a17;
+  --ink-soft: #4f534c;
+  --line: rgba(23, 26, 23, 0.2);
+  --line-strong: rgba(23, 26, 23, 0.72);
+  --signal: #c84b31;
+  --signal-soft: #f0c4b5;
+  --verified: #2e6a4f;
+  --verified-soft: #c7d8c9;
+  --amber: #c38c2f;
+  --blueprint: #315b6d;
+  --shadow: 7px 7px 0 rgba(23, 26, 23, 0.92);
+  --serif:
+    "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Palatino, Georgia,
+    serif;
+  --mono:
+    "SFMono-Regular", "Cascadia Code", "JetBrains Mono", "Liberation Mono",
+    monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  min-width: 320px;
+  margin: 0;
+  color: var(--ink);
+  background: var(--paper);
+  font-family: var(--serif);
+  line-height: 1.55;
+}
+
+button,
+a {
+  color: inherit;
+}
+
+button {
+  font: inherit;
+}
+
+::selection {
+  color: var(--paper-bright);
+  background: var(--signal);
+}
+
+.paper-grid {
+  position: fixed;
+  z-index: -1;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(
+      90deg,
+      transparent 0 47px,
+      rgba(200, 75, 49, 0.2) 48px,
+      transparent 49px
+    ),
+    repeating-linear-gradient(
+      0deg,
+      transparent 0 31px,
+      rgba(49, 91, 109, 0.07) 32px
+    ),
+    radial-gradient(
+      circle at 18% 8%,
+      rgba(255, 255, 255, 0.85),
+      transparent 31%
+    ),
+    radial-gradient(
+      circle at 80% 90%,
+      rgba(195, 140, 47, 0.09),
+      transparent 32%
+    );
+}
+
+.paper-grid::after {
+  position: absolute;
+  inset: 0;
+  content: "";
+  opacity: 0.2;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.16'/%3E%3C/svg%3E");
+}
+
+.topbar {
+  position: sticky;
+  z-index: 20;
+  top: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 74px;
+  padding: 10px clamp(18px, 3vw, 48px);
+  border-bottom: 2px solid var(--ink);
+  background: rgba(238, 231, 216, 0.94);
+  backdrop-filter: blur(12px);
+}
+
+.brand {
+  display: inline-flex;
+  gap: 13px;
+  align-items: center;
+  text-decoration: none;
+}
+
+.brand-mark {
+  display: grid;
+  width: 45px;
+  height: 45px;
+  place-items: center;
+  border: 2px solid var(--ink);
+  color: var(--paper-bright);
+  background: var(--ink);
+  box-shadow: 3px 3px 0 var(--signal);
+  font: 700 14px/1 var(--mono);
+  letter-spacing: 0.05em;
+  transform: rotate(-2deg);
+}
+
+.brand strong,
+.brand small {
+  display: block;
+}
+
+.brand strong {
+  font: 700 12px/1.2 var(--mono);
+  letter-spacing: 0.13em;
+}
+
+.brand small {
+  margin-top: 4px;
+  color: var(--ink-soft);
+  font-size: 12px;
+}
+
+.topbar-status {
+  display: flex;
+  gap: 9px;
+  align-items: center;
+  color: var(--ink-soft);
+  font: 600 11px/1.4 var(--mono);
+  letter-spacing: 0.04em;
+}
+
+.signal {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--verified);
+  box-shadow: 0 0 0 4px rgba(46, 106, 79, 0.14);
+  animation: signal-pulse 2.4s ease-in-out infinite;
+}
+
+.text-button {
+  padding: 5px 8px;
+  border: 1px solid var(--line-strong);
+  background: transparent;
+  cursor: pointer;
+  font: 700 10px/1 var(--mono);
+  text-transform: uppercase;
+}
+
+.text-button:hover {
+  color: var(--paper-bright);
+  background: var(--ink);
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  width: min(1540px, 100%);
+  margin: 0 auto;
+}
+
+.sidebar {
+  position: sticky;
+  top: 74px;
+  align-self: start;
+  min-height: calc(100vh - 74px);
+  padding: 44px 24px 36px clamp(20px, 3vw, 44px);
+  border-right: 2px solid var(--ink);
+}
+
+.sidebar-heading {
+  display: grid;
+  gap: 3px;
+  margin-bottom: 34px;
+}
+
+.sidebar-heading strong {
+  margin-top: 8px;
+  font-size: 23px;
+  line-height: 1;
+}
+
+.eyebrow,
+.subheading,
+.section-index,
+.task-code,
+.muted {
+  font-family: var(--mono);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.eyebrow {
+  color: var(--signal);
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.muted {
+  color: var(--ink-soft);
+  font-size: 9px;
+}
+
+.phase-rail {
+  position: relative;
+  display: grid;
+  gap: 3px;
+}
+
+.phase-rail::before {
+  position: absolute;
+  top: 12px;
+  bottom: 12px;
+  left: 7px;
+  width: 1px;
+  content: "";
+  background: var(--line-strong);
+}
+
+.phase-item {
+  position: relative;
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: start;
+  padding: 10px 7px 10px 0;
+  text-decoration: none;
+}
+
+.phase-item::after {
+  position: absolute;
+  right: -24px;
+  bottom: 0;
+  left: 0;
+  height: 1px;
+  content: "";
+  background: var(--line);
+}
+
+.phase-node {
+  z-index: 1;
+  width: 9px;
+  height: 9px;
+  margin-top: 5px;
+  border: 2px solid var(--ink);
+  border-radius: 50%;
+  background: var(--paper);
+}
+
+.phase-item.active .phase-node,
+.phase-item.is-current .phase-node {
+  background: var(--signal);
+}
+
+.phase-item.verified .phase-node {
+  background: var(--verified);
+}
+
+.phase-item.is-current {
+  transform: translateX(5px);
+}
+
+.phase-item strong,
+.phase-item small {
+  display: block;
+}
+
+.phase-item strong {
+  font: 800 12px/1.2 var(--mono);
+}
+
+.phase-item small {
+  max-width: 145px;
+  margin-top: 2px;
+  color: var(--ink-soft);
+  font-size: 12px;
+}
+
+.phase-item em {
+  color: var(--ink-soft);
+  font: normal 9px/1.4 var(--mono);
+}
+
+.sidebar-note {
+  display: grid;
+  gap: 4px;
+  margin-top: 42px;
+  padding: 14px;
+  border: 1px dashed var(--line-strong);
+  background: rgba(248, 243, 232, 0.58);
+  transform: rotate(-1deg);
+}
+
+.sidebar-note span {
+  color: var(--ink-soft);
+  font-size: 12px;
+}
+
+.sidebar-note strong {
+  color: var(--verified);
+  font-size: 14px;
+}
+
+.content {
+  min-width: 0;
+  padding: clamp(28px, 5vw, 76px);
+}
+
+.hero-panel {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 240px;
+  gap: 36px;
+  min-height: 340px;
+  padding: clamp(28px, 5vw, 64px);
+  overflow: hidden;
+  border: 2px solid var(--ink);
+  background: var(--paper-bright);
+  box-shadow: var(--shadow);
+}
+
+.hero-panel::before {
+  position: absolute;
+  top: 20px;
+  right: -42px;
+  width: 170px;
+  padding: 5px 0;
+  content: "ACTIVE STUDY";
+  color: var(--paper-bright);
+  background: var(--signal);
+  font: 800 10px/1 var(--mono);
+  letter-spacing: 0.13em;
+  text-align: center;
+  transform: rotate(34deg);
+}
+
+.hero-copy {
+  align-self: center;
+}
+
+.task-code {
+  display: inline-block;
+  margin: 28px 0 10px;
+  padding: 6px 9px;
+  color: var(--paper-bright);
+  background: var(--ink);
+  font-size: 11px;
+}
+
+.hero-panel h1 {
+  max-width: 760px;
+  margin: 0;
+  font-size: clamp(42px, 7vw, 91px);
+  font-weight: 500;
+  line-height: 0.94;
+  letter-spacing: -0.055em;
+}
+
+.hero-description {
+  max-width: 720px;
+  margin: 24px 0 0;
+  color: var(--ink-soft);
+  font-size: clamp(15px, 1.8vw, 20px);
+}
+
+.evidence-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 34px;
+  font: 700 10px/1 var(--mono);
+  letter-spacing: 0.06em;
+}
+
+.evidence-legend span {
+  display: inline-flex;
+  gap: 7px;
+  align-items: center;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border: 1px solid var(--ink);
+  border-radius: 50%;
+}
+
+.dot.completed {
+  background: var(--signal);
+}
+
+.dot.verified {
+  background: var(--verified);
+}
+
+.progress-instrument {
+  display: grid;
+  place-content: center;
+  align-self: center;
+}
+
+.progress-ring {
+  --progress: 0deg;
+  display: grid;
+  width: 170px;
+  height: 170px;
+  place-items: center;
+  border-radius: 50%;
+  background: conic-gradient(
+    var(--signal) 0 var(--progress),
+    var(--paper-deep) var(--progress) 360deg
+  );
+  box-shadow: inset 0 0 0 2px var(--ink);
+}
+
+.progress-ring::before {
+  width: 124px;
+  height: 124px;
+  border: 2px solid var(--ink);
+  border-radius: 50%;
+  content: "";
+  background: var(--paper-bright);
+}
+
+.progress-ring > div {
+  position: absolute;
+  display: grid;
+  place-items: center;
+}
+
+.progress-ring strong,
+.progress-ring span {
+  display: block;
+}
+
+.progress-ring strong {
+  font: 800 34px/1 var(--mono);
+}
+
+.progress-ring span {
+  margin-top: 7px;
+  color: var(--ink-soft);
+  font: 700 9px/1 var(--mono);
+  letter-spacing: 0.13em;
+}
+
+.instrument-readout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  margin: 22px 0 0;
+  border-top: 1px solid var(--ink);
+}
+
+.instrument-readout div {
+  padding: 9px;
+  text-align: center;
+}
+
+.instrument-readout div + div {
+  border-left: 1px solid var(--ink);
+}
+
+.instrument-readout dt {
+  color: var(--ink-soft);
+  font-size: 11px;
+}
+
+.instrument-readout dd {
+  margin: 4px 0 0;
+  font: 800 12px/1 var(--mono);
+}
+
+.metric-strip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  margin-top: 54px;
+  border-top: 2px solid var(--ink);
+  border-bottom: 2px solid var(--ink);
+}
+
+.metric-strip article {
+  display: grid;
+  min-height: 128px;
+  padding: 19px;
+  align-content: center;
+}
+
+.metric-strip article + article {
+  border-left: 1px solid var(--ink);
+}
+
+.metric-strip span,
+.metric-strip small {
+  color: var(--ink-soft);
+  font: 700 9px/1.3 var(--mono);
+  letter-spacing: 0.08em;
+}
+
+.metric-strip strong {
+  margin: 9px 0;
+  font: 500 clamp(35px, 5vw, 62px)/0.9 var(--serif);
+}
+
+.section-block {
+  padding: 94px 0 8px;
+}
+
+.section-title {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  padding-bottom: 16px;
+  border-bottom: 2px solid var(--ink);
+}
+
+.section-title h2 {
+  margin: 5px 0 0;
+  font-size: clamp(34px, 5vw, 64px);
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: -0.035em;
+}
+
+.section-index {
+  color: var(--signal);
+  font-size: 13px;
+}
+
+.timeline {
+  position: relative;
+  max-width: 1050px;
+  margin-top: 40px;
+}
+
+.timeline::before {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 52px;
+  width: 2px;
+  content: "";
+  background: var(--ink);
+}
+
+.log-entry {
+  display: grid;
+  grid-template-columns: 105px minmax(0, 1fr);
+  margin-bottom: 30px;
+  opacity: 0;
+  transform: translateY(14px);
+}
+
+.is-ready .log-entry {
+  animation: reveal-up 500ms ease forwards;
+  animation-delay: var(--delay);
+}
+
+.log-marker {
+  z-index: 1;
+  padding-top: 22px;
+}
+
+.log-marker span {
+  display: grid;
+  width: 54px;
+  height: 54px;
+  place-items: center;
+  border: 2px solid var(--ink);
+  border-radius: 50%;
+  color: var(--paper-bright);
+  background: var(--verified);
+  font: 800 10px/1 var(--mono);
+}
+
+.log-card {
+  border: 1px solid var(--ink);
+  background: rgba(248, 243, 232, 0.74);
+}
+
+.log-card header {
+  display: grid;
+  grid-template-columns: 110px minmax(0, 1fr);
+  border-bottom: 1px solid var(--ink);
+}
+
+.log-card header > * {
+  padding: 15px 18px;
+}
+
+.log-card header time {
+  border-right: 1px solid var(--ink);
+  font: 700 10px/1.4 var(--mono);
+}
+
+.log-card h3 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.log-card dl {
+  margin: 0;
+}
+
+.log-card dl div {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr);
+  border-bottom: 1px solid var(--line);
+}
+
+.log-card dl div:last-child {
+  border-bottom: 0;
+}
+
+.log-card dt,
+.log-card dd {
+  padding: 13px 18px;
+}
+
+.log-card dt {
+  color: var(--ink-soft);
+  font: 700 10px/1.4 var(--mono);
+}
+
+.log-card dd {
+  margin: 0;
+  border-left: 1px solid var(--line);
+  font-size: 14px;
+}
+
+code {
+  font-family: var(--mono);
+}
+
+.log-card code,
+.prose code {
+  padding: 1px 4px;
+  color: var(--signal);
+  background: rgba(200, 75, 49, 0.09);
+}
+
+.api-layout {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.82fr) minmax(420px, 1.5fr);
+  gap: clamp(30px, 5vw, 80px);
+  margin-top: 36px;
+}
+
+.subheading {
+  margin: 0 0 14px;
+  color: var(--ink-soft);
+  font-size: 10px;
+}
+
+.command-list,
+.api-list,
+.change-list,
+.commit-list {
+  border-top: 1px solid var(--ink);
+}
+
+.command-card,
+.api-card {
+  border-right: 1px solid var(--ink);
+  border-bottom: 1px solid var(--ink);
+  border-left: 1px solid var(--ink);
+  background: rgba(248, 243, 232, 0.62);
+}
+
+.command-card {
+  padding: 15px;
+}
+
+.command-card > div {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.terminal-prompt {
+  color: var(--verified);
+  font: 900 16px/1 var(--mono);
+}
+
+.command-card code {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.command-card p {
+  margin: 8px 0 4px;
+  font-size: 13px;
+}
+
+.command-card small {
+  display: block;
+  overflow: hidden;
+  color: var(--ink-soft);
+  font: 9px/1.4 var(--mono);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.api-card {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(150px, 0.6fr) minmax(0, 1fr);
+  gap: 12px;
+  padding: 17px;
+}
+
+.api-kind {
+  position: absolute;
+  top: 0;
+  right: 0;
+  padding: 4px 7px;
+  color: var(--paper-bright);
+  background: var(--blueprint);
+  font: 700 8px/1 var(--mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.api-card strong,
+.api-card code {
+  display: block;
+}
+
+.api-card strong {
+  font-size: 18px;
+}
+
+.api-card code {
+  margin-top: 5px;
+  color: var(--ink-soft);
+  font-size: 9px;
+}
+
+.api-card p {
+  max-height: 48px;
+  margin: 7px 0 0;
+  overflow: hidden;
+  color: var(--ink-soft);
+  font: 10px/1.5 var(--mono);
+}
+
+.git-grid {
+  display: grid;
+  grid-template-columns: 180px minmax(250px, 0.9fr) minmax(320px, 1.25fr);
+  gap: 30px;
+  margin-top: 36px;
+}
+
+.git-summary {
+  display: grid;
+  align-content: center;
+  min-height: 160px;
+  padding: 20px;
+  border: 2px solid var(--ink);
+  color: var(--paper-bright);
+  background: var(--ink);
+  box-shadow: 5px 5px 0 var(--signal);
+}
+
+.git-summary span {
+  font: 700 9px/1 var(--mono);
+  letter-spacing: 0.12em;
+}
+
+.git-summary strong {
+  margin: 12px 0;
+  overflow-wrap: anywhere;
+  font-size: 28px;
+}
+
+.git-summary code {
+  color: var(--signal-soft);
+}
+
+.change-row,
+.commit-row {
+  display: grid;
+  gap: 9px;
+  align-items: baseline;
+  padding: 10px 8px;
+  border-bottom: 1px solid var(--line);
+  font-size: 12px;
+}
+
+.change-row {
+  grid-template-columns: 30px minmax(0, 1fr);
+}
+
+.change-row span {
+  color: var(--signal);
+  font: 800 10px/1 var(--mono);
+}
+
+.change-row code,
+.commit-row span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.commit-row {
+  grid-template-columns: 58px minmax(0, 1fr) 78px;
+}
+
+.commit-row code {
+  color: var(--verified);
+  font-size: 10px;
+}
+
+.commit-row time {
+  color: var(--ink-soft);
+  font: 9px/1 var(--mono);
+  text-align: right;
+}
+
+.snapshot-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+  margin-top: 36px;
+}
+
+.snapshot-card {
+  position: relative;
+  display: grid;
+  min-height: 145px;
+  padding: 22px;
+  overflow: hidden;
+  border: 1px solid var(--ink);
+  background: var(--paper-bright);
+  text-decoration: none;
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.snapshot-card:hover {
+  box-shadow: 5px 5px 0 var(--ink);
+  transform: translate(-2px, -2px);
+}
+
+.snapshot-card strong {
+  max-width: calc(100% - 50px);
+  overflow-wrap: anywhere;
+  font: 700 13px/1.5 var(--mono);
+}
+
+.snapshot-card time {
+  align-self: end;
+  color: var(--ink-soft);
+  font: 9px/1 var(--mono);
+}
+
+.snapshot-stamp {
+  position: absolute;
+  top: 16px;
+  right: -12px;
+  padding: 5px 17px;
+  border: 2px solid var(--signal);
+  color: var(--signal);
+  font: 900 9px/1 var(--mono);
+  transform: rotate(7deg);
+}
+
+.vision-panel {
+  margin-top: 86px;
+  border-top: 2px solid var(--ink);
+  border-bottom: 2px solid var(--ink);
+}
+
+.vision-panel summary {
+  display: flex;
+  justify-content: space-between;
+  padding: 20px 4px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.vision-panel summary::-webkit-details-marker {
+  display: none;
+}
+
+.vision-panel summary span {
+  color: var(--signal);
+  font: 800 10px/1 var(--mono);
+  letter-spacing: 0.1em;
+}
+
+.vision-panel summary strong {
+  font-size: 17px;
+}
+
+.prose {
+  max-width: 820px;
+  padding: 16px 4px 50px;
+}
+
+.prose h3,
+.prose h4,
+.prose h5,
+.prose h6 {
+  margin: 32px 0 10px;
+  font-weight: 600;
+}
+
+.prose p,
+.prose li {
+  color: var(--ink-soft);
+  font-size: 15px;
+}
+
+.prose pre {
+  overflow: auto;
+  padding: 18px;
+  color: var(--paper-bright);
+  background: var(--ink);
+}
+
+.empty-state {
+  margin: 0;
+  padding: 28px;
+  border: 1px dashed var(--line-strong);
+  color: var(--ink-soft);
+  font-style: italic;
+  background: rgba(248, 243, 232, 0.4);
+}
+
+.empty-state.compact {
+  padding: 12px 8px;
+  border-width: 0 0 1px;
+}
+
+.footer {
+  display: flex;
+  justify-content: space-between;
+  padding: 22px clamp(20px, 4vw, 60px);
+  border-top: 2px solid var(--ink);
+  color: var(--ink-soft);
+  font: 700 9px/1.4 var(--mono);
+  letter-spacing: 0.09em;
+}
+
+.reveal {
+  opacity: 0;
+  transform: translateY(18px);
+}
+
+.is-ready .reveal {
+  animation: reveal-up 650ms cubic-bezier(0.2, 0.75, 0.2, 1) forwards;
+}
+
+.is-ready .metric-strip {
+  animation-delay: 80ms;
+}
+
+.is-ready .section-block:nth-of-type(3) {
+  animation-delay: 130ms;
+}
+
+@keyframes reveal-up {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes signal-pulse {
+  50% {
+    box-shadow: 0 0 0 7px rgba(46, 106, 79, 0.04);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@media (max-width: 1050px) {
+  .layout {
+    grid-template-columns: 210px minmax(0, 1fr);
+  }
+
+  .sidebar {
+    padding-right: 18px;
+    padding-left: 22px;
+  }
+
+  .hero-panel {
+    grid-template-columns: minmax(0, 1fr) 190px;
+  }
+
+  .progress-ring {
+    width: 148px;
+    height: 148px;
+  }
+
+  .progress-ring::before {
+    width: 108px;
+    height: 108px;
+  }
+
+  .metric-strip {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .metric-strip article:nth-child(3) {
+    border-left: 0;
+  }
+
+  .metric-strip article:nth-child(n + 3) {
+    border-top: 1px solid var(--ink);
+  }
+
+  .api-layout,
+  .git-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .topbar {
+    min-height: 66px;
+    padding: 9px 16px;
+  }
+
+  .brand small,
+  .topbar-status > span:not(.signal) {
+    display: none;
+  }
+
+  .layout {
+    display: block;
+  }
+
+  .sidebar {
+    position: static;
+    min-height: auto;
+    padding: 22px 16px 16px;
+    overflow: hidden;
+    border-right: 0;
+    border-bottom: 2px solid var(--ink);
+  }
+
+  .sidebar-heading {
+    margin-bottom: 14px;
+  }
+
+  .phase-rail {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    padding: 4px 2px 13px;
+    scrollbar-width: thin;
+  }
+
+  .phase-rail::before,
+  .phase-item::after {
+    display: none;
+  }
+
+  .phase-item {
+    flex: 0 0 126px;
+    grid-template-columns: 14px minmax(0, 1fr);
+    padding: 10px;
+    border: 1px solid var(--ink);
+    background: rgba(248, 243, 232, 0.72);
+  }
+
+  .phase-item em,
+  .sidebar-note {
+    display: none;
+  }
+
+  .content {
+    padding: 25px 16px 50px;
+  }
+
+  .hero-panel {
+    grid-template-columns: 1fr;
+    gap: 24px;
+    min-height: 0;
+    padding: 30px 23px;
+    box-shadow: 4px 4px 0 var(--ink);
+  }
+
+  .hero-panel h1 {
+    font-size: clamp(42px, 15vw, 66px);
+  }
+
+  .progress-instrument {
+    grid-template-columns: 130px minmax(0, 1fr);
+    gap: 18px;
+    justify-content: start;
+  }
+
+  .progress-ring {
+    width: 130px;
+    height: 130px;
+  }
+
+  .progress-ring::before {
+    width: 94px;
+    height: 94px;
+  }
+
+  .instrument-readout {
+    display: block;
+    margin: 0;
+    border-top: 0;
+    border-left: 1px solid var(--ink);
+  }
+
+  .instrument-readout div + div {
+    border-top: 1px solid var(--ink);
+    border-left: 0;
+  }
+
+  .metric-strip {
+    margin-top: 38px;
+  }
+
+  .metric-strip article {
+    min-height: 110px;
+    padding: 14px;
+  }
+
+  .section-block {
+    padding-top: 72px;
+  }
+
+  .section-title h2 {
+    font-size: 39px;
+  }
+
+  .timeline::before {
+    left: 20px;
+  }
+
+  .log-entry {
+    grid-template-columns: 50px minmax(0, 1fr);
+  }
+
+  .log-marker span {
+    width: 40px;
+    height: 40px;
+    font-size: 8px;
+  }
+
+  .log-card header,
+  .log-card dl div {
+    grid-template-columns: 1fr;
+  }
+
+  .log-card header time,
+  .log-card dd {
+    border-right: 0;
+    border-left: 0;
+  }
+
+  .log-card header time {
+    padding-bottom: 0;
+  }
+
+  .log-card h3 {
+    padding-top: 6px;
+  }
+
+  .log-card dt {
+    padding-bottom: 2px;
+  }
+
+  .log-card dd {
+    padding-top: 4px;
+  }
+
+  .api-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .api-card {
+    grid-template-columns: 1fr;
+  }
+
+  .snapshot-list {
+    grid-template-columns: 1fr;
+  }
+
+  .footer {
+    display: grid;
+    gap: 6px;
+  }
+}
+
+.source-intro {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 40px;
+  align-items: center;
+  margin: 28px 0 34px;
+  padding: 19px 0;
+  border-bottom: 1px solid var(--ink);
+}
+
+.source-intro p {
+  max-width: 720px;
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 16px;
+}
+
+.source-intro dl {
+  display: flex;
+  margin: 0;
+  border: 1px solid var(--ink);
+  background: var(--paper-bright);
+}
+
+.source-intro dl div {
+  min-width: 95px;
+  padding: 12px 16px;
+  text-align: center;
+}
+
+.source-intro dl div + div {
+  border-left: 1px solid var(--ink);
+}
+
+.source-intro dt {
+  color: var(--ink-soft);
+  font: 700 8px/1 var(--mono);
+  letter-spacing: 0.12em;
+}
+
+.source-intro dd {
+  margin: 7px 0 0;
+  font: 700 24px/1 var(--serif);
+}
+
+.source-groups {
+  display: grid;
+  gap: 34px;
+}
+
+.source-group > header {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: baseline;
+  margin-bottom: 10px;
+}
+
+.source-group > header span,
+.source-group > header em {
+  color: var(--signal);
+  font: 800 9px/1 var(--mono);
+  letter-spacing: 0.08em;
+}
+
+.source-group > header h3 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 600;
+}
+
+.source-group > header em {
+  color: var(--ink-soft);
+  font-style: normal;
+}
+
+.source-file-list {
+  border-top: 2px solid var(--ink);
+}
+
+.source-file {
+  border-right: 1px solid var(--ink);
+  border-bottom: 1px solid var(--ink);
+  border-left: 1px solid var(--ink);
+  background: rgba(248, 243, 232, 0.64);
+}
+
+.source-file summary {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr) auto auto;
+  gap: 14px;
+  align-items: center;
+  min-height: 72px;
+  padding: 11px 14px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.source-file summary::-webkit-details-marker {
+  display: none;
+}
+
+.source-file[open] summary {
+  border-bottom: 1px solid var(--ink);
+  background: var(--paper-bright);
+}
+
+.source-file-mark {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border: 1px solid var(--ink);
+  color: var(--paper-bright);
+  background: var(--blueprint);
+  font: 800 9px/1 var(--mono);
+}
+
+.source-file-name strong,
+.source-file-name small {
+  display: block;
+}
+
+.source-file-name strong {
+  font: 700 13px/1.35 var(--mono);
+}
+
+.source-file-name small {
+  margin-top: 4px;
+  color: var(--ink-soft);
+  font-size: 12px;
+}
+
+.source-file-meta {
+  color: var(--ink-soft);
+  font: 700 8px/1 var(--mono);
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+
+.copy-source {
+  padding: 6px 9px;
+  border: 1px solid var(--ink);
+  background: transparent;
+  cursor: pointer;
+  font: 700 9px/1 var(--mono);
+}
+
+.copy-source:hover {
+  color: var(--paper-bright);
+  background: var(--ink);
+}
+
+.code-frame {
+  position: relative;
+  overflow: hidden;
+  background: #111512;
+}
+
+.code-frame pre {
+  max-height: 620px;
+  margin: 0;
+  overflow: auto;
+  padding: 18px 0 24px;
+  color: #e8e3d8;
+  tab-size: 2;
+}
+
+.code-line {
+  display: grid;
+  grid-template-columns: 54px minmax(max-content, 1fr);
+  min-height: 21px;
+  font: 12px/1.65 var(--mono);
+}
+
+.code-line:hover {
+  background: rgba(255, 255, 255, 0.055);
+}
+
+.code-line i {
+  padding-right: 13px;
+  color: #6f786f;
+  font-style: normal;
+  text-align: right;
+  user-select: none;
+}
+
+.code-line code {
+  padding: 0 22px 0 13px;
+  border-left: 1px solid rgba(232, 227, 216, 0.12);
+  white-space: pre;
+}
+
+.truncation-note {
+  margin: 0;
+  padding: 9px 18px;
+  color: #201a11;
+  background: var(--amber);
+  font: 700 10px/1.4 var(--mono);
+}
+
+@media (max-width: 760px) {
+  .source-intro {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+
+  .source-intro dl {
+    justify-self: start;
+  }
+
+  .source-file summary {
+    grid-template-columns: 34px minmax(0, 1fr) auto;
+  }
+
+  .source-file-meta {
+    display: none;
+  }
+
+  .copy-source {
+    grid-column: 2 / -1;
+    justify-self: start;
+    margin-top: -5px;
+  }
+
+  .code-frame pre {
+    max-height: 520px;
+  }
+
+  .code-line {
+    grid-template-columns: 42px minmax(max-content, 1fr);
+    font-size: 10px;
+  }
+}
+
+.source-groups,
+.source-group,
+.source-file-list,
+.source-file,
+.code-frame {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.code-frame {
+  contain: inline-size;
+}
+
+.code-frame pre {
+  width: 100%;
+  max-width: 100%;
+}
+
+.code-line {
+  width: max-content;
+  min-width: 100%;
+  grid-template-columns: 54px max-content;
+}
+
+@media (max-width: 760px) {
+  .code-line {
+    grid-template-columns: 42px max-content;
+  }
+}
+</style>
+</head>
+<body>
+  <div class="paper-grid" aria-hidden="true"></div>
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="KFlow Learning Machine home">
+      <span class="brand-mark">KF</span>
+      <span><strong>LEARNING MACHINE</strong><small>实验记录与工程证据</small></span>
+    </a>
+    <div class="topbar-status">
+      <span class="signal" aria-hidden="true"></span>
+      <span id="modeLabel">正在读取项目状态</span>
+      <button id="refreshButton" class="text-button" type="button">重新采样</button>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar" aria-label="项目阶段">
+      <div class="sidebar-heading">
+        <span class="eyebrow">RESEARCH ROUTE</span>
+        <strong id="projectName">KFLOW CODE</strong>
+        <span id="projectVersion" class="muted">loading</span>
+      </div>
+      <nav id="phaseRail" class="phase-rail"></nav>
+      <div class="sidebar-note">
+        <span>完成不是模型的声明。</span>
+        <strong>完成是证据的集合。</strong>
+      </div>
+    </aside>
+
+    <main class="content">
+      <section class="hero-panel reveal" aria-labelledby="currentHeading">
+        <div class="hero-copy">
+          <span class="eyebrow">CURRENT EXPERIMENT</span>
+          <p id="currentTaskId" class="task-code">—</p>
+          <h1 id="currentHeading">正在定位当前唯一任务</h1>
+          <p id="currentTaskText" class="hero-description"></p>
+          <div class="evidence-legend" aria-label="状态图例">
+            <span><i class="dot pending"></i>未开始</span>
+            <span><i class="dot completed"></i>已完成</span>
+            <span><i class="dot verified"></i>有证据</span>
+          </div>
+        </div>
+        <div class="progress-instrument" aria-label="项目完成度">
+          <div id="progressRing" class="progress-ring">
+            <div><strong id="completionPercent">0%</strong><span>CHECKED</span></div>
+          </div>
+          <dl class="instrument-readout">
+            <div><dt>已完成</dt><dd id="completedCount">0 / 0</dd></div>
+            <div><dt>已验证</dt><dd id="verifiedCount">0 / 0</dd></div>
+          </dl>
+        </div>
+      </section>
+
+      <section class="metric-strip reveal" aria-label="项目指标">
+        <article><span>LEARNING NOTES</span><strong id="noteCount">0</strong><small>认知变化记录</small></article>
+        <article><span>REAL API</span><strong id="apiCount">0</strong><small>真实导出声明</small></article>
+        <article><span>COMMANDS</span><strong id="commandCount">0</strong><small>当前可运行脚本</small></article>
+        <article><span>WORKTREE</span><strong id="changeCount">0</strong><small>尚未提交变更</small></article>
+      </section>
+
+      <section id="learning" class="section-block reveal">
+        <div class="section-title">
+          <div><span class="eyebrow">OBSERVATION LOG</span><h2>最近学习记录</h2></div>
+          <span class="section-index">01</span>
+        </div>
+        <div id="learningTimeline" class="timeline"></div>
+      </section>
+
+      <section id="api" class="section-block reveal">
+        <div class="section-title">
+          <div><span class="eyebrow">IMPLEMENTED SURFACE</span><h2>KFC API 与命令</h2></div>
+          <span class="section-index">02</span>
+        </div>
+        <div class="api-layout">
+          <div><h3 class="subheading">PACKAGE COMMANDS</h3><div id="commandList" class="command-list"></div></div>
+          <div><h3 class="subheading">SOURCE EXPORTS</h3><div id="apiList" class="api-list"></div></div>
+        </div>
+      </section>
+
+      <section id="source" class="section-block reveal">
+        <div class="section-title">
+          <div><span class="eyebrow">SOURCE MEMORY</span><h2>核心代码复习</h2></div>
+          <span class="section-index">03</span>
+        </div>
+        <div class="source-intro">
+          <p>快照保存当时真正运行的 <code>src/**/*.ts</code>。先理解调用链，再看实现细节；代码不是装饰，而是认知证据。</p>
+          <dl>
+            <div><dt>FILES</dt><dd id="sourceFileCount">0</dd></div>
+            <div><dt>LINES</dt><dd id="sourceLineCount">0</dd></div>
+          </dl>
+        </div>
+        <div id="sourceGroups" class="source-groups"></div>
+      </section>
+
+      <section id="git" class="section-block reveal">
+        <div class="section-title">
+          <div><span class="eyebrow">REPOSITORY SIGNAL</span><h2>Git 开发状态</h2></div>
+          <span class="section-index">04</span>
+        </div>
+        <div class="git-grid">
+          <article class="git-summary"><span>BRANCH</span><strong id="gitBranch">—</strong><code id="gitHead">—</code></article>
+          <div><h3 class="subheading">WORKTREE</h3><div id="changeList" class="change-list"></div></div>
+          <div><h3 class="subheading">RECENT COMMITS</h3><div id="commitList" class="commit-list"></div></div>
+        </div>
+      </section>
+
+      <section id="snapshots" class="section-block reveal">
+        <div class="section-title">
+          <div><span class="eyebrow">IMMUTABLE EVIDENCE</span><h2>HTML 学习快照</h2></div>
+          <span class="section-index">05</span>
+        </div>
+        <div id="snapshotList" class="snapshot-list"></div>
+      </section>
+
+      <details id="vision" class="vision-panel reveal">
+        <summary><span>PROJECT PREMISE</span><strong>展开项目愿景与边界</strong></summary>
+        <div id="visionContent" class="prose"></div>
+      </details>
+    </main>
+  </div>
+
+  <footer class="footer">
+    <span>KFLOW CODE / LR MACHINE</span>
+    <span id="generatedAt">未采样</span>
+  </footer>
+
+  <script id="lr-data" type="application/json">{"generatedAt":"2026-07-29T13:05:18.889Z","snapshot":{"title":"DEC-002 DeepSeek 首个 Provider","fileName":"2026-07-29-210518-dec-002-deepseek-provider.html"},"project":{"name":"kflow-code","version":"0.1.0","description":"A learning-first, verifiable coding agent built from first principles."},"progress":{"phases":[{"id":"P0","title":"工程骨架与边界","tasks":[{"id":"P0.1","text":"P0.1 定义范围：写 docs/vision.md，明确首版只做 CLI、单 Provider、单 Agent；不做 TUI、插件、MCP、多 Agent。","completed":true,"verified":true},{"id":"P0.2","text":"P0.2 初始化工程：创建 Node.js 22+、TypeScript、pnpm 项目；加入 Vitest、ESLint、Prettier。","completed":true,"verified":true},{"id":"P0.3","text":"P0.3 建立最小入口：实现 kfc --help 与 kfc --version，分离 CLI 参数解析和核心逻辑。","completed":true,"verified":true},{"id":"P0.4","text":"P0.4 配置边界：用 Zod 校验环境变量和单 Provider 配置；禁止输出密钥。","completed":true,"verified":true},{"id":"P0.5","text":"P0.5 错误边界：定义 KfcError，区分配置错误、Provider 错误和用户中断。","completed":false,"verified":false},{"id":"P0.6","text":"P0.6 健康检查：实现 kfc doctor，检查 Node 版本、配置文件和 API Key 是否存在。","completed":false,"verified":false},{"id":"P0.7","text":"P0.7 写首个 ADR：ADR-0001-typescript-first.md，记录选择 TypeScript 的收益、代价和重新评估条件。","completed":false,"verified":false},{"id":"P0.8","text":"P0.8 阶段验收：运行 pnpm build \u0026\u0026 pnpm lint \u0026\u0026 pnpm test；记录命令、输出和一次失败案例。","completed":false,"verified":false},{"id":"P0.9","text":"P0.9 阶段复盘：完成 docs/reviews/P0-review.md，确认每项验收都有证据。","completed":false,"verified":false}],"completed":4,"verified":4,"total":9},{"id":"P1","title":"单轮模型调用","tasks":[{"id":null,"text":"定义内部 ModelProvider、请求、事件和错误类型。","completed":false,"verified":false},{"id":null,"text":"只实现一个 OpenAI-compatible Provider，不让 CLI 依赖供应商 SDK 类型。","completed":false,"verified":false},{"id":null,"text":"首个真实回归目标使用 deepseek-v4-flash；供应商差异留在 Provider 适配层，不进入 Core。","completed":false,"verified":false},{"id":null,"text":"实现流式输出、超时和 AbortController 中断。","completed":false,"verified":false},{"id":null,"text":"标准化认证、限流、超时、上下文超限和服务端错误。","completed":false,"verified":false},{"id":null,"text":"用 Mock Provider 测试流式事件、中断与失败，不调用真实 API。","completed":false,"verified":false},{"id":null,"text":"记录首 Token 延迟、总耗时和 Token 用量。","completed":false,"verified":false},{"id":"P1","text":"完成真实 kfc ask 实验、ADR、学习日志和 P1 复盘。","completed":false,"verified":false}],"completed":0,"verified":0,"total":8},{"id":"P2","title":"最小 Agent Loop 与只读工具","tasks":[{"id":null,"text":"定义内部消息、Tool Call、Tool Result 和最大步数。","completed":false,"verified":false},{"id":null,"text":"实现 Tool Registry 与 Zod 参数校验。","completed":false,"verified":false},{"id":null,"text":"实现 list_directory、read_file、grep。","completed":false,"verified":false},{"id":null,"text":"防止路径穿越，限制文件大小、结果数量和工具超时。","completed":false,"verified":false},{"id":null,"text":"检测重复调用；工具失败应成为结构化结果，而非进程崩溃。","completed":false,"verified":false},{"id":null,"text":"用脚本化 Mock Provider 确定性重放完整循环。","completed":false,"verified":false},{"id":null,"text":"在陌生 TypeScript 仓库回答配置来源并给出文件与行号。","completed":false,"verified":false},{"id":"P2","text":"保存工具轨迹、ADR、学习日志和 P2 复盘。","completed":false,"verified":false}],"completed":0,"verified":0,"total":8},{"id":"P3","title":"写操作、Shell 与最小权限","tasks":[{"id":null,"text":"实现结构化 apply_patch，禁止静默整文件覆盖。","completed":false,"verified":false},{"id":null,"text":"实现受限 Shell：工作区边界、超时、输出上限和退出码。","completed":false,"verified":false},{"id":null,"text":"建立只读、写入、执行三档策略与显式确认。","completed":false,"verified":false},{"id":null,"text":"实现 git diff 检查和失败后的恢复说明。","completed":false,"verified":false},{"id":null,"text":"完成一次“读取—修改—测试—解释”的真实任务。","completed":false,"verified":false},{"id":"P3","text":"记录被拒绝操作、失败恢复、ADR 和 P3 复盘。","completed":false,"verified":false}],"completed":0,"verified":0,"total":6},{"id":"P4","title":"事件驱动 Core 与会话持久化","tasks":[{"id":null,"text":"用领域事件统一模型、工具、权限和完成状态。","completed":false,"verified":false},{"id":null,"text":"CLI 只消费事件，不反向控制 Core。","completed":false,"verified":false},{"id":null,"text":"使用 JSONL 持久化会话，支持崩溃后读取与诊断。","completed":false,"verified":false},{"id":null,"text":"测试事件顺序、追加写入和损坏记录处理。","completed":false,"verified":false},{"id":"P4","text":"完成 ADR、学习日志和 P4 复盘。","completed":false,"verified":false}],"completed":0,"verified":0,"total":5},{"id":"P5","title":"上下文与长会话","tasks":[{"id":null,"text":"区分系统规则、用户目标、代码证据、工具结果和历史摘要。","completed":false,"verified":false},{"id":null,"text":"实现 Token 预算、输出截断、摘要和按需文件读取。","completed":false,"verified":false},{"id":null,"text":"建立固定长任务，比较截断前后的正确性与成本。","completed":false,"verified":false},{"id":null,"text":"记录错误遗忘、错误摘要和上下文污染案例。","completed":false,"verified":false},{"id":"P5","text":"完成 ADR、学习日志和 P5 复盘。","completed":false,"verified":false}],"completed":0,"verified":0,"total":5},{"id":"P6","title":"可验证完成","tasks":[{"id":null,"text":"将目标拆成可检查验收条件。","completed":false,"verified":false},{"id":null,"text":"为每个条件绑定测试、Diff、静态检查或人工确认。","completed":false,"verified":false},{"id":null,"text":"用退出码和结构化规则更新状态，模型不得自行标记通过。","completed":false,"verified":false},{"id":null,"text":"输出 Completion Report：改动、证据、未验证项、风险和恢复方式。","completed":false,"verified":false},{"id":null,"text":"测试“代码看似正确但测试失败”的拒绝完成路径。","completed":false,"verified":false},{"id":"P6","text":"完成 ADR、学习日志和 P6 复盘。","completed":false,"verified":false}],"completed":0,"verified":0,"total":6},{"id":"P7–P8","title":"扩展能力（锁定区）","tasks":[{"id":"P7","text":"P7：按 Skills → Hooks → MCP 的顺序逐一加入，每次只验证一种扩展机制。","completed":false,"verified":false},{"id":"P8","text":"P8：最后研究 Subagents、会话分支与 Git Worktree，并用相同验收集比较收益和成本。","completed":false,"verified":false},{"id":null,"text":"为每个扩展写“为何现在需要它”和“删除它会失去什么”。","completed":false,"verified":false}],"completed":0,"verified":0,"total":3}],"currentTask":{"id":"P0.5","text":"P0.5 错误边界：定义统一 KfcError，区分配置错误、Provider 错误和用户中断；为每类错误确定安全消息、退出码和调试信息。"},"totals":{"total":50,"completed":4,"verified":4,"completionPercent":8,"verificationPercent":8}},"learningEntries":[{"date":"2026-07-29","title":"DEC-002 首个真实 Provider 选择","taskId":null,"fields":[{"label":"第一性问题","value":"首个模型服务应该只是最容易调用，还是应该帮助暴露 Provider 抽象中的真实差异？"},{"label":"我的初始假设","value":"首个目标应支持 OpenAI-compatible 基础协议，同时在角色、参数、Thinking 与工具调用上存在足够真实差异，迫使我们验证边界而不是假设兼容。"},{"label":"最小实验","value":"暂不发起网络请求，只核验官方接口、当前模型名称和兼容差异，并记录可替换配置、代价与重新评估条件。"},{"label":"观察到的证据","value":"截至 2026-07-29，DeepSeek 官方 OpenAI 格式 Base URL 为 `https://api.deepseek.com`，当前首选目标记录为 `deepseek-v4-flash`；配置示例、TODO 和 ADR 已同步，API Key 仍保持环境变量专用。"},{"label":"假设哪里错了","value":"“OpenAI-compatible 就可以无差别替换”过于粗糙；兼容主要解决接入形状，不能自动保证角色、Token 参数、Thinking、流式事件和 Tool Calling 行为一致。"},{"label":"得到的可复用原则","value":"选择首个集成对象时，应优先最大化学习到的边界，而不是最大化表面上的顺利。外部模型名称只能存在于配置与带核验日期的决策记录中，不能进入 Core 类型。"},{"label":"尚未理解","value":"DeepSeek V4 Flash 的真实流式事件、错误响应、Thinking 与 Tool Calling 轨迹；必须等 P1 用真实请求和 Fixture 验证。"},{"label":"下一步","value":"继续 P0.5 统一错误边界，再通过 P0.6 `kfc doctor` 检查 DeepSeek 配置，P1 才发起真实模型调用。"}],"raw":"- **第一性问题：** 首个模型服务应该只是最容易调用，还是应该帮助暴露 Provider 抽象中的真实差异？\n- **我的初始假设：** 首个目标应支持 OpenAI-compatible 基础协议，同时在角色、参数、Thinking 与工具调用上存在足够真实差异，迫使我们验证边界而不是假设兼容。\n- **最小实验：** 暂不发起网络请求，只核验官方接口、当前模型名称和兼容差异，并记录可替换配置、代价与重新评估条件。\n- **观察到的证据：** 截至 2026-07-29，DeepSeek 官方 OpenAI 格式 Base URL 为 `https://api.deepseek.com`，当前首选目标记录为 `deepseek-v4-flash`；配置示例、TODO 和 ADR 已同步，API Key 仍保持环境变量专用。\n- **假设哪里错了：** “OpenAI-compatible 就可以无差别替换”过于粗糙；兼容主要解决接入形状，不能自动保证角色、Token 参数、Thinking、流式事件和 Tool Calling 行为一致。\n- **得到的可复用原则：** 选择首个集成对象时，应优先最大化学习到的边界，而不是最大化表面上的顺利。外部模型名称只能存在于配置与带核验日期的决策记录中，不能进入 Core 类型。\n- **尚未理解：** DeepSeek V4 Flash 的真实流式事件、错误响应、Thinking 与 Tool Calling 轨迹；必须等 P1 用真实请求和 Fixture 验证。\n- **下一步：** 继续 P0.5 统一错误边界，再通过 P0.6 `kfc doctor` 检查 DeepSeek 配置，P1 才发起真实模型调用。"},{"date":"2026-07-29","title":"P0.4 配置边界","taskId":"P0.4","fields":[{"label":"第一性问题","value":"模型地址、模型名称和密钥从哪里来，多个来源冲突时听谁的，配置失败时怎样提供证据而不泄露秘密？"},{"label":"我的初始假设","value":"普通配置与密钥不应拥有相同生命周期；首版使用“环境变量 \u003e 用户配置文件 \u003e 默认值”，API Key 只允许来自环境变量，所有文件读取和环境输入都必须可注入测试。"},{"label":"最小实验","value":"使用 Zod 定义配置文件与最终配置 Schema，实现 XDG/用户目录路径解析、可选文件读取、环境覆盖、60 秒默认超时、结构化 `ConfigError` 和 `redactConfig`，不接入 CLI 或模型网络调用。"},{"label":"观察到的证据","value":"全量 Vitest 11 个文件、31 个测试通过；环境变量单独加载、文件与环境合并、环境覆盖、缺失文件、非法 JSON、非法 URL、超时范围、文件内 API Key 拒绝和脱敏均有测试。编译后模块使用虚拟路径完成显式泄露检查，脱敏对象和结构化错误均不包含测试密钥，也未读取真实 `~/.config/kfc`。"},{"label":"假设哪里错了","value":"初版错误归一化把“缺少 base URL”和“提供了非法 URL”都映射成“URL 非法”，抹平了用户应采取的不同修复动作。Zod 已提供 `invalid_type` 与 `invalid_format`，边界层应保留有决策价值的差异，而不是为了统一而过度统一。"},{"label":"得到的可复用原则","value":"配置优先级必须显式且可测试；秘密配置需要比普通配置更严格的来源与输出策略。测试通过依赖注入控制文件系统和环境，而不是触碰开发者真实主目录。结构化错误的价值在于告诉调用方下一步能做什么。"},{"label":"尚未理解","value":"配置错误如何与 Provider 错误、用户中断共享统一基类，以及哪些信息进入用户输出、哪些只进入调试日志；这属于 P0.5 的错误边界。"},{"label":"下一步","value":"P0.5 定义统一 `KfcError`，让 CLI 能依据错误类别决定消息、退出码和调试信息，同时保持密钥脱敏。"}],"raw":"- **第一性问题：** 模型地址、模型名称和密钥从哪里来，多个来源冲突时听谁的，配置失败时怎样提供证据而不泄露秘密？\n- **我的初始假设：** 普通配置与密钥不应拥有相同生命周期；首版使用“环境变量 \u003e 用户配置文件 \u003e 默认值”，API Key 只允许来自环境变量，所有文件读取和环境输入都必须可注入测试。\n- **最小实验：** 使用 Zod 定义配置文件与最终配置 Schema，实现 XDG/用户目录路径解析、可选文件读取、环境覆盖、60 秒默认超时、结构化 `ConfigError` 和 `redactConfig`，不接入 CLI 或模型网络调用。\n- **观察到的证据：** 全量 Vitest 11 个文件、31 个测试通过；环境变量单独加载、文件与环境合并、环境覆盖、缺失文件、非法 JSON、非法 URL、超时范围、文件内 API Key 拒绝和脱敏均有测试。编译后模块使用虚拟路径完成显式泄露检查，脱敏对象和结构化错误均不包含测试密钥，也未读取真实 `~/.config/kfc`。\n- **假设哪里错了：** 初版错误归一化把“缺少 base URL”和“提供了非法 URL”都映射成“URL 非法”，抹平了用户应采取的不同修复动作。Zod 已提供 `invalid_type` 与 `invalid_format`，边界层应保留有决策价值的差异，而不是为了统一而过度统一。\n- **得到的可复用原则：** 配置优先级必须显式且可测试；秘密配置需要比普通配置更严格的来源与输出策略。测试通过依赖注入控制文件系统和环境，而不是触碰开发者真实主目录。结构化错误的价值在于告诉调用方下一步能做什么。\n- **尚未理解：** 配置错误如何与 Provider 错误、用户中断共享统一基类，以及哪些信息进入用户输出、哪些只进入调试日志；这属于 P0.5 的错误边界。\n- **下一步：** P0.5 定义统一 `KfcError`，让 CLI 能依据错误类别决定消息、退出码和调试信息，同时保持密钥脱敏。"},{"date":"2026-07-29","title":"LR.5 核心代码复习层","taskId":null,"fields":[{"label":"第一性问题","value":"学习快照如果只有结论和 API 名称，却没有当时真正运行的核心代码，能否支持日后还原机制与复习调用链？"},{"label":"我的初始假设","value":"当前源码规模很小，自动归档受限的 `src/**/*.ts` 比手工维护“代码摘录”更可靠；实时页面和离线快照必须继续共用同一数据模型。"},{"label":"最小实验","value":"新增源码采集器，只读取普通 TypeScript 文件并忽略声明文件、符号链接和其他目录；记录相对路径、职责、分组、总行数、展示行数和截断状态，在 Dashboard 中提供折叠、行号、横向代码滚动与复制。"},{"label":"观察到的证据","value":"页面自动归档 6 个核心源码文件、共 127 行，`src/cli/parse-args.ts` 的 48 行可以完整展开和复制；LR Machine 5 个测试文件、9 个测试通过；桌面端与 390px 窄屏浏览器验收通过，无控制台错误和整页横向溢出。"},{"label":"假设哪里错了","value":"首次浏览器检查连接到了仍在 `4310` 运行的旧服务，说明修改源码不会让既有 Node 进程自动刷新，验收必须确认服务实例版本。移动端初版还因代码行的 `max-content` 宽度泄漏到页面而产生横向溢出；正确修复是约束代码容器，让长行只在 `\u003cpre\u003e` 内滚动，而不是全局隐藏页面溢出。"},{"label":"得到的可复用原则","value":"学习证据应同时保存目标、认知、验证和实际代码；源码采集必须采用白名单与上限。内部横向滚动是代码阅读需求，整页横向滚动则是布局错误，两者不能混淆。"},{"label":"尚未理解","value":"何时需要从“归档全部 src”升级为按任务标注核心文件，以及语法高亮、代码差异和调用链标注是否带来足够学习收益；在源码规模和复习痛点出现前不增加复杂度。"},{"label":"下一步","value":"回到 P0.4 配置边界；完成配置实现后，新快照将自动包含相关核心代码。"}],"raw":"- **第一性问题：** 学习快照如果只有结论和 API 名称，却没有当时真正运行的核心代码，能否支持日后还原机制与复习调用链？\n- **我的初始假设：** 当前源码规模很小，自动归档受限的 `src/**/*.ts` 比手工维护“代码摘录”更可靠；实时页面和离线快照必须继续共用同一数据模型。\n- **最小实验：** 新增源码采集器，只读取普通 TypeScript 文件并忽略声明文件、符号链接和其他目录；记录相对路径、职责、分组、总行数、展示行数和截断状态，在 Dashboard 中提供折叠、行号、横向代码滚动与复制。\n- **观察到的证据：** 页面自动归档 6 个核心源码文件、共 127 行，`src/cli/parse-args.ts` 的 48 行可以完整展开和复制；LR Machine 5 个测试文件、9 个测试通过；桌面端与 390px 窄屏浏览器验收通过，无控制台错误和整页横向溢出。\n- **假设哪里错了：** 首次浏览器检查连接到了仍在 `4310` 运行的旧服务，说明修改源码不会让既有 Node 进程自动刷新，验收必须确认服务实例版本。移动端初版还因代码行的 `max-content` 宽度泄漏到页面而产生横向溢出；正确修复是约束代码容器，让长行只在 `\u003cpre\u003e` 内滚动，而不是全局隐藏页面溢出。\n- **得到的可复用原则：** 学习证据应同时保存目标、认知、验证和实际代码；源码采集必须采用白名单与上限。内部横向滚动是代码阅读需求，整页横向滚动则是布局错误，两者不能混淆。\n- **尚未理解：** 何时需要从“归档全部 src”升级为按任务标注核心文件，以及语法高亮、代码差异和调用链标注是否带来足够学习收益；在源码规模和复习痛点出现前不增加复杂度。\n- **下一步：** 回到 P0.4 配置边界；完成配置实现后，新快照将自动包含相关核心代码。"},{"date":"2026-07-29","title":"P0.3 建立最小 CLI 入口","taskId":"P0.3","fields":[{"label":"第一性问题","value":"CLI 输入、程序决策和终端输出为什么必须分离，怎样用最小机制把参数稳定地转换为可验证行为？"},{"label":"我的初始假设","value":"当前只有 help 和 version 两个选项，Node.js 内置 `util.parseArgs` 足够；无需提前引入 Commander。参数解析应返回结构化命令，运行器通过注入的版本和 I/O 执行，入口文件只连接 `process`。"},{"label":"最小实验","value":"先写 help、version、未知选项和未实现位置参数的测试，再实现纯 `parseCliArgs`、`runCli`、帮助文本、包版本读取和带 shebang 的 `src/cli.ts`。"},{"label":"观察到的证据","value":"全量 Vitest 7 个文件、18 个测试全部通过，其中新增 10 个 CLI 行为测试；`pnpm build`、Lint 和格式检查通过；编译后的 `pnpm kfc --help` 与 `--version` 返回退出码 0，`--unknown` 输出简明错误且返回退出码 1，不包含调用栈，也不读取配置或访问网络。"},{"label":"假设哪里错了","value":"安装 `@types/node` 不代表 TypeScript 会自动启用 Node 类型，仍需在 `tsconfig.json` 声明 `types: [\"node\"]`。第一次失败构建还发现 TypeScript 默认可能在有错误时继续写入 `dist`，造成“产物能运行但构建已失败”的假象，因此加入 `noEmitOnError: true`。验收脚本也暴露 `status` 是 zsh 只读变量，这属于测试工具错误而非产品错误。TODO 推进到 P0.4 后，LR Machine 集成测试因写死“当前任务必须是 P0.3”而失败，说明测试应约束稳定的数据契约，而不是冻结必然变化的业务内容。"},{"label":"得到的可复用原则","value":"最外层入口应该尽可能薄：环境输入在边缘读取，核心行为使用普通数据和依赖注入，最后显式返回退出码。任何失败构建都不应产生可被误用的新产物。框架只有在内置机制无法控制复杂度时才值得引入。"},{"label":"尚未理解","value":"当子命令、共享选项和帮助层级增长时，`util.parseArgs` 的维护成本会在什么信号下超过引入 CLI 框架的成本；在真实复杂度出现前不做迁移。"},{"label":"下一步","value":"P0.4 建立配置边界，明确环境变量与用户配置的来源、优先级、校验和密钥脱敏。"}],"raw":"- **第一性问题：** CLI 输入、程序决策和终端输出为什么必须分离，怎样用最小机制把参数稳定地转换为可验证行为？\n- **我的初始假设：** 当前只有 help 和 version 两个选项，Node.js 内置 `util.parseArgs` 足够；无需提前引入 Commander。参数解析应返回结构化命令，运行器通过注入的版本和 I/O 执行，入口文件只连接 `process`。\n- **最小实验：** 先写 help、version、未知选项和未实现位置参数的测试，再实现纯 `parseCliArgs`、`runCli`、帮助文本、包版本读取和带 shebang 的 `src/cli.ts`。\n- **观察到的证据：** 全量 Vitest 7 个文件、18 个测试全部通过，其中新增 10 个 CLI 行为测试；`pnpm build`、Lint 和格式检查通过；编译后的 `pnpm kfc --help` 与 `--version` 返回退出码 0，`--unknown` 输出简明错误且返回退出码 1，不包含调用栈，也不读取配置或访问网络。\n- **假设哪里错了：** 安装 `@types/node` 不代表 TypeScript 会自动启用 Node 类型，仍需在 `tsconfig.json` 声明 `types: [\"node\"]`。第一次失败构建还发现 TypeScript 默认可能在有错误时继续写入 `dist`，造成“产物能运行但构建已失败”的假象，因此加入 `noEmitOnError: true`。验收脚本也暴露 `status` 是 zsh 只读变量，这属于测试工具错误而非产品错误。TODO 推进到 P0.4 后，LR Machine 集成测试因写死“当前任务必须是 P0.3”而失败，说明测试应约束稳定的数据契约，而不是冻结必然变化的业务内容。\n- **得到的可复用原则：** 最外层入口应该尽可能薄：环境输入在边缘读取，核心行为使用普通数据和依赖注入，最后显式返回退出码。任何失败构建都不应产生可被误用的新产物。框架只有在内置机制无法控制复杂度时才值得引入。\n- **尚未理解：** 当子命令、共享选项和帮助层级增长时，`util.parseArgs` 的维护成本会在什么信号下超过引入 CLI 框架的成本；在真实复杂度出现前不做迁移。\n- **下一步：** P0.4 建立配置边界，明确环境变量与用户配置的来源、优先级、校验和密钥脱敏。"},{"date":"2026-07-29","title":"LR.1 学习日志展示机器","taskId":null,"fields":[{"label":"第一性问题","value":"如何同时回答“项目现在是什么状态”和“过去某次开发结束时是什么状态”，并让进度、笔记与代码证据保持一致？"},{"label":"我的初始假设","value":"只维护静态网页会失去实时性，只维护动态页面会失去历史；需要共享同一数据模型的实时服务与不可变 HTML 快照。"},{"label":"最小实验","value":"使用 Node.js 内置 HTTP 和文件系统建立只读服务，采集 `TODO.md`、学习日志、愿景、包命令、TypeScript 导出和固定 Git 状态；同一渲染器生成实时页面与自包含 HTML。"},{"label":"观察到的证据","value":"LR Machine 专项测试 4 个文件、6 个测试全部通过；桌面端和 390px 窄屏均完成 Playwright 验收，无控制台错误和页面横向溢出；路径穿越请求被拒绝；页面展示 8 个阶段、2 条既有学习记录和 1 个真实导出 API。"},{"label":"假设哪里错了","value":"“能运行 Python 就能直接运行 Playwright”不成立；系统默认 `python3` 没有 Playwright，而 Anaconda Python 已具备该模块；端口测试在受限沙箱内返回 `EPERM`，根因是执行环境禁止监听。首次快照还发现 pnpm 会把参数分隔符 `--` 传给脚本，生成器必须先归一化 CLI 参数，不能假设业务参数从第一个位置直接开始。"},{"label":"得到的可复用原则","value":"当前状态应从真实项目文件派生，历史状态应以不可变快照保存；两者必须复用同一采集器和渲染器，否则迟早分裂。浏览器接口保持只读，生成快照只能由本地显式命令触发。"},{"label":"尚未理解","value":"随着 API 和笔记增长，单页信息密度、快照数量和 TypeScript AST 描述深度应在什么信号下升级；在真实需求出现前不引入数据库和前端框架。"},{"label":"下一步","value":"回到 P0.3，实现最小 CLI 入口，并在完成后按固定流程生成下一份 HTML 快照。"}],"raw":"- **第一性问题：** 如何同时回答“项目现在是什么状态”和“过去某次开发结束时是什么状态”，并让进度、笔记与代码证据保持一致？\n- **我的初始假设：** 只维护静态网页会失去实时性，只维护动态页面会失去历史；需要共享同一数据模型的实时服务与不可变 HTML 快照。\n- **最小实验：** 使用 Node.js 内置 HTTP 和文件系统建立只读服务，采集 `TODO.md`、学习日志、愿景、包命令、TypeScript 导出和固定 Git 状态；同一渲染器生成实时页面与自包含 HTML。\n- **观察到的证据：** LR Machine 专项测试 4 个文件、6 个测试全部通过；桌面端和 390px 窄屏均完成 Playwright 验收，无控制台错误和页面横向溢出；路径穿越请求被拒绝；页面展示 8 个阶段、2 条既有学习记录和 1 个真实导出 API。\n- **假设哪里错了：** “能运行 Python 就能直接运行 Playwright”不成立；系统默认 `python3` 没有 Playwright，而 Anaconda Python 已具备该模块；端口测试在受限沙箱内返回 `EPERM`，根因是执行环境禁止监听。首次快照还发现 pnpm 会把参数分隔符 `--` 传给脚本，生成器必须先归一化 CLI 参数，不能假设业务参数从第一个位置直接开始。\n- **得到的可复用原则：** 当前状态应从真实项目文件派生，历史状态应以不可变快照保存；两者必须复用同一采集器和渲染器，否则迟早分裂。浏览器接口保持只读，生成快照只能由本地显式命令触发。\n- **尚未理解：** 随着 API 和笔记增长，单页信息密度、快照数量和 TypeScript AST 描述深度应在什么信号下升级；在真实需求出现前不引入数据库和前端框架。\n- **下一步：** 回到 P0.3，实现最小 CLI 入口，并在完成后按固定流程生成下一份 HTML 快照。"},{"date":"2026-07-29","title":"P0.2 初始化工程","taskId":"P0.2","fields":[{"label":"第一性问题","value":"一个尚无 Agent 功能的仓库，至少需要哪些能力才能安全实验？"},{"label":"我的初始假设","value":"需要可重复安装、编译、自动验证、静态检查和统一格式；这些能力应与业务功能分离。"},{"label":"最小实验","value":"建立 Node.js 22+、pnpm、严格 TypeScript、Vitest、ESLint 和 Prettier 配置，仅加入一个无业务含义的导出及 Smoke Test。"},{"label":"观察到的证据","value":"Node.js `v24.14.0`、pnpm `10.11.0`；`pnpm build`、`pnpm test`、`pnpm lint`、`pnpm format:check` 全部退出码为 0；Vitest 通过 1 个测试。"},{"label":"假设哪里错了","value":"“直接安装最新版就最稳”是错误的。初次安装得到 TypeScript `7.0.2`，超出 `typescript-eslint 8.65.0` 声明的 `\u003c6.1.0` 范围；根据约束交集调整为 TypeScript `6.0.3` 后消除直接兼容性问题。"},{"label":"得到的可复用原则","value":"依赖选择不是追逐最大版本号，而是寻找全部约束的交集；安装成功只是现象，构建、测试和静态检查通过才是证据。"},{"label":"尚未理解","value":"CLI 参数解析应如何与核心逻辑分离；Vitest 的 Rolldown 依赖仍报告一个不影响当前 macOS 验证的可选 WASI peer warning，后续升级依赖时重新检查。"},{"label":"下一步","value":"P0.3 实现 `kfc --help` 和 `kfc --version`，先定义 CLI 边界再选择参数解析方式。"}],"raw":"- **第一性问题：** 一个尚无 Agent 功能的仓库，至少需要哪些能力才能安全实验？\n- **我的初始假设：** 需要可重复安装、编译、自动验证、静态检查和统一格式；这些能力应与业务功能分离。\n- **最小实验：** 建立 Node.js 22+、pnpm、严格 TypeScript、Vitest、ESLint 和 Prettier 配置，仅加入一个无业务含义的导出及 Smoke Test。\n- **观察到的证据：** Node.js `v24.14.0`、pnpm `10.11.0`；`pnpm build`、`pnpm test`、`pnpm lint`、`pnpm format:check` 全部退出码为 0；Vitest 通过 1 个测试。\n- **假设哪里错了：** “直接安装最新版就最稳”是错误的。初次安装得到 TypeScript `7.0.2`，超出 `typescript-eslint 8.65.0` 声明的 `\u003c6.1.0` 范围；根据约束交集调整为 TypeScript `6.0.3` 后消除直接兼容性问题。\n- **得到的可复用原则：** 依赖选择不是追逐最大版本号，而是寻找全部约束的交集；安装成功只是现象，构建、测试和静态检查通过才是证据。\n- **尚未理解：** CLI 参数解析应如何与核心逻辑分离；Vitest 的 Rolldown 依赖仍报告一个不影响当前 macOS 验证的可选 WASI peer warning，后续升级依赖时重新检查。\n- **下一步：** P0.3 实现 `kfc --help` 和 `kfc --version`，先定义 CLI 边界再选择参数解析方式。"},{"date":"2026-07-29","title":"P0.1 定义项目范围","taskId":"P0.1","fields":[{"label":"第一性问题","value":"既然已经有成熟编程 Agent，为什么仍要亲手实现 KFC？"},{"label":"我的初始假设","value":"仅会使用现成 Agent 不足以形成独立开发能力；需要亲手理解 MCP、Skills、会话、沙箱、Hooks、权限、分支和命令系统背后的机制。"},{"label":"最小实验","value":"不写代码，先把项目目的、首版边界和“真正学会”的判定标准写成可检查的约束。"},{"label":"观察到的证据","value":"`docs/vision.md` 已明确 KFC Mini v0.1.0 的唯一核心闭环、首版非目标和七项学习标准。"},{"label":"假设哪里错了","value":"暂无技术假设被实验推翻；但已确认“接近成熟产品”不是首版成功标准，建立可解释、可验证的因果理解才是。"},{"label":"得到的可复用原则","value":"在实现之前先定义问题、非目标和完成证据，可以降低范围膨胀，并让后续技术选择具有判断依据。"},{"label":"尚未理解","value":"CLI、Provider、Agent Loop、权限和验证机制应如何形成最小且稳定的边界。"},{"label":"下一步","value":"P0.2 初始化 TypeScript 工程，只建立支持运行、测试和诊断所需的最小工具链。"}],"raw":"- **第一性问题：** 既然已经有成熟编程 Agent，为什么仍要亲手实现 KFC？\n- **我的初始假设：** 仅会使用现成 Agent 不足以形成独立开发能力；需要亲手理解 MCP、Skills、会话、沙箱、Hooks、权限、分支和命令系统背后的机制。\n- **最小实验：** 不写代码，先把项目目的、首版边界和“真正学会”的判定标准写成可检查的约束。\n- **观察到的证据：** `docs/vision.md` 已明确 KFC Mini v0.1.0 的唯一核心闭环、首版非目标和七项学习标准。\n- **假设哪里错了：** 暂无技术假设被实验推翻；但已确认“接近成熟产品”不是首版成功标准，建立可解释、可验证的因果理解才是。\n- **得到的可复用原则：** 在实现之前先定义问题、非目标和完成证据，可以降低范围膨胀，并让后续技术选择具有判断依据。\n- **尚未理解：** CLI、Provider、Agent Loop、权限和验证机制应如何形成最小且稳定的边界。\n- **下一步：** P0.2 初始化 TypeScript 工程，只建立支持运行、测试和诊断所需的最小工具链。"}],"visionMarkdown":"# KFlow Code Vision\n\n**状态：** P0 范围定义  \n**日期：** 2026-07-29\n\n## 为什么做 KFC\n\n成熟的编程 Agent 已经能够完成大量开发任务，但仅仅会使用它们，无法回答其行为为何可靠、为何失败，以及怎样修改其边界。KFlow Code（KFC）的目的不是复制某个产品的外观，而是通过亲手实现关键机制，将编程 Agent 从黑盒还原为一个可解释、可验证、可演进的工程系统。\n\n项目长期希望理解并实现 MCP、Skills、会话、沙箱、Hooks、权限机制、Git 分支以及 `/xxxx` 命令等能力。最终目标是形成对 Agent 开发的独立理解，能够自行开发 Agent、完成真实开发任务，并更灵活地利用 Agent 参与工程工作。\n\nKFC 可以暂时不如成熟产品，但必须能够持续吸收优秀实现、解释设计差异，并通过实验不断迭代。\n\n## KFC Mini v0.1.0 的核心闭环\n\n首版只验证以下最小闭环：\n\n\u003e 接收任务 → 调用模型 → 读取代码 → 修改代码 → 执行测试 → 根据证据判断是否完成\n\n这个闭环必须具备明确的状态、错误边界、终止条件、权限约束和验证证据。任何不能帮助验证该闭环的功能都不进入首版。\n\n## 首版明确不做\n\n- MCP、Skills 和 Hooks\n- Subagents、多模型及多 Provider\n- TUI、IDE 插件和复杂交互界面\n- 云端同步与跨设备会话\n- 自动 Git 分支及 Worktree 管理\n- 完整的斜杠命令系统\n\n这些能力不是永远不做，而是在核心闭环稳定、真实需求出现后再逐项引入。抽象必须由已经发生的问题换取，不能由想象预支。\n\n## 怎样才算学会\n\n掌握一个机制，必须同时做到：\n\n1. **能解释**：不用术语遮掩，说清它解决的真实问题。\n2. **能还原**：不照搬成熟项目，独立完成最小实现。\n3. **能验证**：覆盖正常、异常和边界路径。\n4. **能取舍**：说明选择、代价和重新评估条件。\n5. **能调试**：依据状态、事件、日志和证据定位失败。\n6. **能迁移**：在其他项目中重新实现或组合该机制。\n7. **能比较**：读懂优秀实现，并解释设计差异背后的约束。\n\n每个阶段至少沉淀四类证据：可运行实现、自动化测试与真实任务记录、学习笔记、架构决策或阶段复盘。\n\n## 项目原则\n\n- 先提出第一性问题，再选择技术和抽象。\n- 一次只引入一个主要架构概念。\n- 代码完成不等于任务完成；完成必须有可复现证据。\n- 先写自己的假设，再借助 AI 审查和补充反例。\n- 先做单 Agent 的可靠闭环，再增加扩展能力。\n- 失败、错误假设和重构原因都属于学习成果，必须记录。\n","commands":[{"name":"build","command":"tsc -p tsconfig.json","description":"Compile production TypeScript with strict checks"},{"name":"test","command":"vitest run","description":"Run deterministic automated tests"},{"name":"lint","command":"eslint .","description":"Run static analysis"},{"name":"format","command":"prettier --write .","description":"Rewrite supported files using Prettier"},{"name":"format:check","command":"prettier --check .","description":"Verify formatting without modifying files"},{"name":"learning:serve","command":"node lr-machine/server.mjs","description":"Start the local LR Machine dashboard"},{"name":"learning:snapshot","command":"node lr-machine/generate-snapshot.mjs","description":"Archive the current learning state as HTML"},{"name":"learning:test","command":"vitest run lr-machine/tests","description":"Run LR Machine focused tests"},{"name":"kfc","command":"node dist/cli.js","description":"Project command"}],"api":[{"name":"createHelpText","kind":"function","path":"src/cli/help.ts","line":1,"signature":"export function createHelpText(): string { return `KFlow Code (KFC) A learning-first, verifiable coding agent. Usage: kfc [options] Options: -h, --help Show this help message -v, --version Print the installed version `; "},{"name":"readPackageVersion","kind":"function","path":"src/cli/package-version.ts","line":7,"signature":"export function readPackageVersion( packageUrl = new URL(\"../../package.json\", import.meta.url), ): string { const metadata = JSON.parse( readFileSync(packageUrl, \"utf8\"), ) as PackageMetadata; if (typeof metadata.versio"},{"name":"CliCommand","kind":"type","path":"src/cli/parse-args.ts","line":3,"signature":"export type CliCommand = { type: \"help\" } | { type: \"version\" } | { type: \"error\"; message: string };"},{"name":"parseCliArgs","kind":"function","path":"src/cli/parse-args.ts","line":19,"signature":"export function parseCliArgs(args: readonly string[]): CliCommand { try { const { values, positionals } = parseArgs({ args: [...args], options: { help: { type: \"boolean\", short: \"h\" }, version: { type: \"boolean\", short: "},{"name":"CliEnvironment","kind":"interface","path":"src/cli/run-cli.ts","line":4,"signature":"export interface CliEnvironment { version: string; writeStdout(text: string): void; writeStderr(text: string): void; }"},{"name":"runCli","kind":"function","path":"src/cli/run-cli.ts","line":10,"signature":"export function runCli( args: readonly string[], environment: CliEnvironment, ): number { const command = parseCliArgs(args); switch (command.type) { case \"help\": environment.writeStdout(createHelpText()); return 0; case"},{"name":"ConfigPathOptions","kind":"interface","path":"src/config/config-path.ts","line":4,"signature":"export interface ConfigPathOptions { homeDirectory?: string; currentDirectory?: string; }"},{"name":"resolveConfigPath","kind":"function","path":"src/config/config-path.ts","line":14,"signature":"export function resolveConfigPath( env: NodeJS.ProcessEnv = process.env, options: ConfigPathOptions = {}, ): string { const homeDirectory = options.homeDirectory ?? homedir(); const currentDirectory = options.currentDire"},{"name":"ProviderConfig","kind":"interface","path":"src/config/config.ts","line":1,"signature":"export interface ProviderConfig { type: \"openai-compatible\"; baseUrl: string; model: string; apiKey: string; timeoutMs: number; }"},{"name":"KfcConfig","kind":"interface","path":"src/config/config.ts","line":9,"signature":"export interface KfcConfig { provider: ProviderConfig; }"},{"name":"ConfigIssue","kind":"interface","path":"src/config/config.ts","line":13,"signature":"export interface ConfigIssue { path: string; message: string; }"},{"name":"ConfigErrorCode","kind":"type","path":"src/config/config.ts","line":18,"signature":"export type ConfigErrorCode = \"CONFIG_FILE_READ_FAILED\" | \"CONFIG_FILE_INVALID\" | \"CONFIG_INVALID\";"},{"name":"ConfigError","kind":"class","path":"src/config/config.ts","line":21,"signature":"export class ConfigError extends Error { readonly code: ConfigErrorCode; readonly issues: readonly ConfigIssue[]; constructor( code: ConfigErrorCode, message: string, issues: readonly ConfigIssue[] = [], ) { super(messag"},{"name":"LoadConfigOptions","kind":"interface","path":"src/config/load-config.ts","line":11,"signature":"export interface LoadConfigOptions { env?: NodeJS.ProcessEnv; configPath?: string; readTextFile?: (path: string) =\u003e Promise\u003cstring\u003e; }"},{"name":"loadConfig","kind":"function","path":"src/config/load-config.ts","line":99,"signature":"export async function loadConfig( options: LoadConfigOptions = {}, ): Promise\u003cKfcConfig\u003e { const env = options.env ?? process.env; const configPath = options.configPath ?? resolveConfigPath(env); const readTextFile = opt"},{"name":"RedactedKfcConfig","kind":"type","path":"src/config/redact-config.ts","line":3,"signature":"export type RedactedKfcConfig = Omit\u003cKfcConfig, \"provider\"\u003e \u0026 { provider: Omit\u003cKfcConfig[\"provider\"], \"apiKey\"\u003e \u0026 { apiKey: \"[REDACTED]\" }; };"},{"name":"redactConfig","kind":"function","path":"src/config/redact-config.ts","line":7,"signature":"export function redactConfig(config: KfcConfig): RedactedKfcConfig { return { ...config, provider: { ...config.provider, apiKey: \"[REDACTED]\", }, }; }"},{"name":"configFileSchema","kind":"constant","path":"src/config/schema.ts","line":5,"signature":"export const configFileSchema = z .object({ provider: z .object({ type: z.literal(\"openai-compatible\").optional(), baseUrl: z.string().trim().url().optional(), model: z.string().trim().min(1).optional(), timeoutMs: timeo"},{"name":"finalConfigSchema","kind":"constant","path":"src/config/schema.ts","line":19,"signature":"export const finalConfigSchema = z.object({ provider: z.object({ type: z.literal(\"openai-compatible\"), baseUrl: z.string().trim().min(1).url(), model: z.string().trim().min(1), apiKey: z.string().trim().min(1), timeoutMs"},{"name":"ConfigFileData","kind":"type","path":"src/config/schema.ts","line":29,"signature":"export type ConfigFileData = z.infer\u003ctypeof configFileSchema\u003e;"},{"name":"ConfigError","kind":"re-export","path":"src/index.ts","line":1,"signature":"export { ConfigError } from \"./config/config.js\";"},{"name":"ConfigErrorCode","kind":"re-export","path":"src/index.ts","line":2,"signature":"export type { ConfigErrorCode, ConfigIssue, KfcConfig, ProviderConfig, } from \"./config/config.js\";"},{"name":"ConfigIssue","kind":"re-export","path":"src/index.ts","line":2,"signature":"export type { ConfigErrorCode, ConfigIssue, KfcConfig, ProviderConfig, } from \"./config/config.js\";"},{"name":"KfcConfig","kind":"re-export","path":"src/index.ts","line":2,"signature":"export type { ConfigErrorCode, ConfigIssue, KfcConfig, ProviderConfig, } from \"./config/config.js\";"},{"name":"ProviderConfig","kind":"re-export","path":"src/index.ts","line":2,"signature":"export type { ConfigErrorCode, ConfigIssue, KfcConfig, ProviderConfig, } from \"./config/config.js\";"},{"name":"resolveConfigPath","kind":"re-export","path":"src/index.ts","line":8,"signature":"export { resolveConfigPath } from \"./config/config-path.js\";"},{"name":"loadConfig","kind":"re-export","path":"src/index.ts","line":9,"signature":"export { loadConfig } from \"./config/load-config.js\";"},{"name":"redactConfig","kind":"re-export","path":"src/index.ts","line":10,"signature":"export { redactConfig } from \"./config/redact-config.js\";"},{"name":"RedactedKfcConfig","kind":"re-export","path":"src/index.ts","line":11,"signature":"export type { RedactedKfcConfig } from \"./config/redact-config.js\";"},{"name":"projectName","kind":"constant","path":"src/index.ts","line":13,"signature":"export const projectName = \"kflow-code\";"}],"sourceFiles":[{"path":"src/cli.ts","group":"CLI 执行链","description":"进程适配入口：连接 argv、stdout、stderr、版本和退出码。","content":"#!/usr/bin/env node\n\nimport { readPackageVersion } from \"./cli/package-version.js\";\nimport { runCli } from \"./cli/run-cli.js\";\n\ntry {\n  process.exitCode = runCli(process.argv.slice(2), {\n    version: readPackageVersion(),\n    writeStdout: (text) =\u003e process.stdout.write(text),\n    writeStderr: (text) =\u003e process.stderr.write(text),\n  });\n} catch {\n  process.stderr.write(\"Error: Unable to read KFC package metadata.\\n\");\n  process.exitCode = 1;\n}\n","lineCount":16,"shownLineCount":16,"truncated":false},{"path":"src/cli/help.ts","group":"输出与元数据","description":"集中生成 CLI 帮助文本，避免入口文件承担展示细节。","content":"export function createHelpText(): string {\n  return `KFlow Code (KFC)\nA learning-first, verifiable coding agent.\n\nUsage:\n  kfc [options]\n\nOptions:\n  -h, --help       Show this help message\n  -v, --version    Print the installed version\n`;\n}\n","lineCount":13,"shownLineCount":13,"truncated":false},{"path":"src/cli/package-version.ts","group":"输出与元数据","description":"从 package.json 读取并验证唯一版本来源。","content":"import { readFileSync } from \"node:fs\";\n\ninterface PackageMetadata {\n  version?: unknown;\n}\n\nexport function readPackageVersion(\n  packageUrl = new URL(\"../../package.json\", import.meta.url),\n): string {\n  const metadata = JSON.parse(\n    readFileSync(packageUrl, \"utf8\"),\n  ) as PackageMetadata;\n  if (typeof metadata.version !== \"string\" || metadata.version.length === 0) {\n    throw new Error(\"package.json does not contain a valid version\");\n  }\n  return metadata.version;\n}\n","lineCount":18,"shownLineCount":18,"truncated":false},{"path":"src/cli/parse-args.ts","group":"CLI 执行链","description":"将原始参数字符串转换为 help、version 或 error 等结构化命令。","content":"import { parseArgs } from \"node:util\";\n\nexport type CliCommand =\n  { type: \"help\" } | { type: \"version\" } | { type: \"error\"; message: string };\n\nfunction normalizeParseError(error: unknown): string {\n  if (!(error instanceof Error)) {\n    return \"Unable to parse command-line arguments\";\n  }\n\n  const unknownOption = error.message.match(/Unknown option ['\"]([^'\"]+)['\"]/i);\n  if (unknownOption?.[1]) {\n    return `Unknown option: ${unknownOption[1]}`;\n  }\n\n  return error.message.replace(/^TypeError \\[[^\\]]+\\]:\\s*/, \"\");\n}\n\nexport function parseCliArgs(args: readonly string[]): CliCommand {\n  try {\n    const { values, positionals } = parseArgs({\n      args: [...args],\n      options: {\n        help: { type: \"boolean\", short: \"h\" },\n        version: { type: \"boolean\", short: \"v\" },\n      },\n      allowPositionals: true,\n      strict: true,\n    });\n\n    if (positionals.length \u003e 0) {\n      return {\n        type: \"error\",\n        message: `Unexpected argument: ${positionals[0]}`,\n      };\n    }\n    if (values.help) {\n      return { type: \"help\" };\n    }\n    if (values.version) {\n      return { type: \"version\" };\n    }\n    return { type: \"help\" };\n  } catch (error) {\n    return { type: \"error\", message: normalizeParseError(error) };\n  }\n}\n","lineCount":48,"shownLineCount":48,"truncated":false},{"path":"src/cli/run-cli.ts","group":"CLI 执行链","description":"执行结构化命令，通过注入的环境输出文本并返回退出码。","content":"import { createHelpText } from \"./help.js\";\nimport { parseCliArgs } from \"./parse-args.js\";\n\nexport interface CliEnvironment {\n  version: string;\n  writeStdout(text: string): void;\n  writeStderr(text: string): void;\n}\n\nexport function runCli(\n  args: readonly string[],\n  environment: CliEnvironment,\n): number {\n  const command = parseCliArgs(args);\n\n  switch (command.type) {\n    case \"help\":\n      environment.writeStdout(createHelpText());\n      return 0;\n    case \"version\":\n      environment.writeStdout(`${environment.version}\\n`);\n      return 0;\n    case \"error\":\n      environment.writeStderr(\n        `Error: ${command.message}\\nRun 'kfc --help' for usage.\\n`,\n      );\n      return 1;\n  }\n}\n","lineCount":30,"shownLineCount":30,"truncated":false},{"path":"src/config/config-path.ts","group":"CONFIG 模块","description":"根据显式路径、XDG 和用户目录确定配置文件位置。","content":"import { homedir } from \"node:os\";\nimport { isAbsolute, join, resolve } from \"node:path\";\n\nexport interface ConfigPathOptions {\n  homeDirectory?: string;\n  currentDirectory?: string;\n}\n\nfunction nonEmpty(value: string | undefined): string | undefined {\n  const trimmed = value?.trim();\n  return trimmed ? trimmed : undefined;\n}\n\nexport function resolveConfigPath(\n  env: NodeJS.ProcessEnv = process.env,\n  options: ConfigPathOptions = {},\n): string {\n  const homeDirectory = options.homeDirectory ?? homedir();\n  const currentDirectory = options.currentDirectory ?? process.cwd();\n  const explicitPath = nonEmpty(env.KFC_CONFIG_PATH);\n\n  if (explicitPath) {\n    return isAbsolute(explicitPath)\n      ? explicitPath\n      : resolve(currentDirectory, explicitPath);\n  }\n\n  const configHome =\n    nonEmpty(env.XDG_CONFIG_HOME) ?? join(homeDirectory, \".config\");\n  return join(configHome, \"kfc\", \"config.json\");\n}\n","lineCount":32,"shownLineCount":32,"truncated":false},{"path":"src/config/config.ts","group":"CONFIG 模块","description":"定义最终配置、结构化问题和配置错误的领域类型。","content":"export interface ProviderConfig {\n  type: \"openai-compatible\";\n  baseUrl: string;\n  model: string;\n  apiKey: string;\n  timeoutMs: number;\n}\n\nexport interface KfcConfig {\n  provider: ProviderConfig;\n}\n\nexport interface ConfigIssue {\n  path: string;\n  message: string;\n}\n\nexport type ConfigErrorCode =\n  \"CONFIG_FILE_READ_FAILED\" | \"CONFIG_FILE_INVALID\" | \"CONFIG_INVALID\";\n\nexport class ConfigError extends Error {\n  readonly code: ConfigErrorCode;\n  readonly issues: readonly ConfigIssue[];\n\n  constructor(\n    code: ConfigErrorCode,\n    message: string,\n    issues: readonly ConfigIssue[] = [],\n  ) {\n    super(message);\n    this.name = \"ConfigError\";\n    this.code = code;\n    this.issues = issues;\n  }\n\n  toJSON(): object {\n    return {\n      name: this.name,\n      code: this.code,\n      message: this.message,\n      issues: this.issues,\n    };\n  }\n}\n","lineCount":45,"shownLineCount":45,"truncated":false},{"path":"src/config/load-config.ts","group":"CONFIG 模块","description":"读取可选文件、合并环境变量与默认值并返回校验后的配置。","content":"import { readFile } from \"node:fs/promises\";\n\nimport { type ConfigIssue, ConfigError, type KfcConfig } from \"./config.js\";\nimport { resolveConfigPath } from \"./config-path.js\";\nimport {\n  type ConfigFileData,\n  configFileSchema,\n  finalConfigSchema,\n} from \"./schema.js\";\n\nexport interface LoadConfigOptions {\n  env?: NodeJS.ProcessEnv;\n  configPath?: string;\n  readTextFile?: (path: string) =\u003e Promise\u003cstring\u003e;\n}\n\nfunction envText(env: NodeJS.ProcessEnv, name: string): string | undefined {\n  const value = env[name]?.trim();\n  return value ? value : undefined;\n}\n\nfunction errorCode(error: unknown): string | undefined {\n  if (typeof error === \"object\" \u0026\u0026 error !== null \u0026\u0026 \"code\" in error) {\n    return String(error.code);\n  }\n  return undefined;\n}\n\nfunction fileIssues(error: {\n  issues: readonly { path: PropertyKey[]; message: string }[];\n}): ConfigIssue[] {\n  return error.issues.map((issue) =\u003e ({\n    path: issue.path.map(String).join(\".\") || \"config\",\n    message: issue.message,\n  }));\n}\n\nfunction finalIssueMessage(path: string): string {\n  const messages: Record\u003cstring, string\u003e = {\n    \"provider.apiKey\": \"KFC_API_KEY is required\",\n    \"provider.baseUrl\": \"Provider base URL is required\",\n    \"provider.model\": \"Provider model is required\",\n    \"provider.timeoutMs\": \"Provider timeout must be between 1000 and 300000 ms\",\n  };\n  return messages[path] ?? \"Configuration value is invalid\";\n}\n\nfunction finalIssues(error: {\n  issues: readonly { path: PropertyKey[]; code: string }[];\n}): ConfigIssue[] {\n  return error.issues.map((issue) =\u003e {\n    const path = issue.path.map(String).join(\".\") || \"config\";\n    let message = finalIssueMessage(path);\n    if (path === \"provider.baseUrl\" \u0026\u0026 issue.code === \"invalid_format\") {\n      message = \"Provider base URL must be a valid URL\";\n    }\n    return { path, message };\n  });\n}\n\nasync function readConfigFile(\n  path: string,\n  readTextFile: (path: string) =\u003e Promise\u003cstring\u003e,\n): Promise\u003cConfigFileData\u003e {\n  let content: string;\n  try {\n    content = await readTextFile(path);\n  } catch (error) {\n    if (errorCode(error) === \"ENOENT\") {\n      return {};\n    }\n    throw new ConfigError(\n      \"CONFIG_FILE_READ_FAILED\",\n      \"Unable to read configuration file\",\n    );\n  }\n\n  let parsed: unknown;\n  try {\n    parsed = JSON.parse(content);\n  } catch {\n    throw new ConfigError(\n      \"CONFIG_FILE_INVALID\",\n      \"Configuration file contains invalid JSON\",\n    );\n  }\n\n  const result = configFileSchema.safeParse(parsed);\n  if (!result.success) {\n    throw new ConfigError(\n      \"CONFIG_FILE_INVALID\",\n      \"Configuration file does not match the expected schema\",\n      fileIssues(result.error),\n    );\n  }\n  return result.data;\n}\n\nexport async function loadConfig(\n  options: LoadConfigOptions = {},\n): Promise\u003cKfcConfig\u003e {\n  const env = options.env ?? process.env;\n  const configPath = options.configPath ?? resolveConfigPath(env);\n  const readTextFile =\n    options.readTextFile ?? ((path: string) =\u003e readFile(path, \"utf8\"));\n  const file = await readConfigFile(configPath, readTextFile);\n  const timeoutText = envText(env, \"KFC_TIMEOUT_MS\");\n\n  const candidate = {\n    provider: {\n      type: \"openai-compatible\" as const,\n      baseUrl: envText(env, \"KFC_BASE_URL\") ?? file.provider?.baseUrl,\n      model: envText(env, \"KFC_MODEL\") ?? file.provider?.model,\n      apiKey: envText(env, \"KFC_API_KEY\"),\n      timeoutMs:\n        timeoutText === undefined\n          ? (file.provider?.timeoutMs ?? 60000)\n          : Number(timeoutText),\n    },\n  };\n\n  const result = finalConfigSchema.safeParse(candidate);\n  if (!result.success) {\n    throw new ConfigError(\n      \"CONFIG_INVALID\",\n      \"Configuration is incomplete or invalid\",\n      finalIssues(result.error),\n    );\n  }\n\n  return result.data;\n}\n","lineCount":133,"shownLineCount":133,"truncated":false},{"path":"src/config/redact-config.ts","group":"CONFIG 模块","description":"在配置离开安全边界前替换 API Key。","content":"import type { KfcConfig } from \"./config.js\";\n\nexport type RedactedKfcConfig = Omit\u003cKfcConfig, \"provider\"\u003e \u0026 {\n  provider: Omit\u003cKfcConfig[\"provider\"], \"apiKey\"\u003e \u0026 { apiKey: \"[REDACTED]\" };\n};\n\nexport function redactConfig(config: KfcConfig): RedactedKfcConfig {\n  return {\n    ...config,\n    provider: {\n      ...config.provider,\n      apiKey: \"[REDACTED]\",\n    },\n  };\n}\n","lineCount":16,"shownLineCount":16,"truncated":false},{"path":"src/config/schema.ts","group":"CONFIG 模块","description":"使用 Zod 描述配置文件与最终合并结果的有效形状。","content":"import { z } from \"zod\";\n\nconst timeoutSchema = z.number().int().min(1000).max(300000);\n\nexport const configFileSchema = z\n  .object({\n    provider: z\n      .object({\n        type: z.literal(\"openai-compatible\").optional(),\n        baseUrl: z.string().trim().url().optional(),\n        model: z.string().trim().min(1).optional(),\n        timeoutMs: timeoutSchema.optional(),\n      })\n      .strict()\n      .optional(),\n  })\n  .strict();\n\nexport const finalConfigSchema = z.object({\n  provider: z.object({\n    type: z.literal(\"openai-compatible\"),\n    baseUrl: z.string().trim().min(1).url(),\n    model: z.string().trim().min(1),\n    apiKey: z.string().trim().min(1),\n    timeoutMs: timeoutSchema,\n  }),\n});\n\nexport type ConfigFileData = z.infer\u003ctypeof configFileSchema\u003e;\n","lineCount":30,"shownLineCount":30,"truncated":false},{"path":"src/index.ts","group":"模块入口","description":"供其他程序导入 KFC 能力的包入口。","content":"export { ConfigError } from \"./config/config.js\";\nexport type {\n  ConfigErrorCode,\n  ConfigIssue,\n  KfcConfig,\n  ProviderConfig,\n} from \"./config/config.js\";\nexport { resolveConfigPath } from \"./config/config-path.js\";\nexport { loadConfig } from \"./config/load-config.js\";\nexport { redactConfig } from \"./config/redact-config.js\";\nexport type { RedactedKfcConfig } from \"./config/redact-config.js\";\n\nexport const projectName = \"kflow-code\";\n","lineCount":14,"shownLineCount":14,"truncated":false}],"git":{"branch":"main","head":"c0bae94","changes":[{"state":"M","path":"GENTS.md"},{"state":"M","path":"README.md"},{"state":"M","path":"TODO.md"},{"state":"M","path":"docs/learning-log.md"},{"state":"M","path":"docs/specs/2026-07-29-lr-machine-design.md"},{"state":"M","path":"eslint.config.mjs"},{"state":"M","path":"lr-machine/lib/collect-project-data.mjs"},{"state":"M","path":"lr-machine/lib/render-page.mjs"},{"state":"M","path":"lr-machine/public/app.js"},{"state":"M","path":"lr-machine/public/styles.css"},{"state":"M","path":"lr-machine/tests/server.test.mjs"},{"state":"M","path":"lr-machine/tests/snapshot.test.mjs"},{"state":"M","path":"package.json"},{"state":"M","path":"pnpm-lock.yaml"},{"state":"M","path":"src/index.ts"},{"state":"M","path":"tsconfig.json"},{"state":"??","path":".env.example"},{"state":"??","path":"docs/configuration.md"},{"state":"??","path":"docs/decisions/"},{"state":"??","path":"lr-machine/lib/collect-source-files.mjs"},{"state":"??","path":"lr-machine/snapshots/2026-07-29-194826-p0-3-cli.html"},{"state":"??","path":"lr-machine/snapshots/2026-07-29-195137-p0-3-cli-final.html"},{"state":"??","path":"lr-machine/snapshots/2026-07-29-202652-p0-3.html"},{"state":"??","path":"lr-machine/snapshots/2026-07-29-210026-p0-4.html"},{"state":"??","path":"lr-machine/snapshots/2026-07-29-210518-dec-002-deepseek-provider.html"},{"state":"??","path":"lr-machine/tests/collect-source-files.test.mjs"},{"state":"??","path":"src/cli.ts"},{"state":"??","path":"src/cli/"},{"state":"??","path":"src/config/"},{"state":"??","path":"tests/cli/"},{"state":"??","path":"tests/config/"}],"commits":[{"hash":"c0bae94","subject":"chore: sync local updates","date":"2026-07-29"},{"hash":"657d526","subject":"chore: update gitignore for local env and artifacts","date":"2026-07-29"},{"hash":"6a9c741","subject":"chore: initial commit","date":"2026-07-29"}]},"snapshots":[{"name":"2026-07-29-210518-dec-002-deepseek-provider.html","modifiedAt":"2026-07-29T13:05:18.852Z"},{"name":"2026-07-29-210026-p0-4.html","modifiedAt":"2026-07-29T13:00:26.665Z"},{"name":"2026-07-29-202652-p0-3.html","modifiedAt":"2026-07-29T12:26:52.973Z"},{"name":"2026-07-29-195137-p0-3-cli-final.html","modifiedAt":"2026-07-29T11:51:37.810Z"},{"name":"2026-07-29-194826-p0-3-cli.html","modifiedAt":"2026-07-29T11:48:26.548Z"},{"name":"2026-07-29-193804-lr-machine.html","modifiedAt":"2026-07-29T11:38:04.664Z"}]}</script>
+  <script>(() => {
+  "use strict";
+
+  const byId = (id) => document.getElementById(id);
+  const escapeHtml = (value) =>
+    String(value ?? "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
+
+  const renderInline = (value) =>
+    escapeHtml(value)
+      .replace(/`([^`]+)`/g, "<code>$1</code>")
+      .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+
+  function renderMarkdown(markdown) {
+    const lines = String(markdown ?? "").split(/\r?\n/);
+    const output = [];
+    let inCode = false;
+    let code = [];
+    let listOpen = false;
+
+    const closeList = () => {
+      if (listOpen) output.push("</ul>");
+      listOpen = false;
+    };
+
+    for (const line of lines) {
+      if (line.trim().startsWith("```")) {
+        closeList();
+        if (inCode) {
+          output.push(`<pre><code>${escapeHtml(code.join("\n"))}</code></pre>`);
+          code = [];
+        }
+        inCode = !inCode;
+        continue;
+      }
+      if (inCode) {
+        code.push(line);
+        continue;
+      }
+      const heading = line.match(/^(#{1,4})\s+(.+)$/);
+      if (heading) {
+        closeList();
+        const level = Math.min(heading[1].length + 2, 6);
+        output.push(`<h${level}>${renderInline(heading[2])}</h${level}>`);
+        continue;
+      }
+      const bullet = line.match(/^[-*]\s+(.+)$/);
+      if (bullet) {
+        if (!listOpen) output.push("<ul>");
+        listOpen = true;
+        output.push(`<li>${renderInline(bullet[1])}</li>`);
+        continue;
+      }
+      closeList();
+      if (line.trim()) output.push(`<p>${renderInline(line.trim())}</p>`);
+    }
+
+    closeList();
+    if (inCode)
+      output.push(`<pre><code>${escapeHtml(code.join("\n"))}</code></pre>`);
+    return output.join("");
+  }
+
+  const formatDate = (value) => {
+    try {
+      return new Intl.DateTimeFormat("zh-CN", {
+        timeZone: "Asia/Shanghai",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+      }).format(new Date(value));
+    } catch {
+      return String(value ?? "");
+    }
+  };
+
+  function renderPhases(data) {
+    const activeId = data.progress.currentTask?.id?.split(".")[0] ?? "P0";
+    byId("phaseRail").innerHTML = data.progress.phases
+      .map((phase) => {
+        const state =
+          phase.verified === phase.total && phase.total > 0
+            ? "verified"
+            : phase.completed > 0
+              ? "active"
+              : "pending";
+        const active = phase.id.includes(activeId) ? "is-current" : "";
+        return `<a class="phase-item ${state} ${active}" href="#learning">
+          <span class="phase-node"></span>
+          <span><strong>${escapeHtml(phase.id)}</strong><small>${escapeHtml(phase.title || "阶段")}</small></span>
+          <em>${phase.verified}/${phase.total}</em>
+        </a>`;
+      })
+      .join("");
+  }
+
+  function renderCurrent(data) {
+    const current = data.progress.currentTask ?? {
+      id: "—",
+      text: "TODO.md 尚未定义当前任务",
+    };
+    byId("currentTaskId").textContent = current.id ?? "UNNUMBERED";
+    const cleanText = current.text.replace(/^P\d+(?:\.\d+)?\s*/i, "");
+    const [heading, ...rest] = cleanText.split("：");
+    byId("currentHeading").textContent = heading || cleanText;
+    byId("currentTaskText").textContent =
+      rest.join("：") || "遵循 TODO 中定义的验收边界推进。";
+
+    const totals = data.progress.totals;
+    byId("completionPercent").textContent = `${totals.completionPercent}%`;
+    byId("progressRing").style.setProperty(
+      "--progress",
+      `${Math.max(0, Math.min(100, totals.completionPercent)) * 3.6}deg`,
+    );
+    byId("completedCount").textContent =
+      `${totals.completed} / ${totals.total}`;
+    byId("verifiedCount").textContent = `${totals.verified} / ${totals.total}`;
+  }
+
+  function renderLearning(data) {
+    byId("learningTimeline").innerHTML = data.learningEntries.length
+      ? data.learningEntries
+          .slice(0, 8)
+          .map((entry, index) => {
+            const keyFields = entry.fields.slice(0, 4);
+            return `<article class="log-entry" style="--delay:${index * 55}ms">
+              <div class="log-marker"><span>${escapeHtml(entry.taskId ?? "LOG")}</span></div>
+              <div class="log-card">
+                <header><time>${escapeHtml(entry.date)}</time><h3>${escapeHtml(entry.title)}</h3></header>
+                <dl>${keyFields
+                  .map(
+                    (field) =>
+                      `<div><dt>${escapeHtml(field.label)}</dt><dd>${renderInline(field.value)}</dd></div>`,
+                  )
+                  .join("")}</dl>
+              </div>
+            </article>`;
+          })
+          .join("")
+      : '<p class="empty-state">尚无学习记录。完成任务后先写证据，再生成快照。</p>';
+  }
+
+  function renderCommands(data) {
+    byId("commandList").innerHTML = data.commands
+      .map(
+        (item) => `<article class="command-card">
+          <div><span class="terminal-prompt">$</span><code>pnpm ${escapeHtml(item.name)}</code></div>
+          <p>${escapeHtml(item.description)}</p>
+          <small>${escapeHtml(item.command)}</small>
+        </article>`,
+      )
+      .join("");
+  }
+
+  function renderApi(data) {
+    byId("apiList").innerHTML = data.api.length
+      ? data.api
+          .map(
+            (item) => `<article class="api-card">
+              <span class="api-kind">${escapeHtml(item.kind)}</span>
+              <div><strong>${escapeHtml(item.name)}</strong><code>${escapeHtml(item.path)}:${item.line}</code></div>
+              <p>${escapeHtml(item.signature)}</p>
+            </article>`,
+          )
+          .join("")
+      : '<p class="empty-state">尚无公开导出。API 只在代码真实存在后出现。</p>';
+  }
+
+  function renderCodeLines(content) {
+    return String(content ?? "")
+      .split(/\r?\n/)
+      .map(
+        (line, index) =>
+          `<span class="code-line"><i>${index + 1}</i><code>${escapeHtml(line) || " "}</code></span>`,
+      )
+      .join("");
+  }
+
+  async function copySource(text, button) {
+    try {
+      if (navigator.clipboard?.writeText && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        const textarea = document.createElement("textarea");
+        textarea.value = text;
+        textarea.setAttribute("readonly", "");
+        textarea.style.position = "fixed";
+        textarea.style.opacity = "0";
+        document.body.append(textarea);
+        textarea.select();
+        document.execCommand("copy");
+        textarea.remove();
+      }
+      const original = button.textContent;
+      button.textContent = "已复制";
+      setTimeout(() => {
+        button.textContent = original;
+      }, 1400);
+    } catch {
+      button.textContent = "复制失败";
+    }
+  }
+
+  function renderSource(data) {
+    const sourceFiles = data.sourceFiles ?? [];
+    byId("sourceFileCount").textContent = sourceFiles.length;
+    byId("sourceLineCount").textContent = sourceFiles.reduce(
+      (total, file) => total + file.lineCount,
+      0,
+    );
+
+    const groups = new Map();
+    sourceFiles.forEach((file, index) => {
+      const items = groups.get(file.group) ?? [];
+      items.push({ ...file, sourceIndex: index });
+      groups.set(file.group, items);
+    });
+
+    byId("sourceGroups").innerHTML = sourceFiles.length
+      ? [...groups.entries()]
+          .map(
+            ([group, files], groupIndex) => `<section class="source-group">
+              <header><span>${String(groupIndex + 1).padStart(2, "0")}</span><h3>${escapeHtml(group)}</h3><em>${files.length} FILES</em></header>
+              <div class="source-file-list">${files
+                .map(
+                  (
+                    file,
+                    fileIndex,
+                  ) => `<details class="source-file" ${groupIndex === 0 && fileIndex === 0 ? "open" : ""}>
+                    <summary>
+                      <span class="source-file-mark">TS</span>
+                      <span class="source-file-name"><strong>${escapeHtml(file.path)}</strong><small>${escapeHtml(file.description)}</small></span>
+                      <span class="source-file-meta">${file.lineCount} LINES${file.truncated ? " · TRUNCATED" : ""}</span>
+                      <button class="copy-source" type="button" data-source-index="${file.sourceIndex}">复制</button>
+                    </summary>
+                    <div class="code-frame">
+                      ${file.truncated ? `<p class="truncation-note">仅归档前 ${file.shownLineCount} 行；原文件共 ${file.lineCount} 行。</p>` : ""}
+                      <pre aria-label="${escapeHtml(file.path)} source code">${renderCodeLines(file.content)}</pre>
+                    </div>
+                  </details>`,
+                )
+                .join("")}</div>
+            </section>`,
+          )
+          .join("")
+      : '<p class="empty-state">尚无可归档的 TypeScript 核心源码。</p>';
+
+    document.querySelectorAll(".copy-source").forEach((button) => {
+      button.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        const index = Number(button.dataset.sourceIndex);
+        const file = sourceFiles[index];
+        if (file) copySource(file.content, button);
+      });
+    });
+  }
+
+  function renderGit(data) {
+    byId("gitBranch").textContent = data.git.branch;
+    byId("gitHead").textContent = data.git.head;
+    byId("changeList").innerHTML = data.git.changes.length
+      ? data.git.changes
+          .slice(0, 12)
+          .map(
+            (change) =>
+              `<div class="change-row"><span>${escapeHtml(change.state)}</span><code>${escapeHtml(change.path)}</code></div>`,
+          )
+          .join("")
+      : '<p class="empty-state compact">工作区干净。</p>';
+    byId("commitList").innerHTML = data.git.commits.length
+      ? data.git.commits
+          .map(
+            (commit) =>
+              `<div class="commit-row"><code>${escapeHtml(commit.hash)}</code><span>${escapeHtml(commit.subject)}</span><time>${escapeHtml(commit.date)}</time></div>`,
+          )
+          .join("")
+      : '<p class="empty-state compact">尚无提交记录。</p>';
+  }
+
+  function renderSnapshots(data) {
+    const isSnapshot = Boolean(data.snapshot);
+    byId("snapshotList").innerHTML = data.snapshots.length
+      ? data.snapshots
+          .slice(0, 12)
+          .map((snapshot) => {
+            const href = isSnapshot
+              ? "#"
+              : `/snapshots/${encodeURIComponent(snapshot.name)}`;
+            return `<a class="snapshot-card" href="${href}">
+              <span class="snapshot-stamp">HTML</span>
+              <strong>${escapeHtml(snapshot.name)}</strong>
+              <time>${formatDate(snapshot.modifiedAt)}</time>
+            </a>`;
+          })
+          .join("")
+      : '<p class="empty-state">第一份开发快照尚未生成。</p>';
+  }
+
+  function render(data) {
+    document.title = `${data.project.name} / Learning Machine`;
+    byId("projectName").textContent = data.project.name.toUpperCase();
+    byId("projectVersion").textContent = `VERSION ${data.project.version}`;
+    byId("modeLabel").textContent = data.snapshot
+      ? `归档快照 / ${data.snapshot.title}`
+      : `实时读取 / ${data.git.branch}@${data.git.head}`;
+    byId("refreshButton").hidden = Boolean(data.snapshot);
+    byId("generatedAt").textContent = `采样于 ${formatDate(data.generatedAt)}`;
+
+    byId("noteCount").textContent = data.learningEntries.length;
+    byId("apiCount").textContent = data.api.length;
+    byId("commandCount").textContent = data.commands.length;
+    byId("changeCount").textContent = data.git.changes.length;
+    byId("visionContent").innerHTML = renderMarkdown(data.visionMarkdown);
+
+    renderPhases(data);
+    renderCurrent(data);
+    renderLearning(data);
+    renderCommands(data);
+    renderApi(data);
+    renderSource(data);
+    renderGit(data);
+    renderSnapshots(data);
+
+    document.documentElement.classList.add("is-ready");
+  }
+
+  async function load() {
+    const embedded = byId("lr-data");
+    if (embedded) {
+      render(JSON.parse(embedded.textContent));
+      return;
+    }
+    const response = await fetch("/api/project", { cache: "no-store" });
+    if (!response.ok)
+      throw new Error(`Project data request failed: ${response.status}`);
+    render(await response.json());
+  }
+
+  byId("refreshButton").addEventListener("click", () => {
+    byId("modeLabel").textContent = "重新采样中…";
+    load().catch(showError);
+  });
+
+  function showError(error) {
+    byId("modeLabel").textContent = "采样失败";
+    byId("currentHeading").textContent = "无法读取项目数据";
+    byId("currentTaskText").textContent =
+      error instanceof Error ? error.message : String(error);
+    document.documentElement.classList.add("is-ready");
+  }
+
+  load().catch(showError);
+})();
+</script>
+</body>
+</html>

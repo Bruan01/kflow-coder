@@ -172,6 +172,96 @@
       : '<p class="empty-state">尚无公开导出。API 只在代码真实存在后出现。</p>';
   }
 
+  function renderCodeLines(content) {
+    return String(content ?? "")
+      .split(/\r?\n/)
+      .map(
+        (line, index) =>
+          `<span class="code-line"><i>${index + 1}</i><code>${escapeHtml(line) || " "}</code></span>`,
+      )
+      .join("");
+  }
+
+  async function copySource(text, button) {
+    try {
+      if (navigator.clipboard?.writeText && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        const textarea = document.createElement("textarea");
+        textarea.value = text;
+        textarea.setAttribute("readonly", "");
+        textarea.style.position = "fixed";
+        textarea.style.opacity = "0";
+        document.body.append(textarea);
+        textarea.select();
+        document.execCommand("copy");
+        textarea.remove();
+      }
+      const original = button.textContent;
+      button.textContent = "已复制";
+      setTimeout(() => {
+        button.textContent = original;
+      }, 1400);
+    } catch {
+      button.textContent = "复制失败";
+    }
+  }
+
+  function renderSource(data) {
+    const sourceFiles = data.sourceFiles ?? [];
+    byId("sourceFileCount").textContent = sourceFiles.length;
+    byId("sourceLineCount").textContent = sourceFiles.reduce(
+      (total, file) => total + file.lineCount,
+      0,
+    );
+
+    const groups = new Map();
+    sourceFiles.forEach((file, index) => {
+      const items = groups.get(file.group) ?? [];
+      items.push({ ...file, sourceIndex: index });
+      groups.set(file.group, items);
+    });
+
+    byId("sourceGroups").innerHTML = sourceFiles.length
+      ? [...groups.entries()]
+          .map(
+            ([group, files], groupIndex) => `<section class="source-group">
+              <header><span>${String(groupIndex + 1).padStart(2, "0")}</span><h3>${escapeHtml(group)}</h3><em>${files.length} FILES</em></header>
+              <div class="source-file-list">${files
+                .map(
+                  (
+                    file,
+                    fileIndex,
+                  ) => `<details class="source-file" ${groupIndex === 0 && fileIndex === 0 ? "open" : ""}>
+                    <summary>
+                      <span class="source-file-mark">TS</span>
+                      <span class="source-file-name"><strong>${escapeHtml(file.path)}</strong><small>${escapeHtml(file.description)}</small></span>
+                      <span class="source-file-meta">${file.lineCount} LINES${file.truncated ? " · TRUNCATED" : ""}</span>
+                      <button class="copy-source" type="button" data-source-index="${file.sourceIndex}">复制</button>
+                    </summary>
+                    <div class="code-frame">
+                      ${file.truncated ? `<p class="truncation-note">仅归档前 ${file.shownLineCount} 行；原文件共 ${file.lineCount} 行。</p>` : ""}
+                      <pre aria-label="${escapeHtml(file.path)} source code">${renderCodeLines(file.content)}</pre>
+                    </div>
+                  </details>`,
+                )
+                .join("")}</div>
+            </section>`,
+          )
+          .join("")
+      : '<p class="empty-state">尚无可归档的 TypeScript 核心源码。</p>';
+
+    document.querySelectorAll(".copy-source").forEach((button) => {
+      button.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        const index = Number(button.dataset.sourceIndex);
+        const file = sourceFiles[index];
+        if (file) copySource(file.content, button);
+      });
+    });
+  }
+
   function renderGit(data) {
     byId("gitBranch").textContent = data.git.branch;
     byId("gitHead").textContent = data.git.head;
@@ -234,6 +324,7 @@
     renderLearning(data);
     renderCommands(data);
     renderApi(data);
+    renderSource(data);
     renderGit(data);
     renderSnapshots(data);
 

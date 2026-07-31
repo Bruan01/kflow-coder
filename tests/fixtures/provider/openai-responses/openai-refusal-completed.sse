@@ -1,0 +1,19 @@
+data: {"type":"response.created","sequence_number":0,"response":{"id":"resp_refusal","status":"in_progress"}}
+
+data: {"type":"response.reasoning_summary_part.added","sequence_number":1,"item_id":"rs_123","output_index":0,"summary_index":0,"part":{"type":"summary_text","text":""}}
+
+data: {"type":"response.reasoning_summary_text.delta","sequence_number":2,"item_id":"rs_123","output_index":0,"summary_index":0,"delta":"hidden reasoning"}
+
+data: {"type":"response.reasoning_summary_text.done","sequence_number":3,"item_id":"rs_123","output_index":0,"summary_index":0,"text":"hidden reasoning"}
+
+data: {"type":"response.reasoning_summary_part.done","sequence_number":4,"item_id":"rs_123","output_index":0,"summary_index":0,"part":{"type":"summary_text","text":"hidden reasoning"}}
+
+data: {"type":"response.content_part.added","sequence_number":5,"item_id":"msg_refusal","output_index":1,"content_index":0,"part":{"type":"refusal","refusal":""}}
+
+data: {"type":"response.refusal.delta","sequence_number":6,"item_id":"msg_refusal","output_index":1,"content_index":0,"delta":"I cannot"}
+
+data: {"type":"response.refusal.delta","sequence_number":7,"item_id":"msg_refusal","output_index":1,"content_index":0,"delta":" help with that."}
+
+data: {"type":"response.refusal.done","sequence_number":8,"item_id":"msg_refusal","output_index":1,"content_index":0,"refusal":"I cannot help with that."}
+
+data: {"type":"response.completed","sequence_number":9,"response":{"id":"resp_refusal","status":"completed","usage":null}}

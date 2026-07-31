@@ -41,7 +41,13 @@ describe("LR Machine server", () => {
     expect(api.status).toBe(200);
     const data = await api.json();
     expect(data.project.name).toBe("kflow-code");
-    expect(data.progress.currentTask.id).toBe("P0.3");
+    expect(data.progress.currentTask.id).toMatch(/^P\d+\.\d+$/);
+    expect(data.progress.currentTask.text.length).toBeGreaterThan(0);
+    expect(data.sourceFiles.length).toBeGreaterThanOrEqual(6);
+    expect(
+      data.sourceFiles.find((file) => file.path === "src/cli/parse-args.ts")
+        ?.content,
+    ).toContain("parseCliArgs");
     expect(JSON.stringify(data)).not.toContain(process.cwd());
   });
 

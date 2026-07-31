@@ -25,6 +25,17 @@ const minimalData = {
   visionMarkdown: "# Vision",
   commands: [],
   api: [],
+  sourceFiles: [
+    {
+      path: "src/example.ts",
+      group: "EXAMPLE",
+      description: "Escaping fixture",
+      content: 'export const value = "</script><script>alert(1)</script>";',
+      lineCount: 1,
+      shownLineCount: 1,
+      truncated: false,
+    },
+  ],
   git: { branch: "main", head: "abc1234", changes: [], commits: [] },
   snapshots: [],
 };

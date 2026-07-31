@@ -15,6 +15,8 @@ const browserGlobals = {
   document: "readonly",
   fetch: "readonly",
   Intl: "readonly",
+  navigator: "readonly",
+  setTimeout: "readonly",
   window: "readonly",
 };
 

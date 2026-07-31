@@ -1,0 +1,7 @@
+data: {"id":"fixture-openai","choices":[{"index":0,"delta":{"content":"partial"},"finish_reason":null}],"usage":null}
+
+data: {"id":"fixture-openai","choices":[{"index":0,"delta":{},"finish_reason":"length"}]}
+
+data: {"id":"fixture-openai","choices":[],"usage":{"prompt_tokens":4,"completion_tokens":1,"total_tokens":5}}
+
+data: [DONE]

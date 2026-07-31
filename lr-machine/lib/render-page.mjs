@@ -112,10 +112,25 @@ export function renderPage({
         </div>
       </section>
 
+      <section id="source" class="section-block reveal">
+        <div class="section-title">
+          <div><span class="eyebrow">SOURCE MEMORY</span><h2>核心代码复习</h2></div>
+          <span class="section-index">03</span>
+        </div>
+        <div class="source-intro">
+          <p>快照保存当时真正运行的 <code>src/**/*.ts</code>。先理解调用链，再看实现细节；代码不是装饰，而是认知证据。</p>
+          <dl>
+            <div><dt>FILES</dt><dd id="sourceFileCount">0</dd></div>
+            <div><dt>LINES</dt><dd id="sourceLineCount">0</dd></div>
+          </dl>
+        </div>
+        <div id="sourceGroups" class="source-groups"></div>
+      </section>
+
       <section id="git" class="section-block reveal">
         <div class="section-title">
           <div><span class="eyebrow">REPOSITORY SIGNAL</span><h2>Git 开发状态</h2></div>
-          <span class="section-index">03</span>
+          <span class="section-index">04</span>
         </div>
         <div class="git-grid">
           <article class="git-summary"><span>BRANCH</span><strong id="gitBranch">—</strong><code id="gitHead">—</code></article>
@@ -127,7 +142,7 @@ export function renderPage({
       <section id="snapshots" class="section-block reveal">
         <div class="section-title">
           <div><span class="eyebrow">IMMUTABLE EVIDENCE</span><h2>HTML 学习快照</h2></div>
-          <span class="section-index">04</span>
+          <span class="section-index">05</span>
         </div>
         <div id="snapshotList" class="snapshot-list"></div>
       </section>

@@ -1,0 +1,9 @@
+data: {"id":"fixture-deepseek","choices":[{"index":0,"delta":{"content":"","role":"assistant"},"finish_reason":null}],"usage":null}
+
+data: {"id":"fixture-deepseek","choices":[{"index":0,"delta":{"content":"Hello"},"finish_reason":null}]}
+
+data: {"id":"fixture-deepseek","choices":[{"index":0,"delta":{"content":" world"},"finish_reason":null}]}
+
+data: {"id":"fixture-deepseek","choices":[{"index":0,"delta":{"content":""},"finish_reason":"stop"}],"usage":{"prompt_tokens":8,"completion_tokens":2,"total_tokens":10}}
+
+data: [DONE]
