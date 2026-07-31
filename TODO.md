@@ -73,14 +73,14 @@
 
 - [x] 定义内部 `ModelProvider`、请求、事件和错误类型。
 - [x] 只实现一个 OpenAI-compatible Provider，不让 CLI 依赖供应商 SDK 类型。
-- [ ] 首个真实回归目标使用 `deepseek-v4-flash`；供应商差异留在 Provider 适配层，不进入 Core。
+- [x] 首个真实回归目标使用 `deepseek-v4-flash`；供应商差异留在 Provider 适配层，不进入 Core。
 - [x] 实现流式输出、超时和 `AbortController` 中断。
 - [x] 标准化认证、额度、限流、超时、上下文超限和服务端错误。
 - [x] 用 Mock Provider 测试流式事件、中断与失败，不调用真实 API。
 - [x] 增加 `openai-responses` 协议适配器，继续复用内部 `ModelProvider` 契约。
-- [ ] 增加 `anthropic-messages` 协议适配器，验证跨协议边界。
-- [ ] 记录首 Token 延迟、总耗时和 Token 用量。
-- [ ] 完成真实 `kfc ask` 实验、ADR、学习日志和 P1 复盘。
+- [ ] 增加 `anthropic-messages` 协议适配器，验证跨协议边界。（已延期，不作为当前 P1 完成门槛。）
+- [x] 通过最小 `kfc ask` 调用记录首 Token 延迟、总耗时和 Token 用量。
+- [x] 完成真实 `kfc ask` 实验、ADR、学习日志和 P1 复盘。
 
 ## P2：最小 Agent Loop 与只读工具
 
@@ -159,4 +159,4 @@
 
 ## 当前唯一任务
 
-**P1.4 Anthropic Messages Provider**：按独立协议适配器模式设计并实现 `anthropic-messages`，用第二种供应商协议验证现有消息、流事件、错误与终止契约是否仍然成立。
+**P2.1 Agent Loop 领域契约**：先定义内部 Tool Call、Tool Result、循环状态与最大步数，不接真实文件工具；用脚本化 Mock Provider 证明循环终止、工具结果回灌和超限拒绝。

@@ -4,11 +4,11 @@ KFC exposes one protocol-neutral `ModelProvider` to Core. Wire-protocol adapters
 
 ## Protocol Status
 
-| Protocol                  | Status      | Scope                                                                                    |
-| ------------------------- | ----------- | ---------------------------------------------------------------------------------------- |
-| `openai-chat-completions` | implemented | text messages, SSE text deltas, usage, finish, timeout, cancellation, safe errors        |
-| `openai-responses`        | implemented | typed SSE, text/refusal projection, usage, terminal events, cancellation, safe errors    |
-| `anthropic-messages`      | planned     | subsequent independent adapter used to test whether the Core contract remains sufficient |
+| Protocol                  | Status      | Scope                                                                                 |
+| ------------------------- | ----------- | ------------------------------------------------------------------------------------- |
+| `openai-chat-completions` | implemented | text messages, SSE text deltas, usage, finish, timeout, cancellation, safe errors     |
+| `openai-responses`        | implemented | typed SSE, text/refusal projection, usage, terminal events, cancellation, safe errors |
+| `anthropic-messages`      | deferred    | explicitly skipped for now; not a current P1 completion gate                          |
 
 Configuration selects the protocol explicitly. KFC does not infer it from Base URL, model name, response shape, or a failed first request.
 
@@ -60,8 +60,20 @@ Responses additionally requires strictly increasing event sequence numbers and a
 
 Both adapters share the incremental SSE decoder and request lifecycle. The decoder supports arbitrary network chunk boundaries, split UTF-8, LF/CRLF, comments, unknown fields, and multiline `data:` events.
 
+## Ask Consumption Boundary
+
+`kfc ask <prompt...>` loads validated configuration, selects one of the implemented adapters through the explicit protocol factory, and sends exactly one user message. The protocol-neutral Ask Runner:
+
+- streams non-empty `text-delta` content to stdout without buffering the full answer;
+- keeps metrics and errors on stderr so stdout remains pipe-friendly;
+- derives TTFT, total duration, usage, finish reason, and trailing-newline state from the real event flow;
+- requires one start and one terminal finish, and rejects duplicate lifecycle events or invalid usage;
+- passes AbortSignal through to the Provider and preserves structured errors.
+
+Metrics remain local to the Ask report. KFC does not yet persist or upload telemetry, and it does not introduce a general observability decorator before another real consumer needs one.
+
 ## Failure Boundary
 
 Caller cancellation becomes `USER_INTERRUPTED`; the configured deadline becomes `PROVIDER_TIMEOUT`. Authentication, quota, rate limiting, context limit, temporary service errors, and invalid responses use stable KFC codes. Raw Provider messages, response bodies, authorization headers, API keys, and stacks are never public error output.
 
-Automated tests use injected fetch functions, real `Response`/`ReadableStream` objects, and redacted fixtures. They never access the network or developer credentials.
+Automated tests use injected Providers/fetch functions, deterministic clocks, real `Response`/`ReadableStream` objects, and redacted fixtures. They never access external networks or developer credentials.

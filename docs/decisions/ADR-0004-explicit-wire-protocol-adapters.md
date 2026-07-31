@@ -14,7 +14,7 @@ KFC 的 Core 只需要稳定的消息、文本流、usage、finish、取消和�
 - Core 继续只依赖供应商无关的 `ModelProvider`。
 - 配置显式声明线协议，不自动探测。
 - 每种主流协议使用独立适配器，实现自己的请求编码、外部 Schema、流事件和错误映射。
-- 首个适配器为 `openai-chat-completions`；后续独立增加 `openai-responses` 和 `anthropic-messages`。
+- 首个适配器为 `openai-chat-completions`，第二个为 `openai-responses`；只有真实主路线需要时才继续增加 `anthropic-messages`。
 - 使用平台 `fetch`、`AbortSignal` 和 Web Streams，不让供应商 SDK 类型进入公共契约。
 - 只有至少两个真实适配器暴露相同复杂度后，才提取共享 HTTP/SSE 抽象。
 
@@ -31,6 +31,14 @@ KFC 的 Core 只需要稳定的消息、文本流、usage、finish、取消和�
 - 协议适配器之间会保留少量有意重复。
 - 增加协议需要独立的 Schema、Fixture、错误和生命周期测试。
 - 当前内部契约不足时，必须用真实跨协议证据推动演进，不能靠自动兼容掩盖差异。
+
+## 实施结果（2026-07-31）
+
+- Chat Completions 与 Responses 已分别使用独立 Schema、请求编码和终止状态机实现。
+- 两个适配器证明 timeout、AbortSignal、未知网络错误和资源清理具有稳定共性，因此只提取了最小 request lifecycle；协议事件仍保持独立。
+- `kfc ask` 通过显式协议工厂消费统一 `ModelProvider`，没有根据 DeepSeek URL 或模型名推断协议。
+- 首次真实 DeepSeek V4 Flash 调用成功，使用 Chat Completions 路径返回 `finish=stop`、完整 usage 和流式文本。
+- `anthropic-messages` 经用户确认延期。它不再是 P1 完成门槛；未来只有在现有协议不能覆盖真实需求时重新评估。
 
 ## 拒绝方案
 

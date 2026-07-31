@@ -1,4 +1,5 @@
 export { ConfigError } from "./config/config.js";
+export * from "./ask/index.js";
 export type {
   ConfigErrorCode,
   ConfigIssue,

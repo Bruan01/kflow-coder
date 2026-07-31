@@ -19,6 +19,23 @@ describe("parseCliArgs", () => {
     expect(parseCliArgs(args)).toEqual({ type: "quickstart" });
   });
 
+  it("maps ask and all remaining positionals to one prompt", () => {
+    expect(parseCliArgs(["ask", "explain", "this", "project"])).toEqual({
+      type: "ask",
+      prompt: "explain this project",
+    });
+  });
+
+  it.each([["ask"], ["ask", "   "]])(
+    "rejects ask without a non-empty prompt",
+    (...args) => {
+      expect(parseCliArgs(args)).toEqual({
+        type: "error",
+        message: "Ask prompt is required",
+      });
+    },
+  );
+
   it("rejects unknown options without exposing a stack", () => {
     expect(parseCliArgs(["--unknown"])).toEqual({
       type: "error",
@@ -26,10 +43,10 @@ describe("parseCliArgs", () => {
     });
   });
 
-  it("rejects positionals that are not implemented yet", () => {
-    expect(parseCliArgs(["ask"])).toEqual({
+  it("rejects positionals that are not implemented", () => {
+    expect(parseCliArgs(["unknown-command"])).toEqual({
       type: "error",
-      message: "Unexpected argument: ask",
+      message: "Unexpected argument: unknown-command",
     });
   });
 });

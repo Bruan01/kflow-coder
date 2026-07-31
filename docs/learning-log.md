@@ -181,3 +181,25 @@
 ### 提交前配置策略确认
 
 用户确认保留独立 `credentials.json` 能力。普通 `config.json` 继续禁止 API Key；凭证解析顺序固定为 `KFC_API_KEY` 高于 Base-URL-bound 私有凭证文件。Quickstart 必须在隐藏输入前明确提示明文存储并取得确认，凭证文件使用私有临时文件、原子 rename 和 `0600` 权限。该选择同步进入项目规则与公开文档，避免“环境变量专用”旧约束和当前行为并存。
+
+## 2026-07-31 / P1.4 Minimal `kfc ask` Vertical Slice
+
+- **第一性问题：** CLI、配置、凭证、错误和两个 Provider 都已存在时，怎样用最少的新结构证明用户输入能够真正穿过这些边界并流式得到单轮回答？
+- **我的初始假设：** 下一步应先建设协议无关指标装饰器，再由未来调用方复用；TTFT、总耗时、usage 和 outcome 可以独立于真实命令实现。
+- **最小实验：** 用户指出这可能偏离主路线后，删除独立指标方案，改为实现 `kfc ask <prompt...>`。新增纯参数解析、显式协议工厂和协议无关 Ask Runner；Runner发送一条 user message、流式转发非空文本、计算 TTFT/总耗时/usage/finish，并把正文与摘要分别放入 stdout/stderr。进程入口只负责延迟加载配置、创建单次 AbortController 和临时 SIGINT listener。
+- **观察到的证据：** 最终全量门禁为 30 个 Vitest 文件、144 个测试全部通过；`pnpm build`、`pnpm typecheck:tests`、`pnpm lint`、`pnpm format:check`、`git diff --check` 均通过，构建后的 `pnpm kfc --help` 已展示 `ask <prompt...>`。Ask Runner 的成功、无文本、非法/未知事件、usage 算术、请求前取消、消费期间取消和 ProviderError 身份均由确定性测试覆盖；CLI 测试证明正文只进入 stdout，指标或安全错误只进入 stderr。
+- **假设哪里错了：** 独立指标装饰器没有真实第二消费者，会让横向基础设施继续增长而主闭环仍不可运行。正确顺序是先完成纵向用户路径，再从重复中提取抽象。新增 `ask` 联合类型后，TypeScript 立即迫使 `runCli` 处理新分支；这比临时返回占位错误更有价值，因为类型失败准确揭示了尚未接通的应用边界。
+- **得到的可复用原则：** 路线图条目的顺序不能凌驾于最终闭环；当“可观测性”可以自然附着在真实调用上时，不应先建立独立子系统。stdout 是可组合正文通道，stderr 是诊断和指标通道。Provider 工厂只按已验证协议分派，Ask Runner 只消费内部事件，进程层只管理配置和信号，三者边界必须保持单向。
+- **尚未理解：** 真实 DeepSeek/OpenAI-compatible 网关是否会按 Fixture 顺序发送 usage 和终止事件；终端或代理缓冲对 TTFT 的影响；真实调用是否需要 stdin Prompt、system prompt 或可关闭的指标摘要。
+- **下一步：** 在用户明确授权真实凭证和网络调用后执行 P1.5 `kfc ask` 验收，保存外部调用证据并完成 ADR/P1 Review；Anthropic Messages 继续延期，不阻塞进入主闭环。
+
+## 2026-07-31 / P1.5 真实 `kfc ask` 验收与 P1 复盘
+
+- **第一性问题：** Fixture、Mock 和类型检查都通过后，哪些事实仍必须由真实 Provider 调用证明，P1 又凭什么有资格进入 Agent Loop？
+- **我的初始假设：** 一个要求模型精确返回固定标记的低成本 Prompt，可以同时证明协议连通性和模型服从性；若调用成功，输出应与标记字节一致。
+- **最小实验：** 在用户明确授权后，不直接读取或打印凭证，先运行 Doctor 验证私有配置、Base URL、模型和 API Key presence；随后通过构建后的 `kfc ask` 调用 `https://api.deepseek.com` 的 `deepseek-v4-flash`，Prompt 为 `Reply with exactly: KFC_P1_ACCEPTED`。
+- **观察到的证据：** Doctor 全部通过。真实调用退出码为 0，stdout 包含 `KFC_P1_ACCEPTED`，stderr 为 `finish=stop ttft=1115ms total=1165ms tokens=95/29/124`。API Key 未出现在命令或输出。完整证据保存于 `docs/experiments/EXP-003-real-kfc-ask-deepseek.md`，阶段判断保存于 `docs/reviews/P1-review.md`。
+- **假设哪里错了：** 模型在标记前增加了一个空格。协议调用完全成功，但自然语言“exactly”没有形成字节级保证。模型输出内容与协议完成事实必须分开验收；真正稳定的是退出码、typed event、finish、usage 和安全错误，而不是模型对格式要求的偶然服从。
+- **得到的可复用原则：** 自动化 Fixture 证明边界可重复，真实调用证明环境、凭证、网络和供应商共同工作，两者不能互相替代。真实验收 Prompt 应低成本、无秘密、可判断，但不能把自然语言输出当作结构化协议。完成阶段应主动列出未实测失败路径，而不是用一次成功掩盖风险。
+- **尚未理解：** DeepSeek 真实认证失败、限流、配额、上下文和断网响应是否完全符合当前映射；Responses 的真实端点行为；argv Prompt 的隐私风险应何时通过 stdin 解决。
+- **下一步：** P1 技术门槛通过，进入 P2.1 Agent Loop 领域契约。先用 Mock Provider 和假工具结果验证受控循环状态、最大步数与终止条件，不立即开放文件或 Shell 权限。

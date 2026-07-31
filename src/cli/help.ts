@@ -8,6 +8,7 @@ Usage:
 
 Commands:
   doctor            Check runtime and provider configuration
+  ask <prompt...>   Send one prompt and stream the model response
 
 Options:
   --quickstart      Interactively configure an OpenAI-compatible Provider

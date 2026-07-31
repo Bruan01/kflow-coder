@@ -1,3 +1,4 @@
+import type { AskReport } from "../ask/run-ask.js";
 import type { DoctorReport } from "../doctor/doctor.js";
 import { formatDoctorReport } from "../doctor/doctor.js";
 import { formatErrorForCli } from "../errors/error-presentation.js";
@@ -9,8 +10,26 @@ export interface CliEnvironment {
   version: string;
   runDoctor(): Promise<DoctorReport>;
   runQuickstart(): Promise<QuickstartResult>;
+  runAsk(prompt: string, onText: (delta: string) => void): Promise<AskReport>;
   writeStdout(text: string): void;
   writeStderr(text: string): void;
+}
+
+function formatMilliseconds(value: number | null): string {
+  return value === null ? "n/a" : `${Math.max(0, Math.round(value))}ms`;
+}
+
+function formatAskReport(report: AskReport): string {
+  const tokens =
+    report.usage === undefined
+      ? "n/a"
+      : `${report.usage.inputTokens}/${report.usage.outputTokens}/${report.usage.totalTokens}`;
+  return (
+    `[kfc] finish=${report.finishReason}` +
+    ` ttft=${formatMilliseconds(report.timeToFirstTokenMs)}` +
+    ` total=${formatMilliseconds(report.totalDurationMs)}` +
+    ` tokens=${tokens}\n`
+  );
 }
 
 export async function runCli(
@@ -45,6 +64,19 @@ export async function runCli(
             : environment.writeStderr;
         write(result.text);
         return result.exitCode;
+      } catch (error) {
+        const presentation = formatErrorForCli(error);
+        environment.writeStderr(presentation.text);
+        return presentation.exitCode;
+      }
+    case "ask":
+      try {
+        const report = await environment.runAsk(command.prompt, (delta) =>
+          environment.writeStdout(delta),
+        );
+        if (!report.endedWithNewline) environment.writeStdout("\n");
+        environment.writeStderr(formatAskReport(report));
+        return 0;
       } catch (error) {
         const presentation = formatErrorForCli(error);
         environment.writeStderr(presentation.text);

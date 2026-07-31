@@ -4,7 +4,7 @@ KFlow Code is a learning-first coding agent built from first principles. The pro
 
 ## Current Status
 
-P0 plus DIY onboarding is accepted. P1 now includes fixture-verified `openai-chat-completions` and `openai-responses` Providers with incremental SSE decoding, typed Responses events, conservative text/refusal projection, structured errors, timeout, cancellation, usage normalization, and no SDK dependency. `kfc ask`, live Provider acceptance, and Anthropic Messages are not implemented yet. See `TODO.md` for the active task, `docs/provider.md` for the protocol boundary, and `docs/decisions/README.md` for architecture decisions.
+P0 and P1 are accepted. KFC now includes fixture-verified `openai-chat-completions` and `openai-responses` Providers plus a minimal `kfc ask` vertical slice with explicit protocol selection, streaming stdout, safe stderr summaries, cancellation, usage, TTFT, and total duration. A real DeepSeek V4 Flash call has passed; Anthropic Messages is explicitly deferred. The active task is now the P2 Agent Loop contract. See `TODO.md`, `docs/reviews/P1-review.md`, and `docs/experiments/EXP-003-real-kfc-ask-deepseek.md`.
 
 ## Requirements
 
@@ -38,6 +38,21 @@ pnpm kfc --version
 
 Unknown options return exit code `1` with a short error and no stack trace.
 
+### Ask
+
+```bash
+pnpm build
+pnpm kfc ask "Explain KFlow Code"
+```
+
+Model text streams to stdout. A safe completion summary is written to stderr so stdout remains pipe-friendly:
+
+```text
+[kfc] finish=stop ttft=123ms total=456ms tokens=12/4/16
+```
+
+Ask sends one user message, does not inject a hidden system prompt, and does not persist a conversation. Ctrl+C cancels the active Provider request and returns exit code `130`.
+
 ## Quickstart
 
 ```bash
@@ -69,6 +84,7 @@ Domain failures extend `KfcError`. Public output contains only safe messages/det
 
 - `src/cli.ts`: executable process adapter
 - `src/cli/`: pure argument parsing, help, runner, and package metadata modules
+- `src/ask/`: protocol-neutral single-turn stream consumer and call report
 - `src/index.ts`: package module entry
 - `src/provider/`: protocol-neutral model contract and wire-protocol adapters
 - `tests/`: Vitest tests
