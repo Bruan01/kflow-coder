@@ -93,11 +93,14 @@ describe("KFlow workbench renderer", () => {
       setWorkbenchActivity(createWorkbenchState(), {
         kind: "tool",
         name: "read_file",
+        detail: "文件: src/interactive/workbench.ts",
         frame: 2,
       }),
       { columns: 70, rows: 20, color: false },
     );
-    expect(tool).toContain("⠹ 执行工具: read_file");
+    expect(tool).toContain(
+      "⠹ 执行工具: read_file · 文件: src/interactive/workbench.ts",
+    );
   });
 
   it("scrolls the timeline without moving the fixed status and composer", () => {

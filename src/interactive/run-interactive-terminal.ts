@@ -20,6 +20,7 @@ import {
   startActivityAnimation,
   type ActivityAnimationHandle,
 } from "./activity-animation.js";
+import { describeToolCall } from "./tool-activity.js";
 import { playStartupAnimation } from "./startup-animation.js";
 import {
   appendAssistantText,
@@ -358,10 +359,12 @@ export async function runInteractiveTerminal(
             redraw();
           },
           onToolCall(toolCall) {
-            state = appendToolEvent(state, toolCall.name);
+            const detail = describeToolCall(toolCall.name, toolCall.input);
+            state = appendToolEvent(state, toolCall.name, detail);
             startActivity({
               kind: "tool",
               name: toolCall.name,
+              ...(detail === undefined ? {} : { detail }),
               frame: state.activity?.frame ?? 0,
             });
             redraw();

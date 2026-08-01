@@ -59,6 +59,7 @@ export {
   setWorkbenchStatus,
 } from "./workbench.js";
 export { sanitizeTerminalText } from "./sanitize-terminal-text.js";
+export { describeToolCall } from "./tool-activity.js";
 export type {
   InteractiveSessionInfo,
   WorkbenchEvent,

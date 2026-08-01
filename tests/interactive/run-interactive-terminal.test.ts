@@ -289,7 +289,11 @@ describe("runInteractiveTerminal", () => {
           }): void;
         },
       ) => {
-        handlers.onToolCall({ id: "call_1", name: "read_file", input: {} });
+        handlers.onToolCall({
+          id: "call_1",
+          name: "read_file",
+          input: { path: "src/interactive/workbench.ts" },
+        });
         return new Promise<{
           readonly messages: readonly [
             {
@@ -322,7 +326,9 @@ describe("runInteractiveTerminal", () => {
       expect(output.text.join("")).toContain("⠋ 模型思考中"),
     );
     await vi.waitFor(() =>
-      expect(output.text.join("")).toContain("⠋ 执行工具: read_file"),
+      expect(output.text.join("")).toContain(
+        "⠋ 执行工具: read_file · 文件: src/interactive/workbench.ts",
+      ),
     );
     const outputAfterActivity = output.text.length;
     resolveTurn?.({

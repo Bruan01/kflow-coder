@@ -10,7 +10,11 @@ import { getInteractiveTheme, type WorkbenchTheme } from "./themes.js";
 export type WorkbenchEvent =
   | { readonly type: "user"; readonly text: string }
   | { readonly type: "assistant"; readonly text: string }
-  | { readonly type: "tool"; readonly name: string }
+  | {
+      readonly type: "tool";
+      readonly name: string;
+      readonly detail?: string;
+    }
   | {
       readonly type: "notice";
       readonly text: string;
@@ -31,6 +35,7 @@ export type WorkbenchActivity =
   | {
       readonly kind: "tool";
       readonly name: string;
+      readonly detail?: string;
       readonly frame: number;
     };
 
@@ -86,7 +91,14 @@ function eventLines(
   const width = Math.max(1, columns - 6);
   if (event.type === "tool")
     return [
-      colored(`  ✓ Tool  ${truncate(event.name, width)}`, palette.tool, color),
+      colored(
+        `  ✓ Tool  ${truncate(
+          `${event.name}${event.detail === undefined ? "" : ` · ${event.detail}`}`,
+          width,
+        )}`,
+        palette.tool,
+        color,
+      ),
     ];
   if (event.type === "notice") {
     const code =
@@ -265,7 +277,7 @@ function statusCode(
 function activityLabel(activity: WorkbenchActivity): string {
   const spinner = activitySpinnerFrame(activity.frame);
   return activity.kind === "tool"
-    ? `${spinner} 执行工具: ${activity.name}`
+    ? `${spinner} 执行工具: ${activity.name}${activity.detail === undefined ? "" : ` · ${activity.detail}`}`
     : `${spinner} 模型思考中`;
 }
 
@@ -355,12 +367,19 @@ export function appendUserEvent(
 export function appendToolEvent(
   state: WorkbenchState,
   name: string,
+  detail?: string,
 ): WorkbenchState {
   return {
     ...state,
     events: [
       ...state.events,
-      { type: "tool", name: sanitizeDisplayText(name) },
+      {
+        type: "tool",
+        name: sanitizeDisplayText(name),
+        ...(detail === undefined
+          ? {}
+          : { detail: sanitizeDisplayText(detail) }),
+      },
     ],
     status: "Working",
     scrollOffset: 0,
@@ -432,7 +451,13 @@ export function setWorkbenchActivity(
     status: activity === undefined ? state.status : "Working",
     activity:
       activity?.kind === "tool"
-        ? { ...activity, name: sanitizeDisplayText(activity.name) }
+        ? {
+            ...activity,
+            name: sanitizeDisplayText(activity.name),
+            ...(activity.detail === undefined
+              ? {}
+              : { detail: sanitizeDisplayText(activity.detail) }),
+          }
         : activity,
   };
 }
