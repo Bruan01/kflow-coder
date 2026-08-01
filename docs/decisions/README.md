@@ -9,5 +9,6 @@ ADRs record decisions that affect multiple modules or future development. They p
 | [ADR-0003](ADR-0003-unified-error-contract.md)          | Accepted | Use a unified, safe domain error contract               |
 | [ADR-0004](ADR-0004-explicit-wire-protocol-adapters.md) | Accepted | Use explicit independent wire-protocol adapters         |
 | [ADR-0005](ADR-0005-controlled-agent-loop.md)           | Accepted | Use a controlled protocol-neutral Agent Loop            |
+| [ADR-0006](ADR-0006-zod-tool-registry-boundary.md)      | Accepted | Validate and isolate tools at the Registry boundary     |
 
 Create a new ADR when a decision changes architecture, security boundaries, build/release behavior, or multiple future tasks. Do not use ADRs for temporary implementation details.

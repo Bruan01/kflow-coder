@@ -87,7 +87,7 @@
 **核心问题：Agent 的本质为何是受控状态机，而不是一段更长的 Prompt？**
 
 - [x] 定义内部消息、Tool Call、Tool Result 和最大步数。
-- [ ] 实现 Tool Registry 与 Zod 参数校验。
+- [x] 实现 Tool Registry 与 Zod 参数校验。
 - [ ] 实现 `list_directory`、`read_file`、`grep`。
 - [ ] 防止路径穿越，限制文件大小、结果数量和工具超时。
 - [ ] 检测重复调用；工具失败应成为结构化结果，而非进程崩溃。
@@ -159,4 +159,4 @@
 
 ## 当前唯一任务
 
-**P2.2 Tool Registry 与参数验证**：实现只存元数据与执行函数的 Tool Registry，用 Zod 校验完整 Tool Call input；继续使用内存假工具，不读取文件，不开放 Shell。
+**P2.3 只读工作区工具**：实现 `list_directory`、`read_file`、`grep`，先设计统一的工作区路径边界、结果上限和安全错误；不增加写入、Shell 或真实 Provider Tool Calling。

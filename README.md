@@ -4,7 +4,7 @@ KFlow Code is a learning-first coding agent built from first principles. The pro
 
 ## Current Status
 
-P0 and P1 are accepted. P2.1 now adds a protocol-neutral, maximum-step Agent Loop with atomic Tool Calls, Tool Result feedback, deterministic Mock replay, cancellation, and structured Agent errors. Real file tools and real Provider Tool Calling are not enabled yet. The active task is P2.2 Tool Registry and Zod parameter validation. See `TODO.md`, ADR-0005, and the P2.1 design document.
+P0 and P1 are accepted. P2 now includes a controlled Agent Loop plus an in-memory Tool Registry with typed Zod inputs, safe Tool Result failures, cancellation and deterministic Mock integration. Real file tools and real Provider Tool Calling are not enabled yet. The active task is P2.3 read-only workspace tools. See `TODO.md`, ADR-0005, ADR-0006, and `docs/tool-registry.md`.
 
 ## Requirements
 
@@ -86,6 +86,7 @@ Domain failures extend `KfcError`. Public output contains only safe messages/det
 - `src/cli/`: pure argument parsing, help, runner, and package metadata modules
 - `src/ask/`: protocol-neutral single-turn stream consumer and call report
 - `src/agent/`: controlled Agent Loop, Tool execution contract, and Agent errors
+- `src/tool/`: typed Tool definitions, in-memory Registry, validation, and safe execution results
 - `src/index.ts`: package module entry
 - `src/provider/`: protocol-neutral model contract and wire-protocol adapters
 - `tests/`: Vitest tests

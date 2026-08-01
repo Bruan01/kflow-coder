@@ -16,6 +16,8 @@ Provider failures considered retryable are rate limiting, timeout, and temporary
 
 Agent control failures are non-retryable without changing the run: invalid `maxSteps`, an exhausted model-step budget, or a Tool Result that does not match its Tool Call. Model stream violations remain Provider errors, while Tool Executor failures retain their original identity until the Tool Registry defines structured failure results.
 
+Tool Registry definition failures use the agent category with `TOOL_DEFINITION_INVALID` or `TOOL_NAME_DUPLICATE`. Runtime tool lookup, input and execution failures do not become KfcError: they are safe `isError: true` Tool Results so the model can observe and recover. Cancellation remains `USER_INTERRUPTED`.
+
 ## Public and Debug Information
 
 `KfcError` contains:

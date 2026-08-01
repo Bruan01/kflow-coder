@@ -19,5 +19,6 @@ export * from "./doctor/index.js";
 export * from "./errors/index.js";
 export * from "./quickstart/index.js";
 export * from "./provider/index.js";
+export * from "./tool/index.js";
 
 export const projectName = "kflow-code";

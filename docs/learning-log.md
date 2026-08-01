@@ -214,3 +214,14 @@
 - **得到的可复用原则：** Agent 的本质是受控状态机，不是“模型循环调用自己”。每个外部 await 都是取消重新判定点；每次模型请求都是不可变快照；Tool Call 必须先成为供应商无关原子事实，再进入工具系统。最后一步不执行无法回灌的工具，避免产生孤立动作。错误归属必须区分 Provider 流、Agent 控制与 Tool Executor。
 - **尚未理解：** 真实协议 Tool Call delta 如何可靠组装成原子 input；工具不存在、参数错误、执行超时和输出过大应怎样统一变成 Tool Result；多个无副作用工具何时值得并行。
 - **下一步：** 进入 P2.2 Tool Registry 与 Zod 参数验证。先使用纯内存假工具验证注册、查找、重复名称、参数错误和执行失败结果，不读取工作区或开放任何系统权限。
+
+## 2026-08-01 / P2.2 Tool Registry 与参数验证
+
+- **第一性问题：** Tool Call input 是 unknown、工具实现和失败方式各不相同时，怎样让 Agent Loop 只看到稳定 Tool Result，而不承担查找、Zod issue、异常泄漏和取消策略？
+- **我的初始假设：** ToolDefinition 的 TypeScript 类型足以保护 Registry；只要工具通过 `defineTool` 创建，注册阶段不需要真正的 runtime unknown 检查。工具执行异常也可以沿用 KfcError 传播。
+- **最小实验：** 实现 `defineTool()`、纯内存 `ToolRegistry` 和 ToolRegistryError。Registry 使用 `safeParseAsync`，把 default、transform 和未知字段剔除后的 Zod output 交给假工具；未知工具、参数错误、Error/KfcError/string throw 和非法 output 全部转换成不泄漏内容的 JSON Tool Result。随后直接把 Registry 注入 P2.1 Agent Loop，验证成功和错误结果都能回灌并让模型下一步完成。
+- **观察到的证据：** 首次全量门禁为 36 个 Vitest 文件、198 个测试全部通过；Tool 定向测试为 4 个文件、26 个测试。build、测试类型检查、lint 和 git diff 均通过；格式检查首次只发现一个测试文件未执行 Prettier，修正后通过。Zod output 类型推导、default/transform、字段剔除、注册顺序、重复名称、安全路径、主动错误、异常隔离、三类取消窗口和 Agent Loop 集成都有确定性证据。
+- **假设哪里错了：** 运行时可以绕过 TypeScript 传入 `null` 或伪造 Schema，初版 `isValidDefinition` 直接读取 `.name`，泄漏了原生 TypeError；注册入口必须真正从 unknown 开始检查。KfcError 也不能默认传播：工具内部错误对 Agent 来说通常是可恢复结果，只有取消应该保持控制流异常。错误内容若直接使用 Zod message 或异常 message，也可能把原始值和实现细节回灌给模型。
+- **得到的可复用原则：** 静态类型保护开发者，Runtime Schema 保护系统边界，两者不能互相替代。Tool Registry 应把“普通失败”降级为模型可观察的结构化结果，同时把取消保留为程序控制流。工具只能接收解析后的数据；Agent Loop 不应知道 Zod、Map 或异常格式。安全错误应使用 allowlist 字段重新构造，而不是尝试清洗未知对象。
+- **尚未理解：** 真实文件工具的路径、大小、编码、二进制、Symlink 和超时边界；Zod Schema 到主流 Provider JSON Schema 的兼容范围；工具主动错误 content 如何建立统一安全规范。
+- **下一步：** 进入 P2.3 只读工作区工具。先统一 Workspace Boundary、路径解析、文件/结果上限和稳定错误，再分别实现 `list_directory`、`read_file` 与 `grep`；继续不开放写入或 Shell。
