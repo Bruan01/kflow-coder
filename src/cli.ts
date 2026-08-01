@@ -204,6 +204,12 @@ try {
             `完成轮数: ${runtime.turns}`,
             `上下文消息: ${runtime.messageCount}`,
             `累计 Token（输入 / 输出 / 总计）: ${tokenText}`,
+            `模型轮次: ${runtime.modelTurns}`,
+            `工具调用: ${runtime.toolCalls}（失败 ${runtime.failedToolCalls}）`,
+            `累计模型耗时: ${runtime.totalDurationMs}ms`,
+            `最近首字延迟: ${runtime.lastTimeToFirstTextMs === null ? "n/a" : `${runtime.lastTimeToFirstTextMs}ms`}`,
+            `峰值单轮输入 Token: ${runtime.peakInputTokens ?? "n/a"}`,
+            "成本: 未知（当前未配置模型价格表）",
           ].join("\n");
         },
 

@@ -53,6 +53,27 @@ function formatAskReport(report: AskReport): string {
   );
 }
 
+function formatAgentReport(result: AgentRunResult): string {
+  const metrics = result.metrics;
+  if (metrics === undefined) {
+    return `[kfc] agent steps=${result.steps} finish=${result.finishReason}\n`;
+  }
+  const tokens =
+    metrics.usage === undefined
+      ? "n/a"
+      : `${metrics.usage.inputTokens}/${metrics.usage.outputTokens}/${metrics.usage.totalTokens}`;
+  return (
+    `[kfc] agent steps=${result.steps}` +
+    ` turns=${metrics.modelTurns}` +
+    ` tools=${metrics.toolCalls}` +
+    ` failed_tools=${metrics.failedToolCalls}` +
+    ` finish=${result.finishReason}` +
+    ` ttft=${formatMilliseconds(metrics.timeToFirstTextMs)}` +
+    ` total=${formatMilliseconds(metrics.durationMs)}` +
+    ` tokens=${tokens}\n`
+  );
+}
+
 // runCli：CLI 主入口函数，接收命令行参数和环境依赖，返回退出码
 export async function runCli(
   args: readonly string[], // 命令行参数（不含 node 和脚本名）
@@ -142,9 +163,7 @@ export async function runCli(
           environment.writeStdout("\n");
         }
         // 将 agent 统计信息写入 stderr
-        environment.writeStderr(
-          `[kfc] agent steps=${result.steps} finish=${result.finishReason}\n`,
-        );
+        environment.writeStderr(formatAgentReport(result));
         return 0;
       } catch (error) {
         const presentation = formatErrorForCli(error);

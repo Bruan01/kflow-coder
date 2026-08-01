@@ -91,7 +91,7 @@
 - [x] 实现 `list_directory`、`read_file`、`grep`。
 - [x] 注册 Codex、pi、Claude Code 的共同工具面：`find_files`、`apply_patch`、`write_file`、`shell`，并按 read/edit/execute 分层，修改和执行默认关闭。
 - [x] 防止路径穿越，限制文件大小和结果数量。
-- [x] 检测重复调用；工具失败应成为结构化结果，而非进程崩溃。
+- [x] 检测三轮连续、请求和结果均相同的无进展工具调用；工具失败应成为结构化结果，而非进程崩溃。
 - [x] 接通 Chat Completions Tool Calling，并以显式 `kfc agent` 完成真实只读工作区验收。
 - [x] 建立 TTY-only KFLOW 工作台：会话时间线、滚动、只读 Agent、状态面板、命令菜单、确认式上下文清除和安全终端恢复。
 - [x] 增加模型思考与工具执行的实时 spinner 动效，并在完成、中断、错误和退出时清理计时器。
@@ -101,6 +101,7 @@
 - [x] 集中管理 Agent 运行时设置、交互命令目录和工具展示标签，避免 CLI 与 TUI 重复维护。
 - [x] 增加 `/themes` 主题菜单：实时切换、立即重绘，并持久化到用户配置。
 - [x] 用脚本化 Mock Provider 确定性重放完整循环。
+- [x] 暴露 Agent 模型轮数、工具调用、失败调用、耗时、首字延迟和峰值输入 Token；成本未配置时明确显示未知。
 - [ ] 在陌生 TypeScript 仓库回答配置来源并给出文件与行号。
 - [ ] 保存工具轨迹、ADR、学习日志和 P2 复盘。
 

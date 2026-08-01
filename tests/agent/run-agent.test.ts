@@ -232,7 +232,7 @@ describe("runAgent", () => {
     await expect(
       runAgent(
         { messages: initialMessages, maxSteps: 3 },
-        { provider, toolExecutor },
+        { provider, toolExecutor, now: () => 1000 },
       ),
     ).resolves.toEqual({
       messages: [
@@ -243,6 +243,15 @@ describe("runAgent", () => {
       finalText: "KFlow Code",
       finishReason: "stop",
       usage: { inputTokens: 10, outputTokens: 2, totalTokens: 12 },
+      metrics: {
+        modelTurns: 1,
+        toolCalls: 0,
+        failedToolCalls: 0,
+        durationMs: 0,
+        timeToFirstTextMs: 0,
+        peakInputTokens: 10,
+        usage: { inputTokens: 10, outputTokens: 2, totalTokens: 12 },
+      },
     });
     expect(provider.requests).toEqual([{ messages: initialMessages }]);
     expect(toolExecutor.execute).not.toHaveBeenCalled();
@@ -280,7 +289,7 @@ describe("runAgent", () => {
     await expect(
       runAgent(
         { messages: initialMessages, maxSteps: 3 },
-        { provider, toolExecutor },
+        { provider, toolExecutor, now: () => 1000 },
       ),
     ).resolves.toEqual({
       messages: [
@@ -301,6 +310,14 @@ describe("runAgent", () => {
       steps: 2,
       finalText: "KFlow Code",
       finishReason: "stop",
+      metrics: {
+        modelTurns: 2,
+        toolCalls: 1,
+        failedToolCalls: 0,
+        durationMs: 0,
+        timeToFirstTextMs: 0,
+        peakInputTokens: null,
+      },
     });
     expect(provider.requests).toEqual([
       { messages: initialMessages },
@@ -529,7 +546,13 @@ describe("runAgent", () => {
         { type: "start" as const },
         {
           type: "tool-call" as const,
-          toolCall: { id: `call_${index}`, name: "lookup", input: {} },
+          // Distinct input keeps every turn a fingerprint of its own, so the
+          // repeated-tool-turn guard (which detects non-progress) never fires.
+          toolCall: {
+            id: `call_${index}`,
+            name: "lookup",
+            input: { index },
+          },
         },
         { type: "finish" as const, reason: "tool-call" as const },
       ],
@@ -552,6 +575,78 @@ describe("runAgent", () => {
 
     expect(result).toMatchObject({ steps: 71, finalText: "finished" });
     expect(toolExecutor.execute).toHaveBeenCalledTimes(70);
+  });
+
+  it("throws AGENT_REPEATED_TOOL_CALL after three identical tool turns", async () => {
+    const turns: (readonly ModelStreamEvent[])[] = Array.from(
+      { length: 4 },
+      (_, index): readonly ModelStreamEvent[] => [
+        { type: "start" as const },
+        {
+          type: "tool-call" as const,
+          // Distinct IDs avoid the duplicate-call check, while name + input
+          // stay identical so the progress guard sees one repeating turn.
+          toolCall: { id: `call_${index}`, name: "lookup", input: {} },
+        },
+        { type: "finish" as const, reason: "tool-call" as const },
+      ],
+    );
+    const provider = new ScriptedProvider(turns);
+    const toolExecutor = fakeExecutor();
+
+    await expect(
+      runAgent(
+        {
+          messages: [{ role: "user", content: "repeat" }],
+          maxSteps: "unlimited",
+        },
+        { provider, toolExecutor },
+      ),
+    ).rejects.toMatchObject({
+      code: "AGENT_REPEATED_TOOL_CALL",
+      details: { repetitions: 3, tools: ["lookup"] },
+    });
+    expect(toolExecutor.execute).toHaveBeenCalledTimes(3);
+  });
+
+  it("returns model and token observation metrics", async () => {
+    const provider = new ScriptedProvider([
+      [
+        { type: "start" },
+        { type: "text-delta", delta: "observed" },
+        {
+          type: "usage",
+          usage: { inputTokens: 7, outputTokens: 3, totalTokens: 10 },
+        },
+        { type: "finish", reason: "stop" },
+      ],
+    ]);
+    let clock = 0;
+
+    const result = await runAgent(
+      {
+        messages: [{ role: "user", content: "observe" }],
+        maxSteps: "unlimited",
+      },
+      {
+        provider,
+        toolExecutor: fakeExecutor(),
+        now: () => {
+          clock += 5;
+          return clock;
+        },
+      },
+    );
+
+    expect(result.metrics).toMatchObject({
+      modelTurns: 1,
+      toolCalls: 0,
+      failedToolCalls: 0,
+      durationMs: 10,
+      timeToFirstTextMs: 5,
+      peakInputTokens: 7,
+      usage: { inputTokens: 7, outputTokens: 3, totalTokens: 10 },
+    });
   });
 
   it("rejects a Tool Result with the wrong call ID", async () => {

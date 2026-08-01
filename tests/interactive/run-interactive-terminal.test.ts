@@ -685,4 +685,51 @@ describe("runInteractiveTerminal", () => {
     input.write("/exit\r");
     await pending;
   });
+
+  it("shows Agent observation metrics in the status callback", async () => {
+    const input = new PassThrough();
+    const output = terminalOutput();
+    const status = vi.fn(
+      (runtime: InteractiveRuntimeStatus) =>
+        `轮次: ${runtime.modelTurns}\n工具: ${runtime.toolCalls}\n峰值输入: ${runtime.peakInputTokens}`,
+    );
+    const runTurn = vi.fn(async (messages) => ({
+      messages: [...messages, { role: "assistant" as const, content: "done" }],
+      steps: 2,
+      finalText: "done",
+      finishReason: "stop" as const,
+      metrics: {
+        modelTurns: 2,
+        toolCalls: 1,
+        failedToolCalls: 0,
+        durationMs: 42,
+        timeToFirstTextMs: 8,
+        peakInputTokens: 17,
+        usage: { inputTokens: 17, outputTokens: 4, totalTokens: 21 },
+      },
+    }));
+    const pending = runInteractiveTerminal({
+      input,
+      output,
+      color: false,
+      status,
+      playAnimation: async ({ write }) => write("KFLOW\n"),
+      runTurn,
+    });
+
+    await vi.waitFor(() =>
+      expect(output.text.join("")).toContain("Enter send"),
+    );
+    input.write("inspect\r");
+    await vi.waitFor(() => expect(output.text.join("")).toContain("done"));
+    input.write("/status\r");
+    await vi.waitFor(() => {
+      expect(status).toHaveBeenCalled();
+      expect(output.text.join("")).toContain("轮次: 2");
+      expect(output.text.join("")).toContain("工具: 1");
+      expect(output.text.join("")).toContain("峰值输入: 17");
+    });
+    input.write("/exit\r");
+    await pending;
+  });
 });

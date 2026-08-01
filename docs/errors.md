@@ -4,17 +4,17 @@ KFC errors separate machine decisions from user-safe presentation. Raw provider 
 
 ## Categories and Exit Codes
 
-| Category           | Examples                                                                       | Exit code | Retryable       |
-| ------------------ | ------------------------------------------------------------------------------ | --------: | --------------- |
-| `internal`         | unknown/unclassified failure                                                   |         1 | no              |
-| `config`           | missing or invalid configuration                                               |         2 | no              |
-| `provider`         | authentication, quota, rate limit, timeout, context, service, invalid response |         3 | depends on code |
-| `agent`            | invalid options, maximum steps, invalid Tool Result                            |         1 | no              |
-| `user_interrupted` | Ctrl+C or explicit cancellation                                                |       130 | no              |
+| Category           | Examples                                                                            | Exit code | Retryable       |
+| ------------------ | ----------------------------------------------------------------------------------- | --------: | --------------- |
+| `internal`         | unknown/unclassified failure                                                        |         1 | no              |
+| `config`           | missing or invalid configuration                                                    |         2 | no              |
+| `provider`         | authentication, quota, rate limit, timeout, context, service, invalid response      |         3 | depends on code |
+| `agent`            | invalid options, repeated no-progress Tool Call, maximum steps, invalid Tool Result |         1 | no              |
+| `user_interrupted` | Ctrl+C or explicit cancellation                                                     |       130 | no              |
 
 Provider failures considered retryable are rate limiting, timeout, and temporary service unavailability. Authentication, exhausted quota, context limit, and invalid response errors require a configuration, account, input, or adapter change.
 
-Agent control failures are non-retryable without changing the run: invalid explicit numeric `maxSteps`, an exhausted explicitly bounded model-step budget, or a Tool Result that does not match its Tool Call. Production CLI and TUI runs use `maxSteps: "unlimited"`; normal termination comes from a non-tool model response, Provider/context failure, or user interruption. Model stream violations remain Provider errors, while Tool Executor failures retain their original identity until the Tool Registry defines structured failure results.
+Agent control failures are non-retryable without changing the run: invalid explicit numeric `maxSteps`, an exhausted explicitly bounded model-step budget, a repeated no-progress Tool Call turn, or a Tool Result that does not match its Tool Call. Production CLI and TUI runs use `maxSteps: "unlimited"`; normal termination comes from a non-tool model response, Provider/context failure, user interruption, or the repeated-call guard. The repeated-call guard only stops three consecutive completed tool turns whose request and safe result are identical; it is not a total step limit. Model stream violations remain Provider errors, while Tool Executor failures retain their original identity until the Tool Registry defines structured failure results.
 
 Tool Registry definition failures use the agent category with `TOOL_DEFINITION_INVALID` or `TOOL_NAME_DUPLICATE`. Runtime tool lookup, input and execution failures do not become KfcError: they are safe `isError: true` Tool Results so the model can observe and recover. Cancellation remains `USER_INTERRUPTED`.
 

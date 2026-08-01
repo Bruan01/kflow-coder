@@ -28,6 +28,13 @@ export type AgentToolAuthorizationDecision = boolean | "explain";
 
 export type AgentMaxSteps = number | "unlimited";
 
+/**
+ * Three identical completed tool turns with identical results indicate that
+ * the model is not making progress. This is deliberately not a total step
+ * limit: different work may continue for as long as the user needs.
+ */
+export const DEFAULT_REPEATED_TOOL_TURN_LIMIT = 3;
+
 export interface AgentRunRequest {
   readonly messages: readonly ModelMessage[];
   readonly maxSteps: AgentMaxSteps;
@@ -39,6 +46,18 @@ export interface AgentRunResult {
   readonly steps: number;
   readonly finalText: string;
   readonly finishReason: Exclude<ModelFinishReason, "tool-call">;
+  readonly usage?: ModelTokenUsage;
+  /** Present for runs produced by runAgent; optional for older embedders. */
+  readonly metrics?: AgentRunMetrics;
+}
+
+export interface AgentRunMetrics {
+  readonly modelTurns: number;
+  readonly toolCalls: number;
+  readonly failedToolCalls: number;
+  readonly durationMs: number;
+  readonly timeToFirstTextMs: number | null;
+  readonly peakInputTokens: number | null;
   readonly usage?: ModelTokenUsage;
 }
 
@@ -57,6 +76,8 @@ export interface AgentRunDependencies {
     toolCall: ModelToolCall,
   ) => Promise<AgentToolAuthorizationDecision>;
   readonly onToolResult?: (event: AgentToolResultEvent) => void;
+  /** Injectable clock for deterministic metrics tests. */
+  readonly now?: () => number;
 }
 
 export interface AgentToolResultEvent {
@@ -97,6 +118,50 @@ function isValidToolCall(toolCall: ModelToolCall): boolean {
     typeof toolCall.name === "string" &&
     toolCall.name.trim() !== ""
   );
+}
+
+function stableSerialize(
+  value: unknown,
+  active: WeakSet<object> = new WeakSet<object>(),
+): string {
+  if (value === null) return "null";
+  if (typeof value === "string") return JSON.stringify(value);
+  if (typeof value === "number" || typeof value === "boolean") {
+    return JSON.stringify(value);
+  }
+  if (typeof value === "bigint") return `bigint:${value.toString()}`;
+  if (typeof value === "undefined") return "undefined";
+  if (typeof value !== "object") return `${typeof value}:${String(value)}`;
+  if (active.has(value)) return "[Circular]";
+  active.add(value);
+  if (Array.isArray(value)) {
+    return `[${value.map((item) => stableSerialize(item, active)).join(",")}]`;
+  }
+  const entries = Object.entries(value).sort(([left], [right]) =>
+    left.localeCompare(right),
+  );
+  return `{${entries
+    .map(
+      ([key, child]) =>
+        `${JSON.stringify(key)}:${stableSerialize(child, active)}`,
+    )
+    .join(",")}}`;
+}
+
+function toolTurnFingerprint(
+  toolCalls: readonly ModelToolCall[],
+  results: readonly AgentToolResult[],
+): string {
+  return stableSerialize({
+    calls: toolCalls.map((toolCall) => ({
+      name: toolCall.name,
+      input: toolCall.input,
+    })),
+    results: results.map((result) => ({
+      content: result.content,
+      isError: result.isError,
+    })),
+  });
 }
 
 async function collectModelTurn(
@@ -222,8 +287,17 @@ export async function runAgent(
   }
   throwIfAborted(options.signal);
 
+  const now = dependencies.now ?? (() => performance.now());
+  const startedAt = now();
   const messages: ModelMessage[] = [...request.messages];
   let totalUsage: ModelTokenUsage | undefined;
+  let modelTurns = 0;
+  let toolCallsExecuted = 0;
+  let failedToolCalls = 0;
+  let firstTextAt: number | undefined;
+  let peakInputTokens: number | null = null;
+  let previousToolTurnFingerprint: string | undefined;
+  let repeatedToolTurnCount = 0;
   const seenToolCallIds = new Set<string>();
   for (const message of messages) {
     if (message.role !== "assistant" || message.toolCalls === undefined) {
@@ -256,10 +330,20 @@ export async function runAgent(
       messages,
       request.tools,
       options,
-      dependencies.onText,
+      (delta) => {
+        if (delta !== "") firstTextAt ??= now();
+        dependencies.onText?.(delta);
+      },
       dependencies.onToolCall,
     );
+    modelTurns += 1;
     totalUsage = addUsage(totalUsage, turn.usage);
+    if (turn.usage !== undefined) {
+      peakInputTokens =
+        peakInputTokens === null
+          ? turn.usage.inputTokens
+          : Math.max(peakInputTokens, turn.usage.inputTokens);
+    }
     throwIfAborted(options.signal);
     if (turn.toolCalls.length > 0) {
       for (const toolCall of turn.toolCalls) {
@@ -280,8 +364,10 @@ export async function runAgent(
         );
       }
 
+      const toolResults: AgentToolResult[] = [];
       for (const toolCall of turn.toolCalls) {
         throwIfAborted(options.signal);
+        toolCallsExecuted += 1;
         const startedAt = Date.now();
         const authorized =
           dependencies.authorizeToolCall === undefined
@@ -306,12 +392,33 @@ export async function runAgent(
           result,
           durationMs: Math.max(0, Date.now() - startedAt),
         });
+        if (result.isError) failedToolCalls += 1;
+        toolResults.push(result);
         messages.push({
           role: "tool",
           toolCallId: result.toolCallId,
           content: result.content,
           isError: result.isError,
         });
+      }
+      const fingerprint = toolTurnFingerprint(turn.toolCalls, toolResults);
+      if (fingerprint === previousToolTurnFingerprint) {
+        repeatedToolTurnCount += 1;
+      } else {
+        previousToolTurnFingerprint = fingerprint;
+        repeatedToolTurnCount = 1;
+      }
+      if (repeatedToolTurnCount >= DEFAULT_REPEATED_TOOL_TURN_LIMIT) {
+        throw new AgentError(
+          "AGENT_REPEATED_TOOL_CALL",
+          "Agent repeated the same tool turn without making progress",
+          {
+            repetitions: repeatedToolTurnCount,
+            tools: [
+              ...new Set(turn.toolCalls.map((toolCall) => toolCall.name)),
+            ],
+          },
+        );
       }
       continue;
     }
@@ -327,6 +434,18 @@ export async function runAgent(
       finalText: turn.text,
       finishReason,
       ...(totalUsage === undefined ? {} : { usage: totalUsage }),
+      metrics: {
+        modelTurns,
+        toolCalls: toolCallsExecuted,
+        failedToolCalls,
+        durationMs: Math.max(0, now() - startedAt),
+        timeToFirstTextMs:
+          firstTextAt === undefined
+            ? null
+            : Math.max(0, firstTextAt - startedAt),
+        peakInputTokens,
+        ...(totalUsage === undefined ? {} : { usage: totalUsage }),
+      },
     };
   }
 

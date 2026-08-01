@@ -191,6 +191,38 @@ describe("runCli", () => {
     expect(harness.stderr).toEqual(["[kfc] agent steps=2 finish=stop\n"]);
   });
 
+  it("reports Agent observation metrics when the core provides them", async () => {
+    const harness = createHarness();
+    harness.runAgent.mockImplementationOnce(async (_prompt, onText) => {
+      onText("done");
+      return {
+        messages: [
+          { role: "user", content: "inspect" },
+          { role: "assistant", content: "done" },
+        ],
+        steps: 3,
+        finalText: "done",
+        finishReason: "stop",
+        metrics: {
+          modelTurns: 3,
+          toolCalls: 2,
+          failedToolCalls: 1,
+          durationMs: 123.4,
+          timeToFirstTextMs: 18.2,
+          peakInputTokens: 50,
+          usage: { inputTokens: 50, outputTokens: 12, totalTokens: 62 },
+        },
+      };
+    });
+
+    const exitCode = await runCli(["agent", "inspect"], harness.environment);
+
+    expect(exitCode).toBe(0);
+    expect(harness.stderr).toEqual([
+      "[kfc] agent steps=3 turns=3 tools=2 failed_tools=1 finish=stop ttft=18ms total=123ms tokens=50/12/62\n",
+    ]);
+  });
+
   it("uses the safe presenter when agent fails after partial output", async () => {
     const harness = createHarness();
     harness.runAgent.mockImplementationOnce(async (_prompt, onText) => {

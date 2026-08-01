@@ -2,6 +2,7 @@ import { emitKeypressEvents } from "node:readline";
 
 import type {
   AgentMaxSteps,
+  AgentRunMetrics,
   AgentRunResult,
   AgentToolAuthorizationDecision,
   AgentToolResult,
@@ -124,6 +125,12 @@ export interface InteractiveRuntimeStatus {
   readonly turns: number;
   readonly messageCount: number;
   readonly usage: ModelTokenUsage | undefined;
+  readonly modelTurns: number;
+  readonly toolCalls: number;
+  readonly failedToolCalls: number;
+  readonly totalDurationMs: number;
+  readonly lastTimeToFirstTextMs: number | null;
+  readonly peakInputTokens: number | null;
   readonly enabledToolCount: number;
   readonly totalToolCount: number;
   readonly maxSteps: AgentMaxSteps;
@@ -166,16 +173,56 @@ function runtimeStatus(
   turns: number,
   messageCount: number,
   usage: ModelTokenUsage | undefined,
+  metrics: SessionMetrics,
 ): InteractiveRuntimeStatus {
   const counts = toolCounts(options);
   return {
     turns,
     messageCount,
     usage,
+    modelTurns: metrics.modelTurns,
+    toolCalls: metrics.toolCalls,
+    failedToolCalls: metrics.failedToolCalls,
+    totalDurationMs: metrics.totalDurationMs,
+    lastTimeToFirstTextMs: metrics.lastTimeToFirstTextMs,
+    peakInputTokens: metrics.peakInputTokens,
     enabledToolCount: counts.enabled,
     totalToolCount: counts.total,
     maxSteps: options.maxSteps ?? "unlimited",
   };
+}
+
+interface SessionMetrics {
+  modelTurns: number;
+  toolCalls: number;
+  failedToolCalls: number;
+  totalDurationMs: number;
+  lastTimeToFirstTextMs: number | null;
+  peakInputTokens: number | null;
+}
+
+function addRunMetrics(
+  session: SessionMetrics,
+  result: AgentRunResult,
+  fallbackToolCalls: number,
+  fallbackFailedToolCalls: number,
+): void {
+  const metrics: AgentRunMetrics | undefined = result.metrics;
+  session.modelTurns += metrics?.modelTurns ?? result.steps;
+  session.toolCalls += metrics?.toolCalls ?? fallbackToolCalls;
+  session.failedToolCalls +=
+    metrics?.failedToolCalls ?? fallbackFailedToolCalls;
+  session.totalDurationMs += metrics?.durationMs ?? 0;
+  session.lastTimeToFirstTextMs = metrics?.timeToFirstTextMs ?? null;
+  if (
+    metrics?.peakInputTokens !== null &&
+    metrics?.peakInputTokens !== undefined
+  ) {
+    session.peakInputTokens =
+      session.peakInputTokens === null
+        ? metrics.peakInputTokens
+        : Math.max(session.peakInputTokens, metrics.peakInputTokens);
+  }
 }
 
 function mergeWorkspaceChange(
@@ -220,6 +267,9 @@ function interactiveErrorText(error: unknown): string {
   const normalized = normalizeUnknownError(error);
   if (normalized.code === "AGENT_MAX_STEPS_EXCEEDED") {
     return "Agent 遇到显式步数预算并停止；当前生产模式默认不设置固定步数上限。";
+  }
+  if (normalized.code === "AGENT_REPEATED_TOOL_CALL") {
+    return "Agent 检测到连续重复且无进展的工具调用，已停止；请检查工具结果或调整任务。";
   }
   return (
     formatErrorForCli(normalized).text.split("\n", 1)[0] ?? "Request failed"
@@ -277,6 +327,14 @@ export async function runInteractiveTerminal(
   let messages: readonly ModelMessage[] = [];
   let turns = 0;
   let totalUsage: ModelTokenUsage | undefined;
+  const sessionMetrics: SessionMetrics = {
+    modelTurns: 0,
+    toolCalls: 0,
+    failedToolCalls: 0,
+    totalDurationMs: 0,
+    lastTimeToFirstTextMs: null,
+    peakInputTokens: null,
+  };
   let activityAnimation: ActivityAnimationHandle | undefined;
   let pendingToolCalls: readonly {
     readonly id: string;
@@ -308,7 +366,13 @@ export async function runInteractiveTerminal(
 
   const redraw = (): void => {
     if (closed) return;
-    const runtime = runtimeStatus(options, turns, messages.length, totalUsage);
+    const runtime = runtimeStatus(
+      options,
+      turns,
+      messages.length,
+      totalUsage,
+      sessionMetrics,
+    );
     options.output.write(
       `\u001b[2J\u001b[H${renderWorkbench(state, {
         columns: terminalColumns(options.output),
@@ -423,6 +487,12 @@ export async function runInteractiveTerminal(
     messages = [];
     turns = 0;
     totalUsage = undefined;
+    sessionMetrics.modelTurns = 0;
+    sessionMetrics.toolCalls = 0;
+    sessionMetrics.failedToolCalls = 0;
+    sessionMetrics.totalDurationMs = 0;
+    sessionMetrics.lastTimeToFirstTextMs = null;
+    sessionMetrics.peakInputTokens = null;
     state = appendNotice(
       createWorkbenchState(),
       "已清除当前会话上下文和时间线。",
@@ -459,7 +529,13 @@ export async function runInteractiveTerminal(
           state = appendNotice(
             state,
             options.status(
-              runtimeStatus(options, turns, messages.length, totalUsage),
+              runtimeStatus(
+                options,
+                turns,
+                messages.length,
+                totalUsage,
+                sessionMetrics,
+              ),
             ),
           );
           redraw();
@@ -604,6 +680,12 @@ export async function runInteractiveTerminal(
       messages = result.messages;
       turns += 1;
       totalUsage = addUsage(totalUsage, result.usage);
+      addRunMetrics(
+        sessionMetrics,
+        result,
+        completedTools.length + failedTools.length,
+        failedTools.length,
+      );
       if (!receivedText && result.finalText !== "") {
         state = appendAssistantText(state, result.finalText);
       }
