@@ -4,3 +4,6 @@ pnpm-lock.yaml
 KFlow_Code_KFC_最小实现与智能体架构学习路线.docx
 
 lr-machine/snapshots/*.html
+
+# Local agent test-fork sandbox (not part of the project)
+testforkfc/

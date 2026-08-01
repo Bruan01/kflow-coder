@@ -22,7 +22,12 @@ const browserGlobals = {
 
 export default tseslint.config(
   {
-    ignores: ["dist/", "node_modules/", "lr-machine/snapshots/*.html"],
+    ignores: [
+      "dist/",
+      "node_modules/",
+      "lr-machine/snapshots/*.html",
+      "testforkfc/",
+    ],
   },
   eslint.configs.recommended,
   ...tseslint.configs.recommended,

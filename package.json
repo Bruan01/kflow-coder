@@ -2,6 +2,7 @@
   "name": "kflow-code",
   "version": "0.1.0",
   "description": "A learning-first, verifiable coding agent built from first principles.",
+  "license": "MIT",
   "type": "module",
   "private": true,
   "engines": {
