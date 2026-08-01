@@ -12,6 +12,7 @@ describe("interactive catalog", () => {
       "/clear",
       "/status",
       "/tool",
+      "/themes",
       "/exit",
     ]);
     expect(new Set(interactiveCommands.map((item) => item.command)).size).toBe(

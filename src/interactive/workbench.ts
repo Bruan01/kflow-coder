@@ -2,6 +2,8 @@ import type { InputEditorState } from "./input-editor.js";
 import { createInputEditor } from "./input-editor.js";
 import { sanitizeTerminalText } from "./sanitize-terminal-text.js";
 import { interactiveCommands, type InteractiveCommandItem } from "./catalog.js";
+import type { ThemeName } from "../config/runtime-settings.js";
+import { getInteractiveTheme, type WorkbenchTheme } from "./themes.js";
 
 export type WorkbenchEvent =
   | { readonly type: "user"; readonly text: string }
@@ -21,6 +23,16 @@ export interface InteractiveToolStatus {
   readonly enabled: boolean;
 }
 
+export interface InteractiveSessionInfo {
+  readonly model: string;
+  readonly cwd: string;
+  readonly protocol: string;
+  readonly theme: ThemeName;
+  readonly turns: number;
+  readonly enabledToolCount: number;
+  readonly totalToolCount: number;
+}
+
 const commandMenuItems = interactiveCommands;
 
 export interface WorkbenchState {
@@ -29,6 +41,7 @@ export interface WorkbenchState {
   readonly status: "Ready" | "Working" | "Cancelled" | "Error";
   readonly commandMenu: { readonly selected: number } | undefined;
   readonly toolMenu: { readonly selected: number } | undefined;
+  readonly themeMenu: { readonly selected: number } | undefined;
   readonly scrollOffset: number;
   readonly clearConfirmation: boolean;
 }
@@ -38,6 +51,9 @@ export interface WorkbenchRenderOptions {
   readonly rows: number;
   readonly color: boolean;
   readonly tools?: readonly InteractiveToolStatus[];
+  readonly themes?: readonly WorkbenchTheme[];
+  readonly theme?: WorkbenchTheme;
+  readonly sessionInfo?: InteractiveSessionInfo;
 }
 
 function sanitizeDisplayText(text: string): string {
@@ -53,13 +69,20 @@ function eventLines(
   event: WorkbenchEvent,
   columns: number,
   color: boolean,
+  palette: WorkbenchTheme["palette"],
 ): readonly string[] {
   const width = Math.max(1, columns - 6);
   if (event.type === "tool")
-    return [colored(`  ✓ Tool  ${truncate(event.name, width)}`, "32", color)];
+    return [
+      colored(`  ✓ Tool  ${truncate(event.name, width)}`, palette.tool, color),
+    ];
   if (event.type === "notice") {
     const code =
-      event.tone === "error" ? "31" : event.tone === "warning" ? "33" : "2;37";
+      event.tone === "error"
+        ? palette.error
+        : event.tone === "warning"
+          ? palette.warning
+          : palette.info;
     return sanitizeDisplayText(event.text)
       .split("\n")
       .map((line) => colored(`  ! ${truncate(line, width)}`, code, color));
@@ -70,7 +93,7 @@ function eventLines(
       .map((line, index) =>
         colored(
           `${index === 0 ? "you › " : "      "}${truncate(line, width)}`,
-          "36",
+          palette.user,
           color,
         ),
       );
@@ -79,7 +102,7 @@ function eventLines(
   return lines.map((line, index) =>
     colored(
       `${index === 0 ? "KFC › " : "      "}${truncate(line, width)}`,
-      "37",
+      palette.assistant,
       color,
     ),
   );
@@ -93,13 +116,16 @@ function renderInput(
   input: InputEditorState,
   columns: number,
   color: boolean,
+  palette: WorkbenchTheme["palette"],
 ): readonly string[] {
   const safe = sanitizeDisplayText(input.value);
   const cursor = Math.min(safe.length, Math.max(0, input.cursor));
   const before = safe.slice(0, cursor);
   const selected = safe.slice(cursor, cursor + 1) || " ";
   const after = safe.slice(cursor + 1);
-  const highlighted = color ? `\u001b[7m${selected}\u001b[0m` : `[${selected}]`;
+  const highlighted = color
+    ? `\u001b[${palette.selection}m${selected}\u001b[0m`
+    : `[${selected}]`;
   const inputLines = `${before}${highlighted}${after}`.split("\n");
   const visible = inputLines
     .slice(-2)
@@ -122,6 +148,7 @@ function renderCommandMenu(
   state: WorkbenchState,
   columns: number,
   color: boolean,
+  palette: WorkbenchTheme["palette"],
 ): readonly string[] {
   if (state.commandMenu === undefined) return [];
   const commands = filteredCommands(state.input.value);
@@ -129,8 +156,8 @@ function renderCommandMenu(
   return commands.map((item, index) => {
     const text = `  ${item.command.padEnd(8)} ${item.label}`;
     const line = truncate(text, columns);
-    if (index === selected) return colored(line, "7", color);
-    return colored(line, "2;37", color);
+    if (index === selected) return colored(line, palette.selection, color);
+    return colored(line, palette.info, color);
   });
 }
 
@@ -139,46 +166,120 @@ function renderToolMenu(
   tools: readonly InteractiveToolStatus[],
   columns: number,
   color: boolean,
+  palette: WorkbenchTheme["palette"],
 ): readonly string[] {
   if (state.toolMenu === undefined) return [];
   const selected =
     tools.length === 0
       ? -1
       : Math.min(state.toolMenu.selected, tools.length - 1);
-  const lines = [colored("  工具管理", "1;36", color)];
+  const lines = [colored("  工具管理", palette.header, color)];
   if (tools.length === 0) {
-    lines.push(colored("  当前没有可用工具", "2;37", color));
+    lines.push(colored("  当前没有可用工具", palette.info, color));
   } else {
     lines.push(
       ...tools.map((tool, index) => {
         const marker = tool.enabled ? "✓" : "○";
         const text = `  ${marker} ${tool.name}  ${tool.description}`;
         const line = truncate(text, columns);
-        return index === selected ? colored(line, "7", color) : line;
+        return index === selected
+          ? colored(line, palette.selection, color)
+          : line;
       }),
     );
   }
   lines.push(
-    colored("  ↑↓ 选择 · Space 启用/关闭 · Enter/Esc 返回", "2;37", color),
+    colored(
+      "  ↑↓ 选择 · Space 启用/关闭 · Enter/Esc 返回",
+      palette.info,
+      color,
+    ),
   );
   return lines;
 }
 
-function statusCode(status: WorkbenchState["status"]): string {
-  if (status === "Working") return "36";
-  if (status === "Cancelled") return "33";
-  if (status === "Error") return "31";
-  return "2;37";
+function renderThemeMenu(
+  state: WorkbenchState,
+  themes: readonly WorkbenchTheme[],
+  currentThemeName: ThemeName,
+  columns: number,
+  color: boolean,
+  palette: WorkbenchTheme["palette"],
+): readonly string[] {
+  if (state.themeMenu === undefined) return [];
+  const selected =
+    themes.length === 0
+      ? -1
+      : Math.min(state.themeMenu.selected, themes.length - 1);
+  const lines = [
+    colored("  主题管理（上下键实时预览）", palette.header, color),
+  ];
+  if (themes.length === 0) {
+    lines.push(colored("  当前没有可用主题", palette.info, color));
+  } else {
+    lines.push(
+      ...themes.map((theme, index) => {
+        const marker = theme.name === currentThemeName ? "●" : "○";
+        const text = `  ${marker} ${theme.label}  ${theme.description}`;
+        const line = truncate(text, columns);
+        return index === selected
+          ? colored(line, palette.selection, color)
+          : colored(line, palette.info, color);
+      }),
+    );
+  }
+  lines.push(
+    colored("  ↑↓ 选择并实时切换 · Enter/Esc 返回", palette.info, color),
+  );
+  return lines;
+}
+
+function statusCode(
+  status: WorkbenchState["status"],
+  palette: WorkbenchTheme["palette"],
+): string {
+  if (status === "Working") return palette.statusWorking;
+  if (status === "Cancelled") return palette.statusCancelled;
+  if (status === "Error") return palette.statusError;
+  return palette.statusReady;
 }
 
 function confirmationLines(
   state: WorkbenchState,
   color: boolean,
+  palette: WorkbenchTheme["palette"],
 ): readonly string[] {
   if (!state.clearConfirmation) return [];
   return [
-    colored("  确认清除当前会话上下文和时间线？", "33", color),
-    colored("  输入 y 确认，其他任意内容取消", "2;33", color),
+    colored("  确认清除当前会话上下文和时间线？", palette.warning, color),
+    colored("  输入 y 确认，其他任意内容取消", palette.warning, color),
+  ];
+}
+
+function sessionInfoLines(
+  info: InteractiveSessionInfo | undefined,
+  columns: number,
+  color: boolean,
+  palette: WorkbenchTheme["palette"],
+): readonly string[] {
+  if (info === undefined) return [];
+  return [
+    colored(
+      truncate(
+        `  模型: ${info.model} · 协议: ${info.protocol} · 主题: ${info.theme}`,
+        columns,
+      ),
+      palette.meta,
+      color,
+    ),
+    colored(
+      truncate(
+        `  目录: ${info.cwd} · 会话: ${info.turns} 轮 · 工具: ${info.enabledToolCount}/${info.totalToolCount}`,
+        columns,
+      ),
+      palette.meta,
+      color,
+    ),
   ];
 }
 
@@ -189,6 +290,7 @@ export function createWorkbenchState(): WorkbenchState {
     status: "Ready",
     commandMenu: undefined,
     toolMenu: undefined,
+    themeMenu: undefined,
     scrollOffset: 0,
     clearConfirmation: false,
   };
@@ -294,7 +396,12 @@ export function setCommandMenu(
   state: WorkbenchState,
   open: boolean,
 ): WorkbenchState {
-  return { ...state, commandMenu: open ? { selected: 0 } : undefined };
+  return {
+    ...state,
+    commandMenu: open ? { selected: 0 } : undefined,
+    toolMenu: open ? undefined : state.toolMenu,
+    themeMenu: open ? undefined : state.themeMenu,
+  };
 }
 
 export function setToolMenu(
@@ -306,6 +413,20 @@ export function setToolMenu(
     ...state,
     toolMenu: open ? { selected: Math.max(0, selected) } : undefined,
     commandMenu: open ? undefined : state.commandMenu,
+    themeMenu: open ? undefined : state.themeMenu,
+  };
+}
+
+export function setThemeMenu(
+  state: WorkbenchState,
+  open: boolean,
+  selected = 0,
+): WorkbenchState {
+  return {
+    ...state,
+    themeMenu: open ? { selected: Math.max(0, selected) } : undefined,
+    commandMenu: open ? undefined : state.commandMenu,
+    toolMenu: open ? undefined : state.toolMenu,
   };
 }
 
@@ -318,6 +439,7 @@ export function setClearConfirmation(
     clearConfirmation: pending,
     commandMenu: pending ? undefined : state.commandMenu,
     toolMenu: pending ? undefined : state.toolMenu,
+    themeMenu: pending ? undefined : state.themeMenu,
   };
 }
 
@@ -353,6 +475,20 @@ export function moveToolMenu(
   return { ...state, toolMenu: { selected } };
 }
 
+export function moveThemeMenu(
+  state: WorkbenchState,
+  delta: number,
+  themeCount: number,
+): WorkbenchState {
+  if (state.themeMenu === undefined || themeCount < 1) return state;
+  const selected = (state.themeMenu.selected + delta + themeCount) % themeCount;
+  return { ...state, themeMenu: { selected } };
+}
+
+export function selectedThemeIndex(state: WorkbenchState): number | undefined {
+  return state.themeMenu?.selected;
+}
+
 export function selectedCommand(state: WorkbenchState): string | undefined {
   if (state.commandMenu === undefined) return undefined;
   const commands = filteredCommands(state.input.value);
@@ -370,29 +506,48 @@ export function renderWorkbench(
 ): string {
   const columns = Math.max(24, options.columns);
   const rows = Math.max(9, options.rows);
+  const theme = options.theme ?? getInteractiveTheme(undefined);
+  const palette = theme.palette;
   const divider = "─".repeat(columns);
-  const header = `${colored("KFLOW", "1;36", options.color)}${truncate(
+  const header = `${colored("KFLOW", palette.header, options.color)}${truncate(
     "  ·  Read-only Agent  ·  session memory",
     Math.max(1, columns - 5),
   )}`;
-  const input = renderInput(state.input, columns, options.color);
-  const commandMenu = renderCommandMenu(state, columns, options.color);
+  const input = renderInput(state.input, columns, options.color, palette);
+  const commandMenu = renderCommandMenu(state, columns, options.color, palette);
   const toolMenu = renderToolMenu(
     state,
     options.tools ?? [],
     columns,
     options.color,
+    palette,
   );
-  const confirmation = confirmationLines(state, options.color);
+  const themeMenu = renderThemeMenu(
+    state,
+    options.themes ?? [],
+    theme.name,
+    columns,
+    options.color,
+    palette,
+  );
+  const confirmation = confirmationLines(state, options.color, palette);
+  const sessionInfo = sessionInfoLines(
+    options.sessionInfo,
+    columns,
+    options.color,
+    palette,
+  );
   const fixedRows =
     5 +
     input.length +
     commandMenu.length +
     toolMenu.length +
-    confirmation.length;
+    themeMenu.length +
+    confirmation.length +
+    sessionInfo.length;
   const transcriptRows = Math.max(1, rows - fixedRows);
   const transcript = state.events.flatMap((event) =>
-    eventLines(event, columns, options.color),
+    eventLines(event, columns, options.color, palette),
   );
   const transcriptEnd = Math.max(0, transcript.length - state.scrollOffset);
   const visibleTranscript = transcript.slice(
@@ -401,7 +556,7 @@ export function renderWorkbench(
   );
   const status = colored(
     `${state.status}  ·  Read-only  ·  ${state.events.length} events${state.scrollOffset > 0 ? `  ·  Scroll ${state.scrollOffset} lines` : ""}  ·  Esc cancel`,
-    statusCode(state.status),
+    statusCode(state.status, palette),
     options.color,
   );
 
@@ -419,7 +574,13 @@ export function renderWorkbench(
     ...input,
     ...commandMenu,
     ...toolMenu,
+    ...themeMenu,
     ...confirmation,
-    truncate("  Enter send · Ctrl+J newline · /help", columns),
+    ...sessionInfo,
+    colored(
+      truncate("  Enter send · Ctrl+J newline · /help · /themes", columns),
+      palette.info,
+      options.color,
+    ),
   ].join("\n");
 }

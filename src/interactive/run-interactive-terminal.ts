@@ -1,7 +1,10 @@
 import { emitKeypressEvents } from "node:readline";
 
 import type { AgentRunResult } from "../agent/run-agent.js";
-import { DEFAULT_AGENT_MAX_STEPS } from "../config/runtime-settings.js";
+import {
+  DEFAULT_AGENT_MAX_STEPS,
+  type ThemeName,
+} from "../config/runtime-settings.js";
 import {
   formatErrorForCli,
   normalizeUnknownError,
@@ -27,14 +30,23 @@ import {
   selectedCommand,
   setCommandMenu,
   setClearConfirmation,
+  setThemeMenu,
   setToolMenu,
   setWorkbenchInput,
   setWorkbenchStatus,
   moveToolMenu,
+  moveThemeMenu,
+  selectedThemeIndex,
+  type InteractiveSessionInfo,
   type InteractiveToolStatus,
   type WorkbenchState,
 } from "./workbench.js";
 import { interactiveCommands } from "./catalog.js";
+import {
+  getInteractiveTheme,
+  interactiveThemes,
+  type WorkbenchTheme,
+} from "./themes.js";
 
 const ENTER_ALTERNATE_SCREEN = "\u001b[?1049h\u001b[2J\u001b[H\u001b[?25l";
 const LEAVE_ALTERNATE_SCREEN = "\u001b[?25h\u001b[?1049l";
@@ -62,6 +74,12 @@ export interface InteractiveTerminalOptions {
   readonly tools?: () => readonly InteractiveToolStatus[];
   readonly toggleTool?: (name: string) => void;
   readonly maxSteps?: number;
+  readonly themes?: readonly WorkbenchTheme[];
+  readonly theme?: () => WorkbenchTheme;
+  readonly setTheme?: (name: ThemeName) => void | Promise<void>;
+  readonly sessionInfo?: (
+    runtime: InteractiveRuntimeStatus,
+  ) => InteractiveSessionInfo;
   readonly runTurn: (
     messages: readonly ModelMessage[],
     handlers: InteractiveTerminalTurnHandlers,
@@ -108,6 +126,23 @@ function toolCounts(options: InteractiveTerminalOptions): {
   return {
     enabled: tools.filter((tool) => tool.enabled).length,
     total: tools.length,
+  };
+}
+
+function runtimeStatus(
+  options: InteractiveTerminalOptions,
+  turns: number,
+  messageCount: number,
+  usage: ModelTokenUsage | undefined,
+): InteractiveRuntimeStatus {
+  const counts = toolCounts(options);
+  return {
+    turns,
+    messageCount,
+    usage,
+    enabledToolCount: counts.enabled,
+    totalToolCount: counts.total,
+    maxSteps: options.maxSteps ?? DEFAULT_AGENT_MAX_STEPS,
   };
 }
 
@@ -175,14 +210,21 @@ export async function runInteractiveTerminal(
   const finished = new Promise<void>((resolve) => {
     finish = resolve;
   });
+  const themes = options.themes ?? interactiveThemes;
 
   const redraw = (): void => {
+    const runtime = runtimeStatus(options, turns, messages.length, totalUsage);
     options.output.write(
       `\u001b[2J\u001b[H${renderWorkbench(state, {
         columns: terminalColumns(options.output),
         rows: terminalRows(options.output),
         color: options.color,
         tools: options.tools?.() ?? [],
+        themes,
+        theme: options.theme?.() ?? getInteractiveTheme(undefined),
+        ...(options.sessionInfo === undefined
+          ? {}
+          : { sessionInfo: options.sessionInfo(runtime) }),
       })}`,
     );
   };
@@ -237,17 +279,11 @@ export async function runInteractiveTerminal(
           redraw();
           return;
         case "/status": {
-          const counts = toolCounts(options);
           state = appendNotice(
             state,
-            options.status({
-              turns,
-              messageCount: messages.length,
-              usage: totalUsage,
-              enabledToolCount: counts.enabled,
-              totalToolCount: counts.total,
-              maxSteps: options.maxSteps ?? DEFAULT_AGENT_MAX_STEPS,
-            }),
+            options.status(
+              runtimeStatus(options, turns, messages.length, totalUsage),
+            ),
           );
           redraw();
           return;
@@ -256,6 +292,16 @@ export async function runInteractiveTerminal(
           state = setToolMenu(state, true);
           redraw();
           return;
+        case "/themes": {
+          const current = options.theme?.() ?? getInteractiveTheme(undefined);
+          const selected = Math.max(
+            0,
+            themes.findIndex((theme) => theme.name === current.name),
+          );
+          state = setThemeMenu(state, true, selected);
+          redraw();
+          return;
+        }
         case "/exit":
           exit();
           return;
@@ -340,6 +386,11 @@ export async function runInteractiveTerminal(
         redraw();
         return;
       }
+      if (state.themeMenu !== undefined && activeController === undefined) {
+        state = setThemeMenu(state, false);
+        redraw();
+        return;
+      }
       if (state.clearConfirmation && activeController === undefined) {
         state = appendNotice(
           setClearConfirmation(state, false),
@@ -372,6 +423,50 @@ export async function runInteractiveTerminal(
         const selected = state.toolMenu.selected;
         const tool = tools[selected];
         if (tool !== undefined) options.toggleTool?.(tool.name);
+        redraw();
+        return;
+      }
+      return;
+    }
+    if (state.themeMenu !== undefined) {
+      if (normalizedKey.name === "up") {
+        state = moveThemeMenu(state, -1, themes.length);
+        const selected = selectedThemeIndex(state);
+        const theme = selected === undefined ? undefined : themes[selected];
+        if (theme !== undefined) {
+          const pending = options.setTheme?.(theme.name);
+          void Promise.resolve(pending).catch((error: unknown) => {
+            state = appendNotice(
+              state,
+              formatErrorForCli(error).text.split("\n", 1)[0] ?? "主题保存失败",
+              "Error",
+            );
+            redraw();
+          });
+        }
+        redraw();
+        return;
+      }
+      if (normalizedKey.name === "down") {
+        state = moveThemeMenu(state, 1, themes.length);
+        const selected = selectedThemeIndex(state);
+        const theme = selected === undefined ? undefined : themes[selected];
+        if (theme !== undefined) {
+          const pending = options.setTheme?.(theme.name);
+          void Promise.resolve(pending).catch((error: unknown) => {
+            state = appendNotice(
+              state,
+              formatErrorForCli(error).text.split("\n", 1)[0] ?? "主题保存失败",
+              "Error",
+            );
+            redraw();
+          });
+        }
+        redraw();
+        return;
+      }
+      if (normalizedKey.name === "return") {
+        state = setThemeMenu(state, false);
         redraw();
         return;
       }

@@ -1,5 +1,5 @@
 export type InteractiveCommandName =
-  "/help" | "/clear" | "/status" | "/tool" | "/exit";
+  "/help" | "/clear" | "/status" | "/tool" | "/themes" | "/exit";
 
 export interface InteractiveCommandItem {
   readonly command: InteractiveCommandName;
@@ -27,6 +27,11 @@ export const interactiveCommands: readonly InteractiveCommandItem[] = [
     command: "/tool",
     label: "启用或关闭当前可用工具",
     description: "管理工具开关（↑↓ 选择，Space 启用/关闭）",
+  },
+  {
+    command: "/themes",
+    label: "切换 KFlow 颜色主题",
+    description: "实时切换界面主题",
   },
   {
     command: "/exit",
