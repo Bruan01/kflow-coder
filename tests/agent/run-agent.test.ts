@@ -165,6 +165,51 @@ describe("runAgent", () => {
     expect(result.finalText).toBe("denied");
   });
 
+  it("returns a structured explanation request without executing the tool", async () => {
+    const toolCall = {
+      id: "call_shell",
+      name: "shell",
+      input: { command: "pnpm test" },
+    };
+    const provider = new ScriptedProvider([
+      [
+        { type: "start" },
+        { type: "tool-call", toolCall },
+        { type: "finish", reason: "tool-call" },
+      ],
+      [
+        { type: "start" },
+        { type: "text-delta", delta: "This command runs the test suite." },
+        { type: "finish", reason: "stop" },
+      ],
+    ]);
+    const toolExecutor = fakeExecutor();
+    const observedResults: string[] = [];
+
+    const result = await runAgent(
+      {
+        messages: [{ role: "user", content: "run tests" }],
+        maxSteps: 2,
+      },
+      {
+        provider,
+        toolExecutor,
+        authorizeToolCall: async () => "explain",
+        onToolResult: ({ result: toolResult }) =>
+          observedResults.push(toolResult.content),
+      },
+    );
+
+    expect(toolExecutor.execute).not.toHaveBeenCalled();
+    expect(JSON.parse(observedResults[0] ?? "{}")).toEqual({
+      error: {
+        code: "TOOL_CALL_EXPLANATION_REQUESTED",
+        tool: "shell",
+      },
+    });
+    expect(result.finalText).toBe("This command runs the test suite.");
+  });
+
   it("completes a direct model answer without executing a tool", async () => {
     const initialMessages = [
       { role: "system" as const, content: "Be concise." },

@@ -8,12 +8,14 @@ import {
   appendUserEvent,
   createWorkbenchState,
   moveCommandMenu,
+  moveToolConfirmation,
   moveWorkbenchScroll,
   renderWorkbench,
   setClearConfirmation,
   setCommandMenu,
   setWorkbenchActivity,
   setWorkbenchInput,
+  setToolConfirmation,
 } from "../../src/interactive/workbench.js";
 
 describe("KFlow workbench renderer", () => {
@@ -187,5 +189,25 @@ describe("KFlow workbench renderer", () => {
 
     expect(screen).toContain("确认清除当前会话上下文和时间线？");
     expect(screen).toContain("输入 y 确认");
+  });
+
+  it("renders and moves the three-choice tool confirmation menu", () => {
+    let state = setToolConfirmation(createWorkbenchState(), {
+      id: "call_shell",
+      name: "shell",
+      detail: "命令: pnpm test",
+    });
+    state = moveToolConfirmation(state, 2);
+
+    const screen = renderWorkbench(state, {
+      columns: 70,
+      rows: 18,
+      color: false,
+    });
+
+    expect(screen).toContain("Yes");
+    expect(screen).toContain("No");
+    expect(screen).toContain("❯ Tell me why?");
+    expect(screen).toContain("↑↓ 选择 · Enter 确认");
   });
 });

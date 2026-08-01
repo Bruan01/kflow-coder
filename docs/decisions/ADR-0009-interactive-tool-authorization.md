@@ -10,9 +10,9 @@ Tool Registry 已经用 `read`、`edit`、`execute` capability 区分观察、�
 ## 决定
 
 - `AgentRunDependencies` 增加可选异步 `authorizeToolCall` 边界。
-- 授权回调返回 `true` 才进入 `toolExecutor.execute()`；返回 `false` 不执行工具，而是生成 `TOOL_CALL_DENIED` 的结构化 Tool Result 并继续 Agent Loop。
-- TUI 对 capability 为 `edit` 或 `execute` 的每个 Tool Call 显示安全目标摘要和 `y/N` 确认；读工具自动通过。
-- Esc/Ctrl+C 在确认态表示拒绝当前调用，不遗留 Promise；退出时同时取消活动请求并恢复终端。
+- 授权回调返回 `true` 才进入 `toolExecutor.execute()`；返回 `false` 生成 `TOOL_CALL_DENIED`，返回 `"explain"` 生成 `TOOL_CALL_EXPLANATION_REQUESTED`，两者都不执行工具而继续 Agent Loop。
+- TUI 对 capability 为 `edit` 或 `execute` 的每个 Tool Call 显示安全目标摘要和方向键确认菜单（`Yes`、`No`、`Tell me why?`）；读工具自动通过。
+- ↑/↓ 选择 `Yes`、`No` 或 `Tell me why?`，Enter 确认；Esc/Ctrl+C 等价于 `No`，不遗留 Promise；退出时同时取消活动请求并恢复终端。
 - 非交互调用方未提供授权回调时保持现有兼容行为；高风险工具仍由 Registry 的默认关闭状态保护。
 
 ## 结果

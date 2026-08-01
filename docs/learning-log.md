@@ -345,7 +345,7 @@
 
 - **第一性问题：** 模型输出的 Markdown 和高风险工具调用都不能直接穿透终端；前者会损失信息层次，后者会损失用户控制权。
 - **我的初始假设：** Workbench 只需把助手字符串原样净化后输出，`/tool` 的启用开关也足以表达用户授权；真实使用暴露出长回答难读，以及启用工具后单次调用仍然静默执行。
-- **最小实验：** 新增纯函数 Markdown 投影器，支持标题、列表、引用、行内强调/代码和 fenced code；Workbench 在多轮用户消息前绘制低亮度分割线。Agent Loop 增加可选异步授权边界，TUI 对 Edit/Execute capability 的每个调用显示目标摘要并等待 `y/N`，拒绝生成 `TOOL_CALL_DENIED` 结构化结果。
+- **最小实验：** 新增纯函数 Markdown 投影器，支持标题、列表、引用、行内强调/代码和 fenced code；Workbench 在多轮用户消息前绘制低亮度分割线。Agent Loop 增加可选异步授权边界，TUI 对 Edit/Execute capability 的每个调用显示目标摘要并用方向键选择 `Yes`、`No` 或 `Tell me why?`；拒绝和说明请求分别生成 `TOOL_CALL_DENIED`、`TOOL_CALL_EXPLANATION_REQUESTED` 结构化结果。
 - **观察到的证据：** Markdown 投影、代码块增量显示、问答分割线、拒绝不执行工具、拒绝结果回灌和终端确认闭环均由 Vitest 覆盖；当前自动化门禁为 54 个测试文件、278 个测试通过，`build`、`typecheck:tests`、`lint` 和 `git diff --check` 通过。完整 `format:check` 仍会扫描原有未跟踪的 `testforkfc/index.html`，该文件未修改且不属于本任务。
 - **假设哪里错了：** “只净化文本”不是终端阅读体验；“启用工具”不是一次具体动作的授权。投影层必须保持纯函数和安全降级，授权层必须在执行器之前而不是执行之后拦截。
 - **得到的可复用原则：** UI 应投影结构而非复制协议文本；高风险动作要把能力级开关与调用级确认分开；拒绝是 Agent 可理解的结构化事实，不应通过异常摧毁状态机。

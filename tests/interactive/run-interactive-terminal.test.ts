@@ -202,13 +202,12 @@ describe("runInteractiveTerminal", () => {
     input.write("write it\r");
     await vi.waitFor(() => {
       expect(output.text.join("")).toContain("模型请求执行");
-      expect(output.text.join("")).toContain("确认执行？[y/N]");
+      expect(output.text.join("")).toContain("❯ Yes");
+      expect(output.text.join("")).toContain("Tell me why?");
       expect(output.text.join("")).toContain("⚠ write_file");
     });
-    input.write("n\r");
-    await vi.waitFor(() =>
-      expect(output.text.join("")).toContain("失败: TOOL_CALL_DENIED"),
-    );
+    input.write("\u001b[B\r");
+    await vi.waitFor(() => expect(output.text.join("")).toContain("已拒绝 ·"));
     expect(runTurn).toHaveBeenCalledOnce();
 
     input.write("/exit\r");
@@ -223,7 +222,7 @@ describe("runInteractiveTerminal", () => {
       name: "apply_patch",
       input: { path: "src/app.ts" },
     };
-    const approvedValues: boolean[] = [];
+    const approvedValues: unknown[] = [];
     const runTurn = vi.fn(async (messages, handlers) => {
       handlers.onToolCall(toolCall);
       const approved = await handlers.authorizeToolCall(toolCall);
@@ -268,13 +267,86 @@ describe("runInteractiveTerminal", () => {
       expect(output.text.join("")).toContain("Enter send"),
     );
     input.write("patch it\r");
-    await vi.waitFor(() =>
-      expect(output.text.join("")).toContain("确认执行？[y/N]"),
-    );
-    input.write("y\r");
+    await vi.waitFor(() => expect(output.text.join("")).toContain("❯ Yes"));
+    input.write("\u001b[B\u001b[A\r");
     await vi.waitFor(() => {
       expect(approvedValues).toEqual([true]);
       expect(output.text.join("")).toContain("替换 1 处 · 写入 12 字节");
+    });
+
+    input.write("/exit\r");
+    await pending;
+  });
+
+  it("lets the user ask why a high-risk tool is needed without executing it", async () => {
+    const input = new PassThrough();
+    const output = terminalOutput();
+    const toolCall = {
+      id: "call_shell_explain",
+      name: "shell",
+      input: { command: "pnpm test" },
+    };
+    const decisions: unknown[] = [];
+    const runTurn = vi.fn(async (messages, handlers) => {
+      handlers.onToolCall(toolCall);
+      const decision = await handlers.authorizeToolCall(toolCall);
+      decisions.push(decision);
+      handlers.onToolResult({
+        toolCall,
+        result: {
+          toolCallId: toolCall.id,
+          content: JSON.stringify({
+            error: {
+              code: "TOOL_CALL_EXPLANATION_REQUESTED",
+              tool: toolCall.name,
+            },
+          }),
+          isError: true,
+        },
+        durationMs: 5,
+      });
+      return {
+        messages: [
+          ...messages,
+          {
+            role: "assistant" as const,
+            content: "该命令会运行项目测试，但我没有执行它。",
+          },
+        ],
+        steps: 1,
+        finalText: "该命令会运行项目测试，但我没有执行它。",
+        finishReason: "stop" as const,
+      };
+    });
+    const pending = runInteractiveTerminal({
+      input,
+      output,
+      color: false,
+      status: () => "Read-only",
+      tools: () => [
+        {
+          name: "shell",
+          description: "执行工作区命令",
+          capability: "execute" as const,
+          enabled: true,
+        },
+      ],
+      runTurn,
+      playAnimation: async ({ write }) => write("KFLOW\n"),
+    });
+
+    await vi.waitFor(() =>
+      expect(output.text.join("")).toContain("Enter send"),
+    );
+    input.write("run tests\r");
+    await vi.waitFor(() =>
+      expect(output.text.join("")).toContain("Tell me why?"),
+    );
+    input.write("\u001b[B\u001b[B\r");
+    await vi.waitFor(() => {
+      expect(decisions).toEqual(["explain"]);
+      expect(output.text.join("")).toContain("已请求说明 ·");
+      expect(output.text.join("")).toContain("该命令会运行项目测试");
     });
 
     input.write("/exit\r");

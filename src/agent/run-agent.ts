@@ -26,6 +26,8 @@ export interface AgentToolExecutor {
   ): Promise<AgentToolResult>;
 }
 
+export type AgentToolAuthorizationDecision = boolean | "explain";
+
 export interface AgentRunRequest {
   readonly messages: readonly ModelMessage[];
   readonly maxSteps: number;
@@ -48,9 +50,12 @@ export interface AgentRunDependencies {
   /**
    * Optional authorization boundary for interactive callers. Returning false
    * must not execute the tool; the denial is fed back to the model as a
-   * structured Tool Result so the loop remains deterministic.
+   * structured Tool Result so the loop remains deterministic. `"explain"`
+   * requests that the model explain the action without executing it.
    */
-  readonly authorizeToolCall?: (toolCall: ModelToolCall) => Promise<boolean>;
+  readonly authorizeToolCall?: (
+    toolCall: ModelToolCall,
+  ) => Promise<AgentToolAuthorizationDecision>;
   readonly onToolResult?: (event: AgentToolResultEvent) => void;
 }
 
@@ -186,6 +191,21 @@ function deniedToolResult(toolCall: ModelToolCall): AgentToolResult {
   };
 }
 
+function explanationRequestedToolResult(
+  toolCall: ModelToolCall,
+): AgentToolResult {
+  return {
+    toolCallId: toolCall.id,
+    content: JSON.stringify({
+      error: {
+        code: "TOOL_CALL_EXPLANATION_REQUESTED",
+        tool: toolCall.name.slice(0, 128),
+      },
+    }),
+    isError: true,
+  };
+}
+
 export async function runAgent(
   request: AgentRunRequest,
   dependencies: AgentRunDependencies,
@@ -261,9 +281,12 @@ export async function runAgent(
             ? true
             : await dependencies.authorizeToolCall(toolCall);
         throwIfAborted(options.signal);
-        const result = authorized
-          ? await dependencies.toolExecutor.execute(toolCall, options)
-          : deniedToolResult(toolCall);
+        const result =
+          authorized === true
+            ? await dependencies.toolExecutor.execute(toolCall, options)
+            : authorized === "explain"
+              ? explanationRequestedToolResult(toolCall)
+              : deniedToolResult(toolCall);
         throwIfAborted(options.signal);
         if (result.toolCallId !== toolCall.id) {
           throw new AgentError(

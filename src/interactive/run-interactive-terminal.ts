@@ -1,6 +1,10 @@
 import { emitKeypressEvents } from "node:readline";
 
-import type { AgentRunResult, AgentToolResult } from "../agent/run-agent.js";
+import type {
+  AgentRunResult,
+  AgentToolAuthorizationDecision,
+  AgentToolResult,
+} from "../agent/run-agent.js";
 import {
   DEFAULT_AGENT_MAX_STEPS,
   type ThemeName,
@@ -44,6 +48,8 @@ import {
   setWorkbenchStatus,
   setToolConfirmation,
   updateToolApproval,
+  moveToolConfirmation,
+  selectedToolConfirmation,
   moveToolMenu,
   moveThemeMenu,
   selectedThemeIndex,
@@ -82,7 +88,7 @@ export interface InteractiveTerminalTurnHandlers {
     readonly id: string;
     readonly name: string;
     readonly input: unknown;
-  }): Promise<boolean>;
+  }): Promise<AgentToolAuthorizationDecision>;
 }
 
 export interface InteractiveTerminalInput extends NodeJS.ReadableStream {
@@ -244,7 +250,7 @@ export async function runInteractiveTerminal(
           readonly name: string;
           readonly input: unknown;
         };
-        readonly resolve: (approved: boolean) => void;
+        readonly resolve: (decision: AgentToolAuthorizationDecision) => void;
       }
     | undefined;
   let state: WorkbenchState = {
@@ -294,7 +300,7 @@ export async function runInteractiveTerminal(
   };
 
   const settleToolApproval = (
-    approved: boolean,
+    decision: AgentToolAuthorizationDecision,
     shouldRedraw = true,
   ): boolean => {
     const pending = pendingToolApproval;
@@ -303,10 +309,14 @@ export async function runInteractiveTerminal(
     state = updateToolApproval(
       state,
       pending.toolCall.id,
-      approved ? "approved" : "denied",
+      decision === true
+        ? "approved"
+        : decision === "explain"
+          ? "explain"
+          : "denied",
     );
     state = setToolConfirmation(state, undefined);
-    if (approved) {
+    if (decision === true) {
       const detail = describeToolCall(
         pending.toolCall.name,
         pending.toolCall.input,
@@ -319,7 +329,7 @@ export async function runInteractiveTerminal(
       });
     }
     if (shouldRedraw && !closed) redraw();
-    pending.resolve(approved);
+    pending.resolve(decision);
     return true;
   };
 
@@ -327,10 +337,10 @@ export async function runInteractiveTerminal(
     readonly id: string;
     readonly name: string;
     readonly input: unknown;
-  }): Promise<boolean> => {
+  }): Promise<AgentToolAuthorizationDecision> => {
     if (closed) return Promise.resolve(false);
     const detail = describeToolCall(toolCall.name, toolCall.input);
-    return new Promise<boolean>((resolve) => {
+    return new Promise<AgentToolAuthorizationDecision>((resolve) => {
       pendingToolApproval = { toolCall, resolve };
       state = setToolConfirmation(state, {
         id: toolCall.id,
@@ -678,16 +688,27 @@ export async function runInteractiveTerminal(
       return;
     }
     if (pendingToolApproval !== undefined) {
-      if (normalizedKey.name === "return") {
-        settleToolApproval(state.input.value.trim().toLowerCase() === "y");
-        state = setWorkbenchInput(state, "");
+      if (normalizedKey.name === "up") {
+        state = moveToolConfirmation(state, -1);
         redraw();
         return;
       }
-      const inputKey = mapInputKey(value, normalizedKey);
-      if (inputKey === undefined) return;
-      state = { ...state, input: applyInputKey(state.input, inputKey) };
-      redraw();
+      if (normalizedKey.name === "down") {
+        state = moveToolConfirmation(state, 1);
+        redraw();
+        return;
+      }
+      if (normalizedKey.name === "return") {
+        const selected = selectedToolConfirmation(state);
+        settleToolApproval(
+          selected === "Yes"
+            ? true
+            : selected === "Tell me why?"
+              ? "explain"
+              : false,
+        );
+        return;
+      }
       return;
     }
     if (

@@ -9,4 +9,5 @@ export type {
   AgentToolResultEvent,
   AgentToolExecutor,
   AgentToolResult,
+  AgentToolAuthorizationDecision,
 } from "./run-agent.js";

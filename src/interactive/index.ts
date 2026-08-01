@@ -46,11 +46,13 @@ export {
   isKnownCommand,
   moveCommandMenu,
   moveThemeMenu,
+  moveToolConfirmation,
   moveToolMenu,
   moveWorkbenchScroll,
   renderWorkbench,
   selectedCommand,
   selectedThemeIndex,
+  selectedToolConfirmation,
   setCommandMenu,
   setClearConfirmation,
   setToolConfirmation,
@@ -59,6 +61,7 @@ export {
   setWorkbenchActivity,
   setWorkbenchInput,
   setWorkbenchStatus,
+  toolConfirmationChoices,
   updateToolApproval,
 } from "./workbench.js";
 export { projectMarkdown } from "./markdown-projection.js";
@@ -74,5 +77,6 @@ export type {
   InteractiveToolStatus,
   WorkbenchActivity,
   ToolApprovalState,
+  ToolConfirmationChoice,
   ToolConfirmation,
 } from "./workbench.js";

@@ -71,5 +71,34 @@ describe("tool result summaries", () => {
         5,
       ),
     ).toBe("失败: TOOL_EXECUTION_FAILED · 5ms");
+    expect(
+      summarizeToolResult(
+        "write_file",
+        {
+          toolCallId: "denied",
+          content: JSON.stringify({
+            error: { code: "TOOL_CALL_DENIED", tool: "write_file" },
+          }),
+          isError: true,
+        },
+        4,
+      ),
+    ).toBe("已拒绝 · 4ms");
+    expect(
+      summarizeToolResult(
+        "shell",
+        {
+          toolCallId: "explain",
+          content: JSON.stringify({
+            error: {
+              code: "TOOL_CALL_EXPLANATION_REQUESTED",
+              tool: "shell",
+            },
+          }),
+          isError: true,
+        },
+        6,
+      ),
+    ).toBe("已请求说明 · 6ms");
   });
 });

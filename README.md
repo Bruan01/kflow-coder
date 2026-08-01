@@ -87,7 +87,7 @@ Typing `/` opens a Chinese command menu. Supported commands are:
   by default; Edit and Execute tools are visibly marked and disabled by
   default. Changes apply to the next Agent turn without restarting the session.
   Once an Edit or Execute tool is enabled, every individual call pauses at a
-  `y/N` confirmation boundary; rejecting it returns a structured denial to the
+  an arrow-key confirmation menu with `Yes`, `No`, and `Tell me why?`; rejecting it returns a structured denial to the
   Agent instead of executing the operation.
 - `/clear`: request clearing both in-memory context and visible timeline; type
   `y` to confirm.

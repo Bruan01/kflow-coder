@@ -104,7 +104,7 @@ real TTY.
   unknown.
 - `/tool`: show available tools and toggle their enabled state with Space;
   changes apply to the next Agent turn without restarting the session.
-  Enabled edit and execute tools pause at a per-call `y/N` confirmation gate;
+  Enabled edit and execute tools pause at a per-call arrow-key confirmation menu with `Yes`, `No`, and `Tell me why?`;
   denial is returned to the Agent as a structured Tool Result.
 - `/clear`: request clearing both the visible timeline and conversation
   context; only `y` confirms.

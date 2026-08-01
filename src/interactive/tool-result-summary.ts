@@ -101,6 +101,8 @@ function errorSummary(record: JsonRecord | undefined): string {
     return "执行失败";
   }
   const code = (error as JsonRecord).code;
+  if (code === "TOOL_CALL_DENIED") return "已拒绝";
+  if (code === "TOOL_CALL_EXPLANATION_REQUESTED") return "已请求说明";
   return typeof code === "string" && code !== "" ? `失败: ${code}` : "执行失败";
 }
 

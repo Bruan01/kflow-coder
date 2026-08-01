@@ -54,12 +54,17 @@ export type WorkbenchActivity =
       readonly frame: number;
     };
 
-export type ToolApprovalState = "pending" | "approved" | "denied";
+export type ToolApprovalState = "pending" | "approved" | "denied" | "explain";
+
+export const toolConfirmationChoices = ["Yes", "No", "Tell me why?"] as const;
+
+export type ToolConfirmationChoice = (typeof toolConfirmationChoices)[number];
 
 export interface ToolConfirmation {
   readonly id: string;
   readonly name: string;
   readonly detail?: string;
+  readonly selected: number;
 }
 
 export interface InteractiveSessionInfo {
@@ -129,6 +134,15 @@ function eventLines(
         colored(
           `  ✗ ${truncate(`${detail} · 已拒绝`, width)}`,
           palette.error,
+          color,
+        ),
+      ];
+    }
+    if (event.approval === "explain") {
+      return [
+        colored(
+          `  ? ${truncate(`${detail} · 已请求说明`, width)}`,
+          palette.info,
           color,
         ),
       ];
@@ -417,7 +431,14 @@ function toolConfirmationLines(
             color,
           ),
         ]),
-    colored("  确认执行？[y/N]", palette.warning, color),
+    ...toolConfirmationChoices.map((choice, index) =>
+      colored(
+        `  ${index === confirmation.selected ? "❯" : " "} ${choice}`,
+        index === confirmation.selected ? palette.selection : palette.info,
+        color,
+      ),
+    ),
+    colored("  ↑↓ 选择 · Enter 确认 · Esc 选择 No", palette.warning, color),
   ];
 }
 
@@ -684,17 +705,50 @@ export function setClearConfirmation(
 
 export function setToolConfirmation(
   state: WorkbenchState,
-  confirmation: ToolConfirmation | undefined,
+  confirmation: Omit<ToolConfirmation, "selected"> | undefined,
+  selected = 0,
 ): WorkbenchState {
   return {
     ...state,
-    toolConfirmation: confirmation,
+    toolConfirmation:
+      confirmation === undefined
+        ? undefined
+        : {
+            ...confirmation,
+            selected: Math.min(
+              toolConfirmationChoices.length - 1,
+              Math.max(0, selected),
+            ),
+          },
     clearConfirmation:
       confirmation === undefined ? state.clearConfirmation : false,
     commandMenu: confirmation === undefined ? state.commandMenu : undefined,
     toolMenu: confirmation === undefined ? state.toolMenu : undefined,
     themeMenu: confirmation === undefined ? state.themeMenu : undefined,
   };
+}
+
+export function moveToolConfirmation(
+  state: WorkbenchState,
+  delta: number,
+): WorkbenchState {
+  const confirmation = state.toolConfirmation;
+  if (confirmation === undefined) return state;
+  const selected =
+    (confirmation.selected + delta + toolConfirmationChoices.length) %
+    toolConfirmationChoices.length;
+  return {
+    ...state,
+    toolConfirmation: { ...confirmation, selected },
+  };
+}
+
+export function selectedToolConfirmation(
+  state: WorkbenchState,
+): ToolConfirmationChoice | undefined {
+  const confirmation = state.toolConfirmation;
+  if (confirmation === undefined) return undefined;
+  return toolConfirmationChoices[confirmation.selected];
 }
 
 export function moveWorkbenchScroll(
