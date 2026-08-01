@@ -45,15 +45,16 @@ pnpm build
 pnpm kfc
 ```
 
-In a TTY, `kfc` first shows a short full-width digital-rain animation: digits
-move across the terminal and resolve into a large seven-row ASCII `KFLOW CODE`
-logo. It then enters the KFLOW alternate-screen workbench. Color-disabled
-terminals keep the animation without ANSI colors; very narrow terminals use a
-safe centered text fallback. The top area is a scrollable session timeline; the
-status bar and multi-line editor stay fixed at the bottom. Use `↑`/`↓` or
-PageUp/PageDown to browse history. Mouse reporting is intentionally disabled,
-so the terminal's native text selection and copy behavior remains available.
-`Esc` or Ctrl+C cancels only the current request.
+In a TTY, `kfc` first shows a short full-width digital-rain animation centered
+vertically in the terminal: green digits move across the screen and resolve
+into a large seven-row bright-white ASCII `KFLOW CODE` logo. It then enters the
+KFLOW alternate-screen workbench. Color-disabled terminals keep the animation
+without ANSI colors; very narrow terminals use a safe centered text fallback.
+The top area is a scrollable session timeline; the status bar and multi-line
+editor stay fixed at the bottom. Use `↑`/`↓` or PageUp/PageDown to browse
+history. Mouse reporting is intentionally disabled, so the terminal's native
+text selection and copy behavior remains available. `Esc` or Ctrl+C cancels
+only the current request.
 
 Typing `/` opens a Chinese command menu. Supported commands are:
 

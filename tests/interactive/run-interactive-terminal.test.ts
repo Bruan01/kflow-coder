@@ -219,6 +219,9 @@ describe("runInteractiveTerminal", () => {
     expect(output.text[0]).toContain("\u001b[?1049h");
     expect(output.text.at(-1)).toBe("\u001b[?25h\u001b[?1049l");
     expect(playAnimation).toHaveBeenCalledOnce();
+    expect(playAnimation).toHaveBeenCalledWith(
+      expect.objectContaining({ columns: 80, rows: 24 }),
+    );
     expect(pause).toHaveBeenCalled();
   });
 

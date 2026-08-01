@@ -546,6 +546,7 @@ export async function runInteractiveTerminal(
   try {
     await playAnimation({
       columns: terminalColumns(options.output),
+      rows: terminalRows(options.output),
       color: options.color,
       write: (text) => options.output.write(text),
     });

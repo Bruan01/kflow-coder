@@ -1,5 +1,6 @@
 export interface StartupAnimationOptions {
   readonly columns: number;
+  readonly rows?: number;
   readonly color: boolean;
   readonly write: (text: string) => void;
   readonly delay?: (milliseconds: number) => Promise<void>;
@@ -7,6 +8,7 @@ export interface StartupAnimationOptions {
 
 export interface StartupFrameOptions {
   readonly columns: number;
+  readonly rows?: number;
   readonly color: boolean;
 }
 
@@ -17,6 +19,8 @@ const RAIN_FRAMES = 9;
 const REVEAL_FRAMES = 10;
 const HOLD_FRAMES = 3;
 const LOGO_TOP = 2;
+const LOGO_COLOR = "1;37";
+const RAIN_COLOR = "2;32";
 const ASCII_FONT: Readonly<Record<string, readonly string[]>> = {
   K: ["#...#", "#..#.", "#.#..", "##...", "#.#..", "#..#.", "#...#"],
   F: ["#####", "#....", "#....", "####.", "#....", "#....", "#...."],
@@ -47,10 +51,17 @@ function normalizedColumns(columns: number): number {
   return Math.max(1, Math.floor(columns));
 }
 
-function centered(text: string, columns: number): string {
+function centered(text: string, columns: number, rows?: number): string {
   const width = normalizedColumns(columns);
   const padding = Math.max(0, Math.floor((width - text.length) / 2));
-  return `${" ".repeat(padding)}${text}\n`;
+  const line = `${" ".repeat(padding)}${text}`;
+  if (rows === undefined) return `${line}\n`;
+  const height = Math.max(1, Math.floor(rows));
+  const top = Math.max(0, Math.floor((height - 1) / 2));
+  const bottom = Math.max(0, height - top - 1);
+  return `${[...Array(top).fill(""), line, ...Array(bottom).fill("")].join(
+    "\n",
+  )}\n`;
 }
 
 function colored(text: string, code: string, color: boolean): string {
@@ -74,6 +85,7 @@ function revealThreshold(row: number, column: number): number {
 
 function renderField(
   columns: number,
+  rows: number,
   color: boolean,
   frame: number,
   progress: number,
@@ -82,8 +94,14 @@ function renderField(
   const logoStart = Math.floor((canvasWidth - ASCII_LOGO_WIDTH) / 2);
   const lines: string[] = [];
 
-  for (let row = 0; row < CANVAS_HEIGHT; row += 1) {
-    const logoRow = row - LOGO_TOP;
+  const canvasTop = Math.max(0, Math.floor((rows - CANVAS_HEIGHT) / 2));
+  for (let row = 0; row < rows; row += 1) {
+    const canvasRow = row - canvasTop;
+    if (canvasRow < 0 || canvasRow >= CANVAS_HEIGHT) {
+      lines.push("");
+      continue;
+    }
+    const logoRow = canvasRow - LOGO_TOP;
     const logoLine = ASCII_LOGO[logoRow];
     let line = "";
     for (let column = 0; column < canvasWidth; column += 1) {
@@ -99,10 +117,10 @@ function renderField(
         ? target === "#"
           ? "#"
           : " "
-        : hasRain(frame, row, column)
-          ? digitAt(frame, row, column)
+        : hasRain(frame, canvasRow, column)
+          ? digitAt(frame, canvasRow, column)
           : " ";
-      line += colored(value, isRevealed ? "1;36" : "2;32", color);
+      line += colored(value, isRevealed ? LOGO_COLOR : RAIN_COLOR, color);
     }
     lines.push(line);
   }
@@ -114,20 +132,25 @@ export function createStartupFrames(
   options: StartupFrameOptions,
 ): readonly string[] {
   const columns = normalizedColumns(options.columns);
+  const rows =
+    options.rows === undefined
+      ? CANVAS_HEIGHT
+      : Math.max(1, Math.floor(options.rows));
   if (columns < ASCII_LOGO_WIDTH + 2) {
-    return [centered(LOGO, columns)];
+    return [centered(LOGO, columns, options.rows)];
   }
 
   const frames: string[] = [];
   for (let index = 0; index < RAIN_FRAMES; index += 1) {
     frames.push(
-      renderField(columns, options.color, index, index / RAIN_FRAMES / 3),
+      renderField(columns, rows, options.color, index, index / RAIN_FRAMES / 3),
     );
   }
   for (let index = 0; index < REVEAL_FRAMES; index += 1) {
     frames.push(
       renderField(
         columns,
+        rows,
         options.color,
         RAIN_FRAMES + index,
         (index + 1) / REVEAL_FRAMES,
@@ -138,6 +161,7 @@ export function createStartupFrames(
     frames.push(
       renderField(
         columns,
+        rows,
         options.color,
         RAIN_FRAMES + REVEAL_FRAMES + index,
         1,

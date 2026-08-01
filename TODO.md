@@ -94,7 +94,7 @@
 - [x] 检测重复调用；工具失败应成为结构化结果，而非进程崩溃。
 - [x] 接通 Chat Completions Tool Calling，并以显式 `kfc agent` 完成真实只读工作区验收。
 - [x] 建立 TTY-only KFLOW 工作台：会话时间线、滚动、只读 Agent、状态面板、命令菜单、确认式上下文清除和安全终端恢复。
-- [x] 增加全宽数字雨与七行 ASCII `KFLOW CODE` 启动动画，窄终端安全降级。
+- [x] 增加全宽数字雨与垂直居中的七行亮白 ASCII `KFLOW CODE` 启动动画，窄终端安全降级。
 - [x] 集中管理 Agent 运行时设置、交互命令目录和工具展示标签，避免 CLI 与 TUI 重复维护。
 - [x] 增加 `/themes` 主题菜单：实时切换、立即重绘，并持久化到用户配置。
 - [x] 用脚本化 Mock Provider 确定性重放完整循环。
