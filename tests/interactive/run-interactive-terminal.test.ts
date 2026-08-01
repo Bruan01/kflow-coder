@@ -585,6 +585,58 @@ describe("runInteractiveTerminal", () => {
     await pending;
   });
 
+  it("explains completed work and recovery when a turn fails after an edit", async () => {
+    const input = new PassThrough();
+    const output = terminalOutput();
+    const pending = runInteractiveTerminal({
+      input,
+      output,
+      color: false,
+      status: () => "Ready",
+      playAnimation: async ({ write }) => write("KFLOW\n"),
+      runTurn: async (_messages, handlers) => {
+        handlers.onToolCall({
+          id: "patch",
+          name: "apply_patch",
+          input: { path: "src/file.ts" },
+        });
+        handlers.onToolResult({
+          toolCall: {
+            id: "patch",
+            name: "apply_patch",
+            input: { path: "src/file.ts" },
+          },
+          result: {
+            toolCallId: "patch",
+            content: JSON.stringify({
+              replacements: 1,
+              bytesWritten: 12,
+              workspaceChange: "changed",
+              recovery: "先检查 git_diff，再人工审查。",
+            }),
+            isError: false,
+          },
+          durationMs: 4,
+        });
+        throw new Error("test failure");
+      },
+    });
+
+    await vi.waitFor(() =>
+      expect(output.text.join("")).toContain("Enter send"),
+    );
+    input.write("change\r");
+    await vi.waitFor(() =>
+      expect(output.text.join("")).toContain("本轮执行说明："),
+    );
+    const text = output.text.join("");
+    expect(text).toContain("已完成：apply_patch");
+    expect(text).toContain("工作区：已产生修改");
+    expect(text).toContain("恢复提示：先检查 git_diff，再人工审查。");
+    input.write("/exit\r");
+    await pending;
+  });
+
   it("reports accumulated session usage and resets conversation history only after clear confirmation", async () => {
     const input = new PassThrough();
     const output = terminalOutput();

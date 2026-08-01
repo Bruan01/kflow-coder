@@ -42,6 +42,29 @@ describe("tool result summaries", () => {
     ).toBe("替换 1 处 · 写入 42 字节 · 3ms");
   });
 
+  it("summarizes safe git diff counts without exposing patch content", () => {
+    expect(
+      summarizeToolResult(
+        "git_diff",
+        {
+          toolCallId: "diff",
+          content: JSON.stringify({
+            clean: false,
+            summary: {
+              files: 2,
+              additions: 4,
+              deletions: 1,
+              untrackedFiles: 1,
+            },
+            truncated: false,
+          }),
+          isError: false,
+        },
+        7,
+      ),
+    ).toBe("2 个文件 · +4/-1 · 未跟踪 1 · 7ms");
+  });
+
   it("summarizes shell status and structured failures", () => {
     expect(
       summarizeToolResult(

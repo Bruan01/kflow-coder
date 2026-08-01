@@ -56,6 +56,13 @@ describe("common workspace tools", () => {
         enabled: true,
       },
       {
+        name: "git_diff",
+        description:
+          "Inspect safe Git workspace changes with file summaries, line counts, and session baseline information without returning full diff content",
+        capability: "read",
+        enabled: true,
+      },
+      {
         name: "apply_patch",
         description:
           "Apply one exact text replacement inside an existing workspace file",
@@ -82,6 +89,7 @@ describe("common workspace tools", () => {
       "find_files",
       "read_file",
       "grep",
+      "git_diff",
     ]);
   });
 
@@ -141,8 +149,9 @@ describe("common workspace tools", () => {
       name: "apply_patch",
       input: { path: "file.txt", oldText: "missing", newText: "changed" },
     });
-    expect(JSON.parse(missing.content)).toEqual({
+    expect(JSON.parse(missing.content)).toMatchObject({
       error: { code: "PATCH_NOT_FOUND", path: "file.txt" },
+      workspaceChange: "unchanged",
     });
     expect(ambiguous.isError).toBe(false);
   });
@@ -173,8 +182,9 @@ describe("common workspace tools", () => {
       name: "write_file",
       input: { path: "new.txt", content: "changed" },
     });
-    expect(JSON.parse(overwrite.content)).toEqual({
+    expect(JSON.parse(overwrite.content)).toMatchObject({
       error: { code: "PATH_ALREADY_EXISTS", path: "new.txt" },
+      workspaceChange: "unchanged",
     });
 
     registry.setEnabled("shell", true);

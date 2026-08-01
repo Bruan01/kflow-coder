@@ -192,12 +192,21 @@ export function createShellTool(
             command: input.command,
             cwd: target.relativePath,
             ...result,
+            workspaceChange: "unknown",
+            recovery:
+              result.exitCode === 0 && !result.timedOut && !result.truncated
+                ? "命令可能读取或改变工作区；如需确认，请运行 git_diff。"
+                : "命令失败或被截断，无法确认工作区是否改变；请先运行 git_diff，不自动回滚。",
           }),
           isError: result.exitCode !== 0 || result.timedOut || result.truncated,
         };
       } catch (error) {
         if (error instanceof UserInterruptedError) throw error;
-        if (error instanceof WorkspaceError) return workspaceFailure(error);
+        if (error instanceof WorkspaceError)
+          return workspaceFailure(error, {
+            workspaceChange: "unchanged",
+            recovery: "命令尚未执行；工作区未改变。",
+          });
         throw error;
       }
     },

@@ -45,6 +45,7 @@ export const interactiveToolLabels: Readonly<Record<string, string>> = {
   find_files: "按模式查找工作区文件",
   read_file: "读取工作区文本文件",
   grep: "搜索工作区文本内容",
+  git_diff: "检查工作区 Git 变更摘要（只读）",
   apply_patch: "精确修改工作区文件（需显式启用）",
   write_file: "创建工作区新文件（需显式启用）",
   shell: "执行工作区命令（高风险，需显式启用）",

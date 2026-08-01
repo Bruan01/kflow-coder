@@ -23,12 +23,14 @@ it("creates four read-only tools in stable order and preserves cancellation", as
     "find_files",
     "read_file",
     "grep",
+    "git_diff",
   ]);
   expect(registry.listModelDefinitions().map((tool) => tool.name)).toEqual([
     "list_directory",
     "find_files",
     "read_file",
     "grep",
+    "git_diff",
   ]);
   const controller = new AbortController();
   controller.abort();

@@ -2,6 +2,7 @@ import type { ToolDefinition } from "../define-tool.js";
 import { ToolRegistryError } from "../tool-registry-error.js";
 import { createApplyPatchTool } from "./apply-patch-tool.js";
 import { createGrepTool } from "./grep-tool.js";
+import { createGitDiffTool } from "./git-diff-tool.js";
 import { createFindFilesTool } from "./find-files-tool.js";
 import { createListDirectoryTool } from "./list-directory-tool.js";
 import {
@@ -28,7 +29,8 @@ function validLimits(limits: ReadOnlyToolLimits): boolean {
     limits.defaultReadLines <= limits.maxReadLines &&
     limits.defaultSearchResults <= limits.maxSearchResults &&
     defaultCommandTimeoutMs <= maxCommandTimeoutMs &&
-    defaultCommandTimeoutMs >= 1000
+    defaultCommandTimeoutMs >= 1000 &&
+    (limits.maxGitDiffFiles === undefined || limits.maxGitDiffFiles > 0)
   );
 }
 
@@ -51,6 +53,7 @@ export async function createWorkspaceTools(options: {
     createFindFilesTool(boundary, limits),
     createReadFileTool(boundary, limits),
     createGrepTool(boundary, limits),
+    await createGitDiffTool(boundary, limits),
     createApplyPatchTool(boundary, limits),
     createWriteFileTool(boundary, limits),
     createShellTool(boundary, limits),

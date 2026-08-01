@@ -4,7 +4,7 @@ KFlow Code is a learning-first coding agent built from first principles. The pro
 
 ## Current Status
 
-P0 and P1 are accepted. P2 now includes a controlled Agent Loop, typed Tool Registry, and bounded workspace tools behind a canonical workspace boundary. `kfc agent` connects the default observation tools to OpenAI-compatible Chat Completions Tool Calling. A TTY-only `kfc` opens the KFLOW interactive workbench with a session timeline, command menu, safe status panel, and in-memory context. Edit and Shell tools are registered but disabled by default; enable them explicitly from `/tool`. Responses and Anthropic Tool Calling are not implemented.
+P0 and P1 are accepted. P2 now includes a controlled Agent Loop, typed Tool Registry, and bounded workspace tools behind a canonical workspace boundary. `kfc agent` connects the default observation tools to OpenAI-compatible Chat Completions Tool Calling. A TTY-only `kfc` opens the KFLOW interactive workbench with a session timeline, command menu, safe status panel, and in-memory context. Edit and Shell tools are registered but disabled by default; enable them explicitly from `/tool`. The read-only `git_diff` tool reports file-level Git change summaries and marks changes that existed when the session started. Responses and Anthropic Tool Calling are not implemented.
 
 ## Requirements
 
@@ -65,9 +65,12 @@ printing file contents or inline secrets. The animation stops and returns to
 `Ready`, `Cancelled`, or `Error` when the request finishes.
 
 After a Tool Call completes, the timeline adds a safe result summary such as
-`↳ read_file · 读取 12 行 · 9ms`, `↳ grep · 命中 3 条 · 8ms`, or
-`↳ shell · exit 0 · 1.2s`. Failed, timed-out, and truncated results are marked
-without exposing raw tool output.
+`↳ read_file · 读取 12 行 · 9ms`, `↳ git_diff · 2 个文件 · +3/-1 · 12ms`, or
+`↳ shell · exit 0 · 工作区状态待检查 · 1.2s`. Failed, timed-out, and truncated results are marked
+without exposing raw tool output. `git_diff` never prints full patch content; it reports
+tracked/untracked files, line-count summaries, and whether a path was already dirty at
+session start. If a turn fails after a write or Shell action, the workbench reports completed
+and failed tools plus a recovery hint; KFC does not run destructive rollback automatically.
 
 Assistant replies also receive a lightweight terminal Markdown projection:
 headings, lists, quotes, emphasis, inline code, and fenced code blocks keep
@@ -128,10 +131,10 @@ Tool Calling currently requires `openai-chat-completions` (including the
 configured DeepSeek-compatible target). `openai-responses` and Anthropic
 Messages Tool Calling are rejected/not implemented rather than silently
 falling back. All workspace tools reject traversal and external symlinks,
-hide `.git`, and enforce file/search/output limits. `apply_patch` only accepts
-one exact replacement, `write_file` refuses to overwrite an existing file, and
-`shell` is disabled by default with bounded cwd, timeout, environment, and
-output. See `docs/specs/2026-08-01-common-tool-surface.md` for the necessity
+hide `.git`, and enforce file/search/output limits. `git_diff` is read-only and uses fixed
+Git subprocess arguments without a shell. `apply_patch` only accepts one exact replacement,
+`write_file` refuses to overwrite an existing file, and `shell` is disabled by default with
+bounded cwd, timeout, environment, and output. See `docs/specs/2026-08-01-common-tool-surface.md` for the necessity
 and permission rationale.
 
 ## Quickstart

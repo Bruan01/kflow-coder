@@ -20,6 +20,7 @@ export { createFindFilesTool } from "./workspace/find-files-tool.js";
 export { createApplyPatchTool } from "./workspace/apply-patch-tool.js";
 export { createWriteFileTool } from "./workspace/write-file-tool.js";
 export { createShellTool } from "./workspace/shell-tool.js";
+export { createGitDiffTool } from "./workspace/git-diff-tool.js";
 export { createWorkspaceTools } from "./workspace/create-read-only-tools.js";
 export { createReadOnlyWorkspaceTools } from "./workspace/create-read-only-tools.js";
 export { defaultReadOnlyToolLimits } from "./workspace/limits.js";

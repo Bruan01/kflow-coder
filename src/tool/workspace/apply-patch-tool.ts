@@ -125,11 +125,18 @@ export function createApplyPatchTool(
             path: target.relativePath,
             replacements: 1,
             bytesWritten: nextBytes,
+            workspaceChange: "changed",
+            recovery:
+              "文件已经修改；如需恢复，请先运行 git_diff 并人工审查，不自动回滚。",
           }),
           isError: false,
         };
       } catch (error) {
-        if (error instanceof WorkspaceError) return workspaceFailure(error);
+        if (error instanceof WorkspaceError)
+          return workspaceFailure(error, {
+            workspaceChange: "unchanged",
+            recovery: "修改未写入工作区；请修正目标或补丁后重试，无需回滚。",
+          });
         throw error;
       }
     },

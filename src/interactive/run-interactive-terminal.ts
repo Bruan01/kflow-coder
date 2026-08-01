@@ -25,7 +25,11 @@ import {
   type ActivityAnimationHandle,
 } from "./activity-animation.js";
 import { describeToolCall } from "./tool-activity.js";
-import { summarizeToolResult } from "./tool-result-summary.js";
+import {
+  inspectToolResult,
+  summarizeToolResult,
+  type ToolWorkspaceChange,
+} from "./tool-result-summary.js";
 import { playStartupAnimation } from "./startup-animation.js";
 import {
   appendAssistantText,
@@ -174,6 +178,44 @@ function runtimeStatus(
     totalToolCount: counts.total,
     maxSteps: options.maxSteps ?? DEFAULT_AGENT_MAX_STEPS,
   };
+}
+
+function mergeWorkspaceChange(
+  current: ToolWorkspaceChange,
+  next: ToolWorkspaceChange,
+): ToolWorkspaceChange {
+  if (current === "changed" || next === "changed") return "changed";
+  if (current === "unknown" || next === "unknown") return "unknown";
+  return "unchanged";
+}
+
+function uniqueNames(names: readonly string[]): string {
+  const unique = [...new Set(names)];
+  return unique.length === 0 ? "无" : unique.join("、");
+}
+
+function turnRecoveryNotice(
+  completedTools: readonly string[],
+  failedTools: readonly string[],
+  workspaceChange: ToolWorkspaceChange,
+  recoveryNotes: readonly string[],
+): string | undefined {
+  if (completedTools.length === 0 && failedTools.length === 0) return undefined;
+  const workspaceText =
+    workspaceChange === "changed"
+      ? "已产生修改；先运行 git_diff 查看文件摘要，人工审查后再决定恢复。"
+      : workspaceChange === "unknown"
+        ? "可能产生修改；先运行 git_diff 确认，不能直接假定可回滚。"
+        : "未发现已写入的修改；失败或拒绝的操作没有执行。";
+  return [
+    "本轮执行说明：",
+    `已完成：${uniqueNames(completedTools)}`,
+    `失败：${uniqueNames(failedTools)}`,
+    `工作区：${workspaceText}`,
+    recoveryNotes.length > 0
+      ? `恢复提示：${[...new Set(recoveryNotes)].join("；")}`
+      : "恢复提示：KFC 不自动执行 reset、checkout 或删除文件。",
+  ].join("\n");
 }
 
 function interactiveErrorText(error: unknown, maxSteps: number): string {
@@ -457,6 +499,10 @@ export async function runInteractiveTerminal(
     pendingToolCalls = [];
     startActivity({ kind: "thinking", frame: 0 });
     let receivedText = false;
+    let workspaceChange: ToolWorkspaceChange = "unchanged";
+    const completedTools: string[] = [];
+    const failedTools: string[] = [];
+    const recoveryNotes: string[] = [];
     activeController = new AbortController();
     try {
       const result = await options.runTurn(
@@ -511,6 +557,20 @@ export async function runInteractiveTerminal(
               event.result,
               event.durationMs,
             );
+            const inspection = inspectToolResult(
+              event.toolCall.name,
+              event.result,
+            );
+            workspaceChange = mergeWorkspaceChange(
+              workspaceChange,
+              inspection.workspaceChange,
+            );
+            (event.result.isError ? failedTools : completedTools).push(
+              event.toolCall.name,
+            );
+            if (inspection.recovery !== undefined) {
+              recoveryNotes.push(inspection.recovery);
+            }
             state = appendToolResult(
               state,
               event.toolCall.name,
@@ -553,12 +613,23 @@ export async function runInteractiveTerminal(
     } catch (error) {
       if (closed) return;
       const presentation = formatErrorForCli(error);
+      const recovery = turnRecoveryNotice(
+        completedTools,
+        failedTools,
+        workspaceChange,
+        recoveryNotes,
+      );
       state = appendNotice(
         state,
-        interactiveErrorText(
-          error,
-          options.maxSteps ?? DEFAULT_AGENT_MAX_STEPS,
-        ),
+        [
+          interactiveErrorText(
+            error,
+            options.maxSteps ?? DEFAULT_AGENT_MAX_STEPS,
+          ),
+          recovery,
+        ]
+          .filter((part): part is string => part !== undefined)
+          .join("\n"),
         presentation.exitCode === 130 ? "Cancelled" : "Error",
       );
     } finally {

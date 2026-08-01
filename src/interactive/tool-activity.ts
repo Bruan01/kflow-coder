@@ -58,6 +58,8 @@ export function describeToolCall(
     }
     case "read_file":
       return pathDetail(input, "文件");
+    case "git_diff":
+      return pathDetail(input, "范围");
     case "grep": {
       const query = compact(recordValue(input, "query"));
       const path = compact(recordValue(input, "path")) ?? ".";

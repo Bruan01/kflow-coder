@@ -13,6 +13,7 @@ export interface ReadOnlyToolLimits {
   readonly maxCommandOutputChars?: number;
   readonly defaultCommandTimeoutMs?: number;
   readonly maxCommandTimeoutMs?: number;
+  readonly maxGitDiffFiles?: number;
 }
 
 export const defaultReadOnlyToolLimits: ReadOnlyToolLimits = {
@@ -30,4 +31,5 @@ export const defaultReadOnlyToolLimits: ReadOnlyToolLimits = {
   maxCommandOutputChars: 20_000,
   defaultCommandTimeoutMs: 30_000,
   maxCommandTimeoutMs: 120_000,
+  maxGitDiffFiles: 200,
 };
