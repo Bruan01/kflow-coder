@@ -6,6 +6,13 @@ export interface ModelToolCall {
   readonly input: unknown;
 }
 
+/** A provider-neutral, JSON Schema description safe to expose to a model. */
+export interface ModelToolDefinition {
+  readonly name: string;
+  readonly description: string;
+  readonly parameters: Readonly<Record<string, unknown>>;
+}
+
 export interface ModelTextMessage {
   readonly role: "system" | "user";
   readonly content: string;
@@ -29,6 +36,7 @@ export type ModelMessage =
 
 export interface ModelRequest {
   readonly messages: readonly ModelMessage[];
+  readonly tools?: readonly ModelToolDefinition[];
 }
 
 export interface ModelStreamOptions {

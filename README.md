@@ -4,7 +4,7 @@ KFlow Code is a learning-first coding agent built from first principles. The pro
 
 ## Current Status
 
-P0 and P1 are accepted. P2 now includes a controlled Agent Loop plus an in-memory Tool Registry with typed Zod inputs, safe Tool Result failures, cancellation and deterministic Mock integration. Real file tools and real Provider Tool Calling are not enabled yet. The active task is P2.3 read-only workspace tools. See `TODO.md`, ADR-0005, ADR-0006, and `docs/tool-registry.md`.
+P0 and P1 are accepted. P2 now includes a controlled Agent Loop, typed Tool Registry, and bounded `list_directory`, `read_file`, and fixed-string `grep` tools behind a canonical workspace boundary. `kfc agent` connects those read-only tools to OpenAI-compatible Chat Completions Tool Calling. A TTY-only `kfc` opens the KFLOW interactive workbench with a session timeline, read-only Agent, command menu, safe status panel, and in-memory context. Write operations and Shell remain disabled; Responses and Anthropic Tool Calling are not implemented.
 
 ## Requirements
 
@@ -38,6 +38,37 @@ pnpm kfc --version
 
 Unknown options return exit code `1` with a short error and no stack trace.
 
+### Interactive workbench
+
+```bash
+pnpm build
+pnpm kfc
+```
+
+In a TTY, `kfc` enters a KFLOW alternate-screen workbench with a short text
+startup animation. The top area is a scrollable session timeline; the status
+bar and multi-line editor stay fixed at the bottom. Use `↑`/`↓` or
+PageUp/PageDown to browse history. Mouse reporting is intentionally disabled,
+so the terminal's native text selection and copy behavior remains available.
+`Esc` or Ctrl+C cancels only the current request.
+
+Typing `/` opens a Chinese command menu. Supported commands are:
+
+- `/help`: show all commands and shortcuts in Chinese.
+- `/status`: show the safe resolved Provider configuration, model, timeout,
+  credential presence, Agent step limit, enabled-tool count, session message
+  count, turn count, and accumulated Provider token usage. Context-window size
+  is shown as unknown unless a Provider actually supplies it.
+- `/tool`: open the live tool manager. Use `↑`/`↓` to select a tool, Space to
+  enable or disable it, and Enter/Esc to return. Changes apply to the next
+  Agent turn without restarting the session.
+- `/clear`: request clearing both in-memory context and visible timeline; type
+  `y` to confirm.
+- `/exit`: restore the cursor and prior terminal screen.
+
+In non-TTY input/output contexts, no-argument `kfc` still prints help instead
+of starting an interactive process.
+
 ### Ask
 
 ```bash
@@ -52,6 +83,25 @@ Model text streams to stdout. A safe completion summary is written to stderr so 
 ```
 
 Ask sends one user message, does not inject a hidden system prompt, and does not persist a conversation. Ctrl+C cancels the active Provider request and returns exit code `130`.
+
+### Read-only Agent
+
+```bash
+pnpm build
+pnpm kfc agent "查看当前工作目录下的主要文件，并总结项目用途"
+```
+
+`agent` is deliberately separate from `ask`: it creates `list_directory`,
+`read_file`, and fixed-string `grep` tools rooted at the command's current
+directory, runs at most eight model turns by default, and streams model text
+to stdout. Set `KFC_AGENT_MAX_STEPS` to an integer from `1` to `64` to adjust
+the bounded loop for a command or session.
+Tool Calling currently requires `openai-chat-completions` (including the
+configured DeepSeek-compatible target). `openai-responses` and Anthropic
+Messages Tool Calling are rejected/not implemented rather than silently
+falling back. The tools are read-only: they reject traversal and external
+Symlinks, hide `.git`, restrict file/search sizes, and do not expose Shell,
+write, network, or Git operations.
 
 ## Quickstart
 
@@ -86,7 +136,8 @@ Domain failures extend `KfcError`. Public output contains only safe messages/det
 - `src/cli/`: pure argument parsing, help, runner, and package metadata modules
 - `src/ask/`: protocol-neutral single-turn stream consumer and call report
 - `src/agent/`: controlled Agent Loop, Tool execution contract, and Agent errors
-- `src/tool/`: typed Tool definitions, in-memory Registry, validation, and safe execution results
+- `src/interactive/`: ANSI workbench state, secure raw-mode input, startup animation, and terminal lifecycle
+- `src/tool/`: typed Tool definitions, Registry, read-only workspace boundary, validation, and safe execution results
 - `src/index.ts`: package module entry
 - `src/provider/`: protocol-neutral model contract and wire-protocol adapters
 - `tests/`: Vitest tests

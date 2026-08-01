@@ -6,6 +6,7 @@ export type CliCommand =
   | { type: "doctor" }
   | { type: "quickstart" }
   | { type: "ask"; prompt: string }
+  | { type: "agent"; prompt: string }
   | { type: "error"; message: string };
 
 function normalizeParseError(error: unknown): string {
@@ -50,12 +51,15 @@ export function parseCliArgs(args: readonly string[]): CliCommand {
     if (positionals.length === 1 && positionals[0] === "doctor") {
       return { type: "doctor" };
     }
-    if (positionals[0] === "ask") {
+    if (positionals[0] === "ask" || positionals[0] === "agent") {
       const prompt = positionals.slice(1).join(" ");
       if (prompt.trim() === "") {
-        return { type: "error", message: "Ask prompt is required" };
+        return {
+          type: "error",
+          message: `${positionals[0] === "ask" ? "Ask" : "Agent"} prompt is required`,
+        };
       }
-      return { type: "ask", prompt };
+      return { type: positionals[0], prompt };
     }
     return {
       type: "error",

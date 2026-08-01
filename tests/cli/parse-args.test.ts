@@ -26,12 +26,29 @@ describe("parseCliArgs", () => {
     });
   });
 
+  it("maps agent and all remaining positionals to one prompt", () => {
+    expect(parseCliArgs(["agent", "inspect", "this", "workspace"])).toEqual({
+      type: "agent",
+      prompt: "inspect this workspace",
+    });
+  });
+
   it.each([["ask"], ["ask", "   "]])(
     "rejects ask without a non-empty prompt",
     (...args) => {
       expect(parseCliArgs(args)).toEqual({
         type: "error",
         message: "Ask prompt is required",
+      });
+    },
+  );
+
+  it.each([["agent"], ["agent", "   "]])(
+    "rejects agent without a non-empty prompt",
+    (...args) => {
+      expect(parseCliArgs(args)).toEqual({
+        type: "error",
+        message: "Agent prompt is required",
       });
     },
   );

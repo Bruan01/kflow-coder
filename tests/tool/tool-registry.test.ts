@@ -40,6 +40,37 @@ describe("ToolRegistry registration", () => {
     ]);
   });
 
+  it("filters disabled tools from model definitions and blocks their execution", async () => {
+    const execute = vi.fn(async () => ({ content: "unused", isError: false }));
+    const registry = new ToolRegistry([
+      defineTool({
+        name: "search",
+        description: "Search fixtures",
+        inputSchema: z.object({}),
+        execute,
+      }),
+    ]);
+
+    expect(registry.listToolStatuses()).toEqual([
+      { name: "search", description: "Search fixtures", enabled: true },
+    ]);
+    expect(registry.setEnabled("search", false)).toBe(true);
+    expect(registry.listModelDefinitions()).toEqual([]);
+    await expect(
+      registry.execute({ id: "call_disabled", name: "search", input: {} }),
+    ).resolves.toEqual({
+      toolCallId: "call_disabled",
+      content: JSON.stringify({
+        error: { code: "TOOL_DISABLED", tool: "search" },
+      }),
+      isError: true,
+    });
+    expect(execute).not.toHaveBeenCalled();
+    expect(registry.setEnabled("search", true)).toBe(true);
+    expect(registry.listModelDefinitions()).toHaveLength(1);
+    expect(registry.setEnabled("missing", false)).toBe(false);
+  });
+
   it("rejects duplicate names without replacing the original tool", () => {
     const registry = new ToolRegistry([fixtureTool("search", "original")]);
 

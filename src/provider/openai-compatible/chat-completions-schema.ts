@@ -2,6 +2,18 @@ import { z } from "zod";
 
 const nonNegativeTokenCount = z.number().int().nonnegative();
 
+const chatCompletionToolCallDeltaSchema = z.object({
+  index: z.number().int().nonnegative(),
+  id: z.string().min(1).optional(),
+  type: z.literal("function").optional(),
+  function: z
+    .object({
+      name: z.string().min(1).optional(),
+      arguments: z.string().optional(),
+    })
+    .optional(),
+});
+
 export const chatCompletionUsageSchema = z.object({
   prompt_tokens: nonNegativeTokenCount,
   completion_tokens: nonNegativeTokenCount,
@@ -12,6 +24,7 @@ const chatCompletionChoiceSchema = z.object({
   index: z.number().int().nonnegative(),
   delta: z.object({
     content: z.string().nullable().optional(),
+    tool_calls: z.array(chatCompletionToolCallDeltaSchema).optional(),
   }),
   finish_reason: z.string().nullable().optional(),
 });

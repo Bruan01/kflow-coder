@@ -39,6 +39,66 @@ function fakeExecutor(): AgentToolExecutor & {
 }
 
 describe("runAgent", () => {
+  it("passes model tool definitions into every model step and streams text", async () => {
+    const toolCall = {
+      id: "call_lookup",
+      name: "lookup",
+      input: { query: "KFC" },
+    };
+    const provider = new ScriptedProvider([
+      [
+        { type: "start" },
+        { type: "tool-call", toolCall },
+        { type: "finish", reason: "tool-call" },
+      ],
+      [
+        { type: "start" },
+        { type: "text-delta", delta: "Found " },
+        { type: "text-delta", delta: "it" },
+        { type: "finish", reason: "stop" },
+      ],
+    ]);
+    const toolExecutor: AgentToolExecutor = {
+      async execute(call) {
+        return { toolCallId: call.id, content: "result", isError: false };
+      },
+    };
+    const definitions = [
+      {
+        name: "lookup",
+        description: "Look up a term",
+        parameters: {
+          type: "object",
+          properties: { query: { type: "string" } },
+        },
+      },
+    ];
+    const text: string[] = [];
+    const observedTools: string[] = [];
+
+    await expect(
+      runAgent(
+        {
+          messages: [{ role: "user", content: "find KFC" }],
+          maxSteps: 2,
+          tools: definitions,
+        },
+        {
+          provider,
+          toolExecutor,
+          onText: (delta) => text.push(delta),
+          onToolCall: (call) => observedTools.push(call.name),
+        },
+      ),
+    ).resolves.toMatchObject({ finalText: "Found it", steps: 2 });
+
+    expect(provider.requests).toHaveLength(2);
+    expect(provider.requests[0]?.tools).toEqual(definitions);
+    expect(provider.requests[1]?.tools).toEqual(definitions);
+    expect(text).toEqual(["Found ", "it"]);
+    expect(observedTools).toEqual(["lookup"]);
+  });
+
   it("completes a direct model answer without executing a tool", async () => {
     const initialMessages = [
       { role: "system" as const, content: "Be concise." },
@@ -71,6 +131,7 @@ describe("runAgent", () => {
       steps: 1,
       finalText: "KFlow Code",
       finishReason: "stop",
+      usage: { inputTokens: 10, outputTokens: 2, totalTokens: 12 },
     });
     expect(provider.requests).toEqual([{ messages: initialMessages }]);
     expect(toolExecutor.execute).not.toHaveBeenCalled();

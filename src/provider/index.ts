@@ -10,6 +10,7 @@ export type {
   ModelTokenUsage,
   ModelTextMessage,
   ModelToolCall,
+  ModelToolDefinition,
   ModelToolResultMessage,
 } from "./model-provider.js";
 export { createModelProvider } from "./create-model-provider.js";

@@ -74,9 +74,20 @@ Metrics remain local to the Ask report. KFC does not yet persist or upload telem
 
 ## Agent Tool Boundary
 
-The protocol-neutral contract now supports an atomic `tool-call` event, assistant messages containing Tool Calls, tool-result messages, and a normalized `tool-call` finish reason. These are Core concepts: IDs, tool names, complete JSON inputs, string results, and error flags. No OpenAI argument delta, Responses item index, or vendor field enters the Agent Loop.
+The protocol-neutral contract supports an atomic `tool-call` event, assistant messages containing Tool Calls, tool-result messages, a normalized `tool-call` finish reason, and optional model-safe JSON Schema tool definitions. These are Core concepts: IDs, tool names, complete JSON inputs, string results, error flags, and JSON Schema parameters. No OpenAI argument delta, Responses item index, or vendor field enters the Agent Loop.
 
-P2.1 uses this contract only with a scripted Mock Provider. The production Chat Completions and Responses adapters remain text-only: they do not send tool definitions, encode tool-result messages, or parse wire Tool Calling yet. `kfc ask` continues to reject Tool Call events rather than silently entering an Agent Loop.
+The Chat Completions adapter encodes model tool definitions as `tools[].function`, assistant calls as `tool_calls`, and Tool Results as `role: tool` with `tool_call_id`. It buffers stream fragments by tool-call index and emits an atomic Core Tool Call only once `tool_calls` finishes and its arguments form a JSON object. Malformed, incomplete, duplicate, or non-JSON calls are rejected as `PROVIDER_INVALID_RESPONSE` before a tool runs.
+
+`kfc agent <prompt...>` is the explicit real Tool Calling entry point. It is limited to `openai-chat-completions`, uses the current directory as the P2 read-only workspace root, passes the same definitions on each bounded Agent turn, and shares Ctrl+C cancellation across Provider and tools. `kfc ask` remains a one-turn text-only command. The `openai-responses` adapter rejects a non-empty Tool definition list until its independent Tool Calling wire adapter exists.
+
+The TTY-only `kfc` workbench reuses this same Agent path and keeps messages only
+for the current process. It aggregates validated `usage` events across every
+model step in a completed Agent turn, then across successful interactive turns
+for `/status`. If a Provider omits usage or context-window metadata, the UI
+shows that value as unavailable/unknown instead of estimating it. A transient
+`PROVIDER_SERVICE_UNAVAILABLE` means the request lifecycle saw a non-KFC
+network failure or a mapped upstream 5xx; the workbench keeps the session open
+and the user may retry the prompt.
 
 ## Failure Boundary
 

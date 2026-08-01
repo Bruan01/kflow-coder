@@ -1,4 +1,5 @@
 import type { AskReport } from "../ask/run-ask.js";
+import type { AgentRunResult } from "../agent/run-agent.js";
 import type { DoctorReport } from "../doctor/doctor.js";
 import { formatDoctorReport } from "../doctor/doctor.js";
 import { formatErrorForCli } from "../errors/error-presentation.js";
@@ -11,6 +12,12 @@ export interface CliEnvironment {
   runDoctor(): Promise<DoctorReport>;
   runQuickstart(): Promise<QuickstartResult>;
   runAsk(prompt: string, onText: (delta: string) => void): Promise<AskReport>;
+  runAgent(
+    prompt: string,
+    onText: (delta: string) => void,
+  ): Promise<AgentRunResult>;
+  isInteractiveTerminal(): boolean;
+  runInteractive(): Promise<void>;
   writeStdout(text: string): void;
   writeStderr(text: string): void;
 }
@@ -36,6 +43,16 @@ export async function runCli(
   args: readonly string[],
   environment: CliEnvironment,
 ): Promise<number> {
+  if (args.length === 0 && environment.isInteractiveTerminal()) {
+    try {
+      await environment.runInteractive();
+      return 0;
+    } catch (error) {
+      const presentation = formatErrorForCli(error);
+      environment.writeStderr(presentation.text);
+      return presentation.exitCode;
+    }
+  }
   const command = parseCliArgs(args);
 
   switch (command.type) {
@@ -76,6 +93,25 @@ export async function runCli(
         );
         if (!report.endedWithNewline) environment.writeStdout("\n");
         environment.writeStderr(formatAskReport(report));
+        return 0;
+      } catch (error) {
+        const presentation = formatErrorForCli(error);
+        environment.writeStderr(presentation.text);
+        return presentation.exitCode;
+      }
+    case "agent":
+      try {
+        let endedWithNewline = false;
+        const result = await environment.runAgent(command.prompt, (delta) => {
+          endedWithNewline = delta.endsWith("\n");
+          environment.writeStdout(delta);
+        });
+        if (!endedWithNewline && result.finalText !== "") {
+          environment.writeStdout("\n");
+        }
+        environment.writeStderr(
+          `[kfc] agent steps=${result.steps} finish=${result.finishReason}\n`,
+        );
         return 0;
       } catch (error) {
         const presentation = formatErrorForCli(error);

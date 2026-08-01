@@ -8,6 +8,15 @@
 const echoTool = defineTool({
   name: "echo",
   description: "Echo text from an in-memory fixture",
+  parameters: {
+    type: "object",
+    properties: {
+      value: { type: "string" },
+      uppercase: { type: "boolean" },
+    },
+    required: ["value"],
+    additionalProperties: false,
+  },
   inputSchema: z.object({
     value: z.string().trim().min(1),
     uppercase: z.boolean().default(false),
@@ -22,6 +31,12 @@ const echoTool = defineTool({
 ```
 
 `input` is inferred from the Zod output. Defaults, transforms, coercion and unknown-field stripping happen before execute.
+
+`parameters` is optional JSON Schema exposed to a model provider. Production
+workspace tools provide it explicitly; the Zod `inputSchema` remains the
+execution-time authority. `registry.listModelDefinitions()` returns only the
+name, description, and parameters safe to send to a provider. A legacy custom
+tool without parameters receives a conservative empty-object schema.
 
 ## Execute Through the Registry
 
@@ -60,4 +75,9 @@ Raw inputs, Zod messages, thrown values, causes and stacks are never included. `
 
 ## Current Limits
 
-P2.2 contains only in-memory fake tools. The Registry does not yet read files, execute Shell commands, apply permissions, impose timeouts, truncate output, generate Provider JSON Schema, or run tools in parallel.
+P2 provides a read-only workspace tool factory for `list_directory`,
+`read_file`, and fixed-string `grep`; it uses a canonical workspace boundary,
+rejects traversal/external Symlinks, and applies file, result, and scan limits.
+The Registry still does not execute Shell commands, write files, request
+permission, impose a universal tool timeout, persist tool traces, or run tools
+in parallel.

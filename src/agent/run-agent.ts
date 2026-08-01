@@ -5,10 +5,13 @@ import type {
   ModelMessage,
   ModelProvider,
   ModelStreamOptions,
+  ModelToolDefinition,
   ModelTokenUsage,
   ModelToolCall,
 } from "../provider/model-provider.js";
 import { AgentError } from "./agent-error.js";
+
+export { DEFAULT_AGENT_MAX_STEPS } from "../config/runtime-settings.js";
 
 export interface AgentToolResult {
   readonly toolCallId: string;
@@ -26,6 +29,7 @@ export interface AgentToolExecutor {
 export interface AgentRunRequest {
   readonly messages: readonly ModelMessage[];
   readonly maxSteps: number;
+  readonly tools?: readonly ModelToolDefinition[];
 }
 
 export interface AgentRunResult {
@@ -33,17 +37,21 @@ export interface AgentRunResult {
   readonly steps: number;
   readonly finalText: string;
   readonly finishReason: Exclude<ModelFinishReason, "tool-call">;
+  readonly usage?: ModelTokenUsage;
 }
 
 export interface AgentRunDependencies {
   readonly provider: ModelProvider;
   readonly toolExecutor: AgentToolExecutor;
+  readonly onText?: (delta: string) => void;
+  readonly onToolCall?: (toolCall: ModelToolCall) => void;
 }
 
 interface ModelTurn {
   readonly text: string;
   readonly toolCalls: readonly ModelToolCall[];
   readonly finishReason: ModelFinishReason;
+  readonly usage?: ModelTokenUsage;
 }
 
 function invalidProviderResponse(): ProviderError {
@@ -76,16 +84,23 @@ function isValidToolCall(toolCall: ModelToolCall): boolean {
 async function collectModelTurn(
   provider: ModelProvider,
   messages: readonly ModelMessage[],
+  tools: readonly ModelToolDefinition[] | undefined,
   options: ModelStreamOptions,
+  onText: ((delta: string) => void) | undefined,
+  onToolCall: ((toolCall: ModelToolCall) => void) | undefined,
 ): Promise<ModelTurn> {
   let started = false;
   let usageSeen = false;
+  let usage: ModelTokenUsage | undefined;
   let finishReason: ModelFinishReason | undefined;
   let text = "";
   const toolCalls: ModelToolCall[] = [];
 
   for await (const event of provider.stream(
-    { messages: [...messages] },
+    {
+      messages: [...messages],
+      ...(tools === undefined ? {} : { tools }),
+    },
     options,
   )) {
     if (finishReason !== undefined) throw invalidProviderResponse();
@@ -99,13 +114,16 @@ async function collectModelTurn(
 
     if (event.type === "text-delta") {
       text += event.delta;
+      onText?.(event.delta);
     } else if (event.type === "tool-call") {
       toolCalls.push(event.toolCall);
+      onToolCall?.(event.toolCall);
     } else if (event.type === "usage") {
       if (usageSeen || !isValidUsage(event.usage)) {
         throw invalidProviderResponse();
       }
       usageSeen = true;
+      usage = event.usage;
     } else if (event.type === "finish") {
       finishReason = event.reason;
     } else {
@@ -117,7 +135,25 @@ async function collectModelTurn(
   if (toolCalls.length > 0 !== (finishReason === "tool-call")) {
     throw invalidProviderResponse();
   }
-  return { text, toolCalls, finishReason };
+  return {
+    text,
+    toolCalls,
+    finishReason,
+    ...(usage === undefined ? {} : { usage }),
+  };
+}
+
+function addUsage(
+  current: ModelTokenUsage | undefined,
+  next: ModelTokenUsage | undefined,
+): ModelTokenUsage | undefined {
+  if (next === undefined) return current;
+  if (current === undefined) return next;
+  return {
+    inputTokens: current.inputTokens + next.inputTokens,
+    outputTokens: current.outputTokens + next.outputTokens,
+    totalTokens: current.totalTokens + next.totalTokens,
+  };
 }
 
 function throwIfAborted(signal: AbortSignal | undefined): void {
@@ -138,6 +174,7 @@ export async function runAgent(
   throwIfAborted(options.signal);
 
   const messages: ModelMessage[] = [...request.messages];
+  let totalUsage: ModelTokenUsage | undefined;
   const seenToolCallIds = new Set<string>();
   for (const message of messages) {
     if (message.role !== "assistant" || message.toolCalls === undefined) {
@@ -164,8 +201,12 @@ export async function runAgent(
     const turn = await collectModelTurn(
       dependencies.provider,
       messages,
+      request.tools,
       options,
+      dependencies.onText,
+      dependencies.onToolCall,
     );
+    totalUsage = addUsage(totalUsage, turn.usage);
     throwIfAborted(options.signal);
     if (turn.toolCalls.length > 0) {
       for (const toolCall of turn.toolCalls) {
@@ -219,6 +260,7 @@ export async function runAgent(
       steps: step,
       finalText: turn.text,
       finishReason,
+      ...(totalUsage === undefined ? {} : { usage: totalUsage }),
     };
   }
 

@@ -1,0 +1,475 @@
+import { emitKeypressEvents } from "node:readline";
+
+import type { AgentRunResult } from "../agent/run-agent.js";
+import { DEFAULT_AGENT_MAX_STEPS } from "../config/runtime-settings.js";
+import {
+  formatErrorForCli,
+  normalizeUnknownError,
+} from "../errors/error-presentation.js";
+import type { ModelMessage } from "../provider/model-provider.js";
+import type { ModelTokenUsage } from "../provider/model-provider.js";
+import {
+  applyInputKey,
+  createInputEditor,
+  type InputKey,
+} from "./input-editor.js";
+import { playStartupAnimation } from "./startup-animation.js";
+import {
+  appendAssistantText,
+  appendNotice,
+  appendToolEvent,
+  appendUserEvent,
+  createWorkbenchState,
+  isKnownCommand,
+  moveCommandMenu,
+  moveWorkbenchScroll,
+  renderWorkbench,
+  selectedCommand,
+  setCommandMenu,
+  setClearConfirmation,
+  setToolMenu,
+  setWorkbenchInput,
+  setWorkbenchStatus,
+  moveToolMenu,
+  type InteractiveToolStatus,
+  type WorkbenchState,
+} from "./workbench.js";
+import { interactiveCommands } from "./catalog.js";
+
+const ENTER_ALTERNATE_SCREEN = "\u001b[?1049h\u001b[2J\u001b[H\u001b[?25l";
+const LEAVE_ALTERNATE_SCREEN = "\u001b[?25h\u001b[?1049l";
+const SGR_MOUSE_PREFIX = `${String.fromCharCode(27)}[<`;
+
+export interface InteractiveTerminalTurnHandlers {
+  onText(delta: string): void;
+  onToolCall(toolCall: {
+    readonly id: string;
+    readonly name: string;
+    readonly input: unknown;
+  }): void;
+}
+
+export interface InteractiveTerminalInput extends NodeJS.ReadableStream {
+  readonly isTTY?: boolean;
+  setRawMode?(mode: boolean): void;
+}
+
+export interface InteractiveTerminalOptions {
+  readonly input: InteractiveTerminalInput;
+  readonly output: NodeJS.WriteStream;
+  readonly color: boolean;
+  readonly status: (runtime: InteractiveRuntimeStatus) => string;
+  readonly tools?: () => readonly InteractiveToolStatus[];
+  readonly toggleTool?: (name: string) => void;
+  readonly maxSteps?: number;
+  readonly runTurn: (
+    messages: readonly ModelMessage[],
+    handlers: InteractiveTerminalTurnHandlers,
+    signal: AbortSignal,
+  ) => Promise<AgentRunResult>;
+  readonly playAnimation?: typeof playStartupAnimation;
+}
+
+export interface InteractiveRuntimeStatus {
+  readonly turns: number;
+  readonly messageCount: number;
+  readonly usage: ModelTokenUsage | undefined;
+  readonly enabledToolCount: number;
+  readonly totalToolCount: number;
+  readonly maxSteps: number;
+}
+
+function terminalColumns(output: NodeJS.WriteStream): number {
+  return Number.isInteger(output.columns) && output.columns > 0
+    ? output.columns
+    : 80;
+}
+
+function terminalRows(output: NodeJS.WriteStream): number {
+  return Number.isInteger(output.rows) && output.rows > 0 ? output.rows : 24;
+}
+
+function commandHelp(): string {
+  return [
+    "可用命令：",
+    ...interactiveCommands.map(
+      (item) => `  ${item.command.padEnd(8)} ${item.description}`,
+    ),
+    "快捷键：↑↓/PageUp/PageDown 浏览历史；Esc 或 Ctrl+C 取消当前请求；Ctrl+J 换行。",
+    "复制：鼠标选区使用终端原生复制；历史浏览使用键盘快捷键。",
+  ].join("\n");
+}
+
+function toolCounts(options: InteractiveTerminalOptions): {
+  readonly enabled: number;
+  readonly total: number;
+} {
+  const tools = options.tools?.() ?? [];
+  return {
+    enabled: tools.filter((tool) => tool.enabled).length,
+    total: tools.length,
+  };
+}
+
+function interactiveErrorText(error: unknown, maxSteps: number): string {
+  const normalized = normalizeUnknownError(error);
+  if (normalized.code === "AGENT_MAX_STEPS_EXCEEDED") {
+    return `Agent 已达到本轮最大步数（${maxSteps}），为避免循环已停止。可缩小任务范围，或设置 KFC_AGENT_MAX_STEPS 后重试。`;
+  }
+  return (
+    formatErrorForCli(normalized).text.split("\n", 1)[0] ?? "Request failed"
+  );
+}
+
+function addUsage(
+  current: ModelTokenUsage | undefined,
+  next: ModelTokenUsage | undefined,
+): ModelTokenUsage | undefined {
+  if (next === undefined) return current;
+  if (current === undefined) return next;
+  return {
+    inputTokens: current.inputTokens + next.inputTokens,
+    outputTokens: current.outputTokens + next.outputTokens,
+    totalTokens: current.totalTokens + next.totalTokens,
+  };
+}
+
+function mapInputKey(
+  value: unknown,
+  key: { name?: string; ctrl?: boolean; meta?: boolean },
+): InputKey | undefined {
+  if (key.ctrl === true && key.name === "j") return { type: "newline" };
+  if (key.name === "left") return { type: "left" };
+  if (key.name === "right") return { type: "right" };
+  if (key.name === "home") return { type: "home" };
+  if (key.name === "end") return { type: "end" };
+  if (key.name === "backspace") return { type: "backspace" };
+  if (key.name === "delete") return { type: "delete" };
+  if (
+    key.ctrl === true ||
+    key.meta === true ||
+    typeof value !== "string" ||
+    value === ""
+  ) {
+    return undefined;
+  }
+  return { type: "text", value };
+}
+
+export async function runInteractiveTerminal(
+  options: InteractiveTerminalOptions,
+): Promise<void> {
+  const playAnimation = options.playAnimation ?? playStartupAnimation;
+  let activeController: AbortController | undefined;
+  let messages: readonly ModelMessage[] = [];
+  let turns = 0;
+  let totalUsage: ModelTokenUsage | undefined;
+  let state: WorkbenchState = {
+    ...createWorkbenchState(),
+    input: createInputEditor(),
+  };
+  let closed = false;
+  let rawModeEnabled = false;
+  let suppressMouseKeypress = false;
+  let finish: () => void = () => {};
+  const finished = new Promise<void>((resolve) => {
+    finish = resolve;
+  });
+
+  const redraw = (): void => {
+    options.output.write(
+      `\u001b[2J\u001b[H${renderWorkbench(state, {
+        columns: terminalColumns(options.output),
+        rows: terminalRows(options.output),
+        color: options.color,
+        tools: options.tools?.() ?? [],
+      })}`,
+    );
+  };
+  const handleInterrupt = (): void => {
+    if (activeController !== undefined) {
+      activeController.abort();
+      return;
+    }
+    state = appendNotice(state, "Use /exit to leave KFlow.");
+    redraw();
+  };
+  const exit = (): void => {
+    if (closed) return;
+    closed = true;
+    finish();
+  };
+
+  const clearSession = (): void => {
+    messages = [];
+    turns = 0;
+    totalUsage = undefined;
+    state = appendNotice(
+      createWorkbenchState(),
+      "已清除当前会话上下文和时间线。",
+    );
+  };
+
+  const submit = async (): Promise<void> => {
+    const input = state.input.value.trim();
+    if (input === "") return;
+    state = setWorkbenchInput(state, "");
+    if (state.clearConfirmation) {
+      if (input.toLowerCase() === "y") {
+        clearSession();
+      } else {
+        state = appendNotice(
+          setClearConfirmation(state, false),
+          "已取消清除。",
+        );
+      }
+      redraw();
+      return;
+    }
+    if (input.startsWith("/")) {
+      switch (input) {
+        case "/help":
+          state = appendNotice(state, commandHelp());
+          redraw();
+          return;
+        case "/clear":
+          state = setClearConfirmation(state, true);
+          redraw();
+          return;
+        case "/status": {
+          const counts = toolCounts(options);
+          state = appendNotice(
+            state,
+            options.status({
+              turns,
+              messageCount: messages.length,
+              usage: totalUsage,
+              enabledToolCount: counts.enabled,
+              totalToolCount: counts.total,
+              maxSteps: options.maxSteps ?? DEFAULT_AGENT_MAX_STEPS,
+            }),
+          );
+          redraw();
+          return;
+        }
+        case "/tool":
+          state = setToolMenu(state, true);
+          redraw();
+          return;
+        case "/exit":
+          exit();
+          return;
+        default:
+          state = appendNotice(state, `Unknown command: ${input}`, "Error");
+          redraw();
+          return;
+      }
+    }
+
+    const requestMessages: readonly ModelMessage[] = [
+      ...messages,
+      { role: "user", content: input },
+    ];
+    state = setWorkbenchStatus(appendUserEvent(state, input), "Working");
+    redraw();
+    let receivedText = false;
+    activeController = new AbortController();
+    try {
+      const result = await options.runTurn(
+        requestMessages,
+        {
+          onText(delta) {
+            receivedText = true;
+            state = appendAssistantText(state, delta);
+            redraw();
+          },
+          onToolCall(toolCall) {
+            state = appendToolEvent(state, toolCall.name);
+            redraw();
+          },
+        },
+        activeController.signal,
+      );
+      messages = result.messages;
+      turns += 1;
+      totalUsage = addUsage(totalUsage, result.usage);
+      if (!receivedText && result.finalText !== "") {
+        state = appendAssistantText(state, result.finalText);
+      }
+      state = setWorkbenchStatus(state, "Ready");
+    } catch (error) {
+      const presentation = formatErrorForCli(error);
+      state = appendNotice(
+        state,
+        interactiveErrorText(
+          error,
+          options.maxSteps ?? DEFAULT_AGENT_MAX_STEPS,
+        ),
+        presentation.exitCode === 130 ? "Cancelled" : "Error",
+      );
+    } finally {
+      activeController = undefined;
+      redraw();
+    }
+  };
+  const handleMouseData = (chunk: unknown): void => {
+    const text = Buffer.isBuffer(chunk)
+      ? chunk.toString("utf8")
+      : typeof chunk === "string"
+        ? chunk
+        : "";
+    if (!text.includes(SGR_MOUSE_PREFIX)) return;
+    suppressMouseKeypress = true;
+    queueMicrotask(() => {
+      suppressMouseKeypress = false;
+    });
+  };
+  const handleKeypress = (value: unknown, key: unknown): void => {
+    if (closed) return;
+    if (suppressMouseKeypress) return;
+    const normalizedKey =
+      typeof key === "object" && key !== null
+        ? (key as { name?: string; ctrl?: boolean; meta?: boolean })
+        : {};
+    if (
+      normalizedKey.name === "escape" ||
+      (normalizedKey.ctrl === true && normalizedKey.name === "c")
+    ) {
+      if (state.toolMenu !== undefined && activeController === undefined) {
+        state = setToolMenu(state, false);
+        redraw();
+        return;
+      }
+      if (state.clearConfirmation && activeController === undefined) {
+        state = appendNotice(
+          setClearConfirmation(state, false),
+          "已取消清除。",
+        );
+        redraw();
+        return;
+      }
+      handleInterrupt();
+      return;
+    }
+    if (state.toolMenu !== undefined) {
+      const tools = options.tools?.() ?? [];
+      if (normalizedKey.name === "up") {
+        state = moveToolMenu(state, -1, tools.length);
+        redraw();
+        return;
+      }
+      if (normalizedKey.name === "down") {
+        state = moveToolMenu(state, 1, tools.length);
+        redraw();
+        return;
+      }
+      if (normalizedKey.name === "return") {
+        state = setToolMenu(state, false);
+        redraw();
+        return;
+      }
+      if (value === " " || normalizedKey.name === "space") {
+        const selected = state.toolMenu.selected;
+        const tool = tools[selected];
+        if (tool !== undefined) options.toggleTool?.(tool.name);
+        redraw();
+        return;
+      }
+      return;
+    }
+    if (
+      normalizedKey.ctrl === true &&
+      normalizedKey.name === "d" &&
+      state.input.value === ""
+    ) {
+      exit();
+      return;
+    }
+    if (state.commandMenu !== undefined && normalizedKey.name === "up") {
+      state = moveCommandMenu(state, -1);
+      redraw();
+      return;
+    }
+    if (state.commandMenu !== undefined && normalizedKey.name === "down") {
+      state = moveCommandMenu(state, 1);
+      redraw();
+      return;
+    }
+    if (normalizedKey.name === "up") {
+      state = moveWorkbenchScroll(state, 1);
+      redraw();
+      return;
+    }
+    if (normalizedKey.name === "down") {
+      state = moveWorkbenchScroll(state, -1);
+      redraw();
+      return;
+    }
+    if (normalizedKey.name === "pageup") {
+      state = moveWorkbenchScroll(state, 8);
+      redraw();
+      return;
+    }
+    if (normalizedKey.name === "pagedown") {
+      state = moveWorkbenchScroll(state, -8);
+      redraw();
+      return;
+    }
+    if (normalizedKey.name === "return") {
+      if (activeController !== undefined) return;
+      if (
+        state.commandMenu !== undefined &&
+        !isKnownCommand(state.input.value)
+      ) {
+        const command = selectedCommand(state);
+        if (command !== undefined) {
+          state = setWorkbenchInput(setCommandMenu(state, false), command);
+          redraw();
+        }
+        return;
+      }
+      void submit();
+      return;
+    }
+    const inputKey = mapInputKey(value, normalizedKey);
+    if (inputKey === undefined || activeController !== undefined) return;
+    const input = applyInputKey(state.input, inputKey);
+    state = {
+      ...state,
+      input,
+      commandMenu: input.value.startsWith("/") ? { selected: 0 } : undefined,
+    };
+    redraw();
+  };
+
+  process.on("SIGINT", handleInterrupt);
+  options.input.prependListener("data", handleMouseData);
+  emitKeypressEvents(options.input);
+  options.input.on("keypress", handleKeypress);
+  options.output.on("resize", redraw);
+  options.output.write(ENTER_ALTERNATE_SCREEN);
+  try {
+    await playAnimation({
+      columns: terminalColumns(options.output),
+      color: options.color,
+      write: (text) => options.output.write(text),
+    });
+    if (
+      options.input.isTTY === true &&
+      options.input.setRawMode !== undefined
+    ) {
+      options.input.setRawMode(true);
+      rawModeEnabled = true;
+    }
+    redraw();
+    await finished;
+  } finally {
+    process.removeListener("SIGINT", handleInterrupt);
+    options.input.off("keypress", handleKeypress);
+    options.input.off("data", handleMouseData);
+    options.output.off("resize", redraw);
+    if (rawModeEnabled) options.input.setRawMode?.(false);
+    options.input.pause();
+    options.output.write(LEAVE_ALTERNATE_SCREEN);
+  }
+}

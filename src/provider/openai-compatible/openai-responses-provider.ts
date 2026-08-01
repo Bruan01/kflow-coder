@@ -102,6 +102,12 @@ export class OpenAiResponsesProvider implements ModelProvider {
     request: ModelRequest,
     options: ModelStreamOptions = {},
   ): AsyncIterable<ModelStreamEvent> {
+    if (request.tools !== undefined && request.tools.length > 0) {
+      throw new ProviderError(
+        "PROVIDER_INVALID_RESPONSE",
+        "Provider does not support Tool Calling for this protocol",
+      );
+    }
     const lifecycle = createProviderRequestLifecycle(
       options.signal,
       this.config.timeoutMs,

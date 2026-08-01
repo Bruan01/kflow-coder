@@ -88,9 +88,12 @@
 
 - [x] 定义内部消息、Tool Call、Tool Result 和最大步数。
 - [x] 实现 Tool Registry 与 Zod 参数校验。
-- [ ] 实现 `list_directory`、`read_file`、`grep`。
-- [ ] 防止路径穿越，限制文件大小、结果数量和工具超时。
-- [ ] 检测重复调用；工具失败应成为结构化结果，而非进程崩溃。
+- [x] 实现 `list_directory`、`read_file`、`grep`。
+- [x] 防止路径穿越，限制文件大小和结果数量。
+- [x] 检测重复调用；工具失败应成为结构化结果，而非进程崩溃。
+- [x] 接通 Chat Completions Tool Calling，并以显式 `kfc agent` 完成真实只读工作区验收。
+- [x] 建立 TTY-only KFLOW 工作台：会话时间线、滚动、只读 Agent、状态面板、命令菜单、确认式上下文清除和安全终端恢复。
+- [x] 集中管理 Agent 运行时设置、交互命令目录和工具展示标签，避免 CLI 与 TUI 重复维护。
 - [x] 用脚本化 Mock Provider 确定性重放完整循环。
 - [ ] 在陌生 TypeScript 仓库回答配置来源并给出文件与行号。
 - [ ] 保存工具轨迹、ADR、学习日志和 P2 复盘。
@@ -159,4 +162,4 @@
 
 ## 当前唯一任务
 
-**P2.3 只读工作区工具**：实现 `list_directory`、`read_file`、`grep`，先设计统一的工作区路径边界、结果上限和安全错误；不增加写入、Shell 或真实 Provider Tool Calling。
+**P2.6 工具资源与证据强化**：补充统一工具 timeout、输出上限和可持久化的工具轨迹；继续只使用只读工具，不开放写入或 Shell。

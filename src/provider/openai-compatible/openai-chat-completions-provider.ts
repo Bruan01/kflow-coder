@@ -2,10 +2,12 @@ import type { ProviderConfig } from "../../config/config.js";
 import { ProviderError } from "../../errors/provider-error.js";
 import type {
   ModelFinishReason,
+  ModelMessage,
   ModelProvider,
   ModelRequest,
   ModelStreamEvent,
   ModelStreamOptions,
+  ModelToolCall,
   ModelTokenUsage,
 } from "../model-provider.js";
 import {
@@ -43,7 +45,102 @@ function parseChunk(data: string): ChatCompletionChunk {
 function mapFinishReason(reason: string): ModelFinishReason {
   if (reason === "stop" || reason === "length") return reason;
   if (reason === "content_filter") return "content-filter";
+  if (reason === "tool_calls") return "tool-call";
   return "unknown";
+}
+
+function encodeMessages(messages: readonly ModelMessage[]): readonly object[] {
+  return messages.map((message) => {
+    if (message.role === "tool") {
+      return {
+        role: "tool",
+        tool_call_id: message.toolCallId,
+        content: message.content,
+      };
+    }
+    if (message.role === "assistant" && message.toolCalls !== undefined) {
+      return {
+        role: "assistant",
+        content: message.content,
+        tool_calls: message.toolCalls.map((toolCall) => ({
+          id: toolCall.id,
+          type: "function",
+          function: {
+            name: toolCall.name,
+            arguments: JSON.stringify(toolCall.input),
+          },
+        })),
+      };
+    }
+    return { role: message.role, content: message.content };
+  });
+}
+
+interface PendingToolCall {
+  id: string;
+  name: string;
+  arguments: string;
+}
+
+function appendFragment(current: string, fragment: string | undefined): string {
+  return fragment === undefined ? current : `${current}${fragment}`;
+}
+
+function collectToolCallFragments(
+  pending: Map<number, PendingToolCall>,
+  deltas: NonNullable<
+    NonNullable<ChatCompletionChunk["choices"][number]>["delta"]["tool_calls"]
+  >,
+): void {
+  const indices = new Set<number>();
+  for (const delta of deltas) {
+    if (indices.has(delta.index)) throw invalidResponse();
+    indices.add(delta.index);
+    const current = pending.get(delta.index) ?? {
+      id: "",
+      name: "",
+      arguments: "",
+    };
+    if (delta.type !== undefined && delta.type !== "function") {
+      throw invalidResponse();
+    }
+    current.id = appendFragment(current.id, delta.id);
+    current.name = appendFragment(current.name, delta.function?.name);
+    current.arguments = appendFragment(
+      current.arguments,
+      delta.function?.arguments,
+    );
+    pending.set(delta.index, current);
+  }
+}
+
+function completeToolCalls(
+  pending: ReadonlyMap<number, PendingToolCall>,
+): readonly ModelToolCall[] {
+  if (pending.size === 0) throw invalidResponse();
+  const ids = new Set<string>();
+  return [...pending.entries()]
+    .sort(([left], [right]) => left - right)
+    .map(([, toolCall]) => {
+      if (
+        toolCall.id.trim() === "" ||
+        toolCall.name.trim() === "" ||
+        ids.has(toolCall.id)
+      ) {
+        throw invalidResponse();
+      }
+      ids.add(toolCall.id);
+      let input: unknown;
+      try {
+        input = JSON.parse(toolCall.arguments);
+      } catch {
+        throw invalidResponse();
+      }
+      if (typeof input !== "object" || input === null || Array.isArray(input)) {
+        throw invalidResponse();
+      }
+      return { id: toolCall.id, name: toolCall.name, input };
+    });
 }
 
 function mapUsage(
@@ -97,7 +194,20 @@ export class OpenAiChatCompletionsProvider implements ModelProvider {
           },
           body: JSON.stringify({
             model: this.config.model,
-            messages: request.messages,
+            messages: encodeMessages(request.messages),
+            ...(request.tools === undefined || request.tools.length === 0
+              ? {}
+              : {
+                  tools: request.tools.map((tool) => ({
+                    type: "function",
+                    function: {
+                      name: tool.name,
+                      description: tool.description,
+                      parameters: tool.parameters,
+                    },
+                  })),
+                  tool_choice: "auto",
+                }),
             stream: true,
             stream_options: { include_usage: true },
           }),
@@ -113,10 +223,18 @@ export class OpenAiChatCompletionsProvider implements ModelProvider {
       yield { type: "start" };
       let pendingFinish: ModelFinishReason | undefined;
       let usageSeen = false;
+      const pendingToolCalls = new Map<number, PendingToolCall>();
 
       for await (const data of decodeSseData(response.body)) {
         if (data === "[DONE]") {
           if (pendingFinish === undefined) throw invalidResponse();
+          if (pendingFinish === "tool-call") {
+            for (const toolCall of completeToolCalls(pendingToolCalls)) {
+              yield { type: "tool-call", toolCall };
+            }
+          } else if (pendingToolCalls.size > 0) {
+            throw invalidResponse();
+          }
           yield { type: "finish", reason: pendingFinish };
           return;
         }
@@ -139,6 +257,12 @@ export class OpenAiChatCompletionsProvider implements ModelProvider {
             throw invalidResponse();
           }
           yield { type: "text-delta", delta: content };
+        }
+
+        const toolCalls = choice?.delta.tool_calls;
+        if (toolCalls !== undefined) {
+          if (pendingFinish !== undefined || usageSeen) throw invalidResponse();
+          collectToolCallFragments(pendingToolCalls, toolCalls);
         }
 
         const finishReason = choice?.finish_reason;

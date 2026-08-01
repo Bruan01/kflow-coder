@@ -12,6 +12,8 @@ export interface ToolExecutionOutput {
 export interface ToolDefinition<TSchema extends z.ZodType = z.ZodType> {
   readonly name: string;
   readonly description: string;
+  /** JSON Schema sent to model providers; inputSchema remains authoritative. */
+  readonly parameters?: Readonly<Record<string, unknown>>;
   readonly inputSchema: TSchema;
   execute(
     input: z.output<TSchema>,

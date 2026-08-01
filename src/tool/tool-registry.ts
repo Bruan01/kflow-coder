@@ -1,6 +1,9 @@
 import type { AgentToolExecutor, AgentToolResult } from "../agent/run-agent.js";
 import { UserInterruptedError } from "../errors/user-interrupted-error.js";
-import type { ModelToolCall } from "../provider/model-provider.js";
+import type {
+  ModelToolCall,
+  ModelToolDefinition,
+} from "../provider/model-provider.js";
 import type {
   ToolDefinition,
   ToolExecutionOptions,
@@ -11,6 +14,10 @@ import { ToolRegistryError } from "./tool-registry-error.js";
 export interface ToolMetadata {
   readonly name: string;
   readonly description: string;
+}
+
+export interface ToolStatus extends ToolMetadata {
+  readonly enabled: boolean;
 }
 
 function isValidDefinition(tool: unknown): tool is ToolDefinition {
@@ -24,6 +31,10 @@ function isValidDefinition(tool: unknown): tool is ToolDefinition {
     typeof candidate.description === "string" &&
     candidate.description !== "" &&
     candidate.description === candidate.description.trim() &&
+    (candidate.parameters === undefined ||
+      (typeof candidate.parameters === "object" &&
+        candidate.parameters !== null &&
+        !Array.isArray(candidate.parameters))) &&
     typeof inputSchema === "object" &&
     inputSchema !== null &&
     "safeParseAsync" in inputSchema &&
@@ -33,7 +44,10 @@ function isValidDefinition(tool: unknown): tool is ToolDefinition {
 }
 
 type ToolResultErrorCode =
-  "TOOL_NOT_FOUND" | "TOOL_INPUT_INVALID" | "TOOL_EXECUTION_FAILED";
+  | "TOOL_NOT_FOUND"
+  | "TOOL_DISABLED"
+  | "TOOL_INPUT_INVALID"
+  | "TOOL_EXECUTION_FAILED";
 
 function throwIfAborted(signal: AbortSignal | undefined): void {
   if (signal?.aborted === true) throw new UserInterruptedError();
@@ -80,6 +94,7 @@ function isValidOutput(output: ToolExecutionOutput): boolean {
 
 export class ToolRegistry implements AgentToolExecutor {
   private readonly tools = new Map<string, ToolDefinition>();
+  private readonly enabledTools = new Set<string>();
 
   constructor(tools: readonly ToolDefinition[] = []) {
     for (const tool of tools) this.register(tool);
@@ -99,6 +114,7 @@ export class ToolRegistry implements AgentToolExecutor {
       );
     }
     this.tools.set(tool.name, tool);
+    this.enabledTools.add(tool.name);
   }
 
   list(): readonly ToolMetadata[] {
@@ -106,6 +122,31 @@ export class ToolRegistry implements AgentToolExecutor {
       name,
       description,
     }));
+  }
+
+  listToolStatuses(): readonly ToolStatus[] {
+    return [...this.tools.values()].map(({ name, description }) => ({
+      name,
+      description,
+      enabled: this.enabledTools.has(name),
+    }));
+  }
+
+  setEnabled(name: string, enabled: boolean): boolean {
+    if (!this.tools.has(name)) return false;
+    if (enabled) this.enabledTools.add(name);
+    else this.enabledTools.delete(name);
+    return true;
+  }
+
+  listModelDefinitions(): readonly ModelToolDefinition[] {
+    return [...this.tools.values()]
+      .filter(({ name }) => this.enabledTools.has(name))
+      .map(({ name, description, parameters }) => ({
+        name,
+        description,
+        parameters: parameters ?? { type: "object", properties: {} },
+      }));
   }
 
   async execute(
@@ -116,6 +157,9 @@ export class ToolRegistry implements AgentToolExecutor {
     const tool = this.tools.get(toolCall.name);
     if (tool === undefined) {
       return errorResult(toolCall, "TOOL_NOT_FOUND");
+    }
+    if (!this.enabledTools.has(toolCall.name)) {
+      return errorResult(toolCall, "TOOL_DISABLED");
     }
 
     try {

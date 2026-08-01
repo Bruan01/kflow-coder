@@ -225,3 +225,41 @@
 - **得到的可复用原则：** 静态类型保护开发者，Runtime Schema 保护系统边界，两者不能互相替代。Tool Registry 应把“普通失败”降级为模型可观察的结构化结果，同时把取消保留为程序控制流。工具只能接收解析后的数据；Agent Loop 不应知道 Zod、Map 或异常格式。安全错误应使用 allowlist 字段重新构造，而不是尝试清洗未知对象。
 - **尚未理解：** 真实文件工具的路径、大小、编码、二进制、Symlink 和超时边界；Zod Schema 到主流 Provider JSON Schema 的兼容范围；工具主动错误 content 如何建立统一安全规范。
 - **下一步：** 进入 P2.3 只读工作区工具。先统一 Workspace Boundary、路径解析、文件/结果上限和稳定错误，再分别实现 `list_directory`、`read_file` 与 `grep`；继续不开放写入或 Shell。
+
+## 2026-08-01 / P2.3 只读工作区工具
+
+- **结果：** 建立 canonical Workspace Boundary，并实现非递归目录列表、受限 UTF-8 文件读取和固定字符串递归搜索。临时目录测试覆盖路径穿越、`.git`、内部/外部 Symlink、排序、截断、二进制、大文件、扫描上限和统一工厂。
+- **证据：** Workspace 定向测试 5 个文件、16 个测试通过；全量质量门禁随后验证。没有使用 Shell、真实工作区或外部模型。
+- **教训：** “只读”必须同时限制路径、Symlink、内容类型和资源消耗；realpath containment 是三个工具共同边界，不能复制实现。
+- **下一步：** P2.4 统一工具 timeout、输出上限和重复调用检测。
+
+## 2026-08-01 / P2.4 Chat Completions Tool Calling 与显式只读 Agent
+
+- **第一性问题：** 已经分别验证的 Agent Loop、Registry 和文件工具，怎样在不让供应商分片格式污染 Core、也不隐式扩大 `ask` 权限的前提下，形成真实可用闭环？
+- **我的初始假设：** 只要把 P2.1 的 Tool Call event 直接塞给现有 Chat Completions Provider，就可以从模型端得到真实工具调用。
+- **最小实验：** 新增模型安全 JSON Schema tool definitions；Chat Completions 负责 wire message/tools 编码及 `delta.tool_calls` 分片组装；Agent 每一步传入同一工具集合并回调文本；新增显式 `kfc agent`，以当前目录生成 P2.3 只读工具，限定八步且只接受 Chat Completions。用 fixture 验证参数分片、错误 JSON、每步工具定义和 CLI 输出，再用真实 Provider 验收。
+- **观察到的证据：** `pnpm build`、`pnpm typecheck:tests`、`pnpm lint`、`pnpm format:check` 全部通过；全量 Vitest 为 41 个文件、222 个测试。真实 `kfc agent` 在当前工作区完成 4 个 Agent step 并以 `finish=stop` 返回项目总结。首次 Agent 和最小 Ask 都出现临时 Provider unavailable，15 秒后 Ask 健康对照成功，再试 Agent 成功，证明该失败来自上游瞬态可用性而不是工具请求格式。
+- **假设哪里错了：** Provider 的 Tool Call 不是一个完整事件：id、name 和 arguments 可跨多个 SSE chunk，直接向 Agent 发半成品会使工具在不完整 input 上执行。另一个错误假设是“给 ask 加工具最省事”；命令语义改变会把原有无文件权限路径变成有本地读取能力，安全边界必须显式。
+- **得到的可复用原则：** 工具调用的协议状态应在 Provider adapter 收敛成原子事实，Core 只接受完整、可解析的 JSON object。能力权限应体现在用户可见命令与配置门禁上，而不是藏在便利函数里。真实验收需用同配置的低成本健康对照区分上游故障与新功能回归。
+- **尚未理解：** Responses/Anthropic 的 Tool Calling 状态机、JSON Schema 与 Zod 重复维护的长期成本、工具 timeout/输出预算以及中间 Agent 文本更适合怎样以 P4 事件渲染。
+- **下一步：** P2.5 为工具加入统一 timeout、输出上限和可持久化轨迹；继续不开放写入或 Shell。
+
+## 2026-08-01 / P2.5 KFLOW 交互工作台与终端边界
+
+- **第一性问题：** 一次性 Agent 命令怎样变成可连续工作、能观察工具事件、又不会因为终端输入和清理细节损坏用户 shell 的会话？
+- **我的初始假设：** 备用屏幕加 `readline.question()` 已足以实现类似 coding-agent CLI 的交互。
+- **最小实验：** 先实现简版 TTY session，随后用真实终端与用户交互反馈检验。将它替换为纯 WorkbenchState + ANSI renderer + raw-mode editor：时间线、固定 status/editor、短 KFLOW 动画、中文 slash 菜单、滚动、配置/usage status 与确认式 clear。用 PassThrough 伪终端模拟 tool/text stream、undefined mouse keypress、SGR scroll、status 累计和 `/exit` 清理。
+- **观察到的证据：** `emitKeypressEvents` 在鼠标滚轮等序列上可以回调 undefined value；旧 editor 对它调用 string sanitize 导致进程直接抛 TypeError。SGR mouse 包还会被 keypress parser 分解为 `64;20;10M` 文本，必须在 data 边界识别整包并在同一事件循环抑制派生 keypress。`emitKeypressEvents` 激活 stdin 流，若 finally 不 pause，会导致退出后父进程等待。修复后真实 TTY 通过 `/`→`/status`→`/exit` 获得退出码 0。全量门禁为 46 个测试文件、243 个测试通过。
+- **假设哪里错了：** “终端输入就是 string”错误；raw TTY 面对的是未知字节与控制协议。只恢复画面也不等于完整退出：输入流、mouse mode、raw mode、listener 和 cursor 都属于同一生命周期。另一个错误是把 `/clear` 当成视觉操作；若保留 messages，它不能解决上下文污染。
+- **得到的可复用原则：** TUI 应从可测状态渲染，而不是拼 stdout。所有终端输入都先作为 unknown 处理；任何 UI 控制序列必须是程序常量。会话状态、模型 usage 与配置状态要分层聚合；Provider 未提供的上下文能力应显示未知。上下文重置是安全操作，必须显式确认。
+- **尚未理解：** 宽 Unicode 字符的终端列宽、复杂粘贴和多行编辑兼容、跨 Windows 终端的 mouse 协议，以及长会话的 Token 压缩与持久化。
+- **下一步：** P2.6 统一工具 timeout、输出上限和可持久化工具轨迹；P5 再解决上下文预算、摘要和会话持久化。
+
+## 2026-08-01 / 运行时设置与交互目录集中管理
+
+- **第一性问题：** 当 Agent 步数、命令说明和工具展示标签分散在 CLI、Agent 与 TUI 中时，怎样让一次配置变化只需要修改一个来源？
+- **我的初始假设：** 继续增加导出常量即可解决重复，但这只能减少数字重复，不能消除命令菜单和 `/help` 的表格分叉。
+- **最小实验：** 将 Agent 默认步数、上下限和环境变量名收敛到 `src/config/runtime-settings.ts`；将交互命令及工具本地化标签收敛到 `src/interactive/catalog.ts`；让 CLI、WorkBench 菜单和帮助输出共同消费目录。
+- **观察到的证据：** `KFC_AGENT_MAX_STEPS` 的默认值、边界和错误校验只保留一份；新增命令目录测试验证 `/help`、`/clear`、`/status`、`/tool`、`/exit` 无重复且具有菜单/帮助所需字段；工具展示名称变化不会改变 Provider-facing tool name。
+- **得到的可复用原则：** 配置表应按职责分层集中，而不是建立无边界的全局常量文件；运行策略、交互目录和协议实现分别维护，调用方只消费，不复制。
+- **下一步：** 继续保持写入工具、Shell 和跨协议 Tool Calling 不开放；P2.6 再处理工具 timeout、输出上限和工具轨迹持久化。

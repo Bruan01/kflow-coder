@@ -37,9 +37,10 @@ async function fixture(name: string): Promise<string> {
 
 async function collect(
   provider: OpenAiChatCompletionsProvider,
+  modelRequest: ModelRequest = request,
 ): Promise<ModelStreamEvent[]> {
   const events: ModelStreamEvent[] = [];
-  for await (const event of provider.stream(request)) events.push(event);
+  for await (const event of provider.stream(modelRequest)) events.push(event);
   return events;
 }
 
@@ -100,6 +101,125 @@ describe("OpenAiChatCompletionsProvider", () => {
       },
       { type: "finish", reason: "length" },
     ]);
+  });
+
+  it("encodes tool messages and emits complete calls from fragmented tool deltas", async () => {
+    const toolRequest: ModelRequest = {
+      messages: [
+        { role: "user", content: "List the workspace" },
+        {
+          role: "assistant",
+          content: "",
+          toolCalls: [
+            {
+              id: "call_prior",
+              name: "list_directory",
+              input: { path: "." },
+            },
+          ],
+        },
+        {
+          role: "tool",
+          toolCallId: "call_prior",
+          content: '{"path":".","entries":[]}',
+          isError: false,
+        },
+      ],
+      tools: [
+        {
+          name: "list_directory",
+          description: "List a workspace directory",
+          parameters: {
+            type: "object",
+            properties: { path: { type: "string" } },
+          },
+        },
+      ],
+    };
+    const fetch = vi.fn<typeof globalThis.fetch>(async () =>
+      successfulResponse(`data: {"choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"id":"call_next","type":"function","function":{"name":"read_file","arguments":"{\\"path\\":\\"README"}}]},"finish_reason":null}]}
+
+data: {"choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"function":{"arguments":".md\\"}"}}]},"finish_reason":"tool_calls"}]}
+
+data: [DONE]
+
+`),
+    );
+    const provider = new OpenAiChatCompletionsProvider(config, { fetch });
+
+    await expect(collect(provider, toolRequest)).resolves.toEqual([
+      { type: "start" },
+      {
+        type: "tool-call",
+        toolCall: {
+          id: "call_next",
+          name: "read_file",
+          input: { path: "README.md" },
+        },
+      },
+      { type: "finish", reason: "tool-call" },
+    ]);
+
+    const [, init] = fetch.mock.calls[0] ?? [];
+    expect(JSON.parse(String(init?.body))).toEqual({
+      model: "fixture-model",
+      messages: [
+        { role: "user", content: "List the workspace" },
+        {
+          role: "assistant",
+          content: "",
+          tool_calls: [
+            {
+              id: "call_prior",
+              type: "function",
+              function: {
+                name: "list_directory",
+                arguments: '{"path":"."}',
+              },
+            },
+          ],
+        },
+        {
+          role: "tool",
+          tool_call_id: "call_prior",
+          content: '{"path":".","entries":[]}',
+        },
+      ],
+      tools: [
+        {
+          type: "function",
+          function: {
+            name: "list_directory",
+            description: "List a workspace directory",
+            parameters: {
+              type: "object",
+              properties: { path: { type: "string" } },
+            },
+          },
+        },
+      ],
+      tool_choice: "auto",
+      stream: true,
+      stream_options: { include_usage: true },
+    });
+  });
+
+  it("rejects incomplete or invalid fragmented Tool Calls", async () => {
+    const cases = [
+      'data: {"choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"id":"call_missing","type":"function","function":{"name":"read_file","arguments":"{"}}]},"finish_reason":"tool_calls"}]}\n\ndata: [DONE]\n\n',
+      'data: {"choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"id":"call_bad","type":"function","function":{"name":"read_file","arguments":"[]"}}]},"finish_reason":"tool_calls"}]}\n\ndata: [DONE]\n\n',
+    ];
+
+    for (const body of cases) {
+      const provider = new OpenAiChatCompletionsProvider(config, {
+        fetch: vi.fn(async () => successfulResponse(body)),
+      });
+      await expect(
+        collect(provider, { messages: [], tools: [] }),
+      ).rejects.toMatchObject({
+        code: "PROVIDER_INVALID_RESPONSE",
+      });
+    }
   });
 
   it("normalizes unsupported finish reasons without leaking wire values", async () => {

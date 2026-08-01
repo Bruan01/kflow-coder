@@ -14,9 +14,15 @@ export {
 } from "./config/config-path.js";
 export { loadConfig } from "./config/load-config.js";
 export { redactConfig } from "./config/redact-config.js";
+export {
+  DEFAULT_AGENT_MAX_STEPS,
+  MAX_AGENT_MAX_STEPS,
+  runtimeSettings,
+} from "./config/runtime-settings.js";
 export type { RedactedKfcConfig } from "./config/redact-config.js";
 export * from "./doctor/index.js";
 export * from "./errors/index.js";
+export * from "./interactive/index.js";
 export * from "./quickstart/index.js";
 export * from "./provider/index.js";
 export * from "./tool/index.js";
