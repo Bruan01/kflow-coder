@@ -3,6 +3,7 @@ import { createInputEditor } from "./input-editor.js";
 import { sanitizeTerminalText } from "./sanitize-terminal-text.js";
 import { interactiveCommands, type InteractiveCommandItem } from "./catalog.js";
 import type { ThemeName } from "../config/runtime-settings.js";
+import type { ToolCapability } from "../tool/define-tool.js";
 import { getInteractiveTheme, type WorkbenchTheme } from "./themes.js";
 
 export type WorkbenchEvent =
@@ -21,6 +22,7 @@ export interface InteractiveToolStatus {
   readonly name: string;
   readonly description: string;
   readonly enabled: boolean;
+  readonly capability?: ToolCapability;
 }
 
 export interface InteractiveSessionInfo {
@@ -180,7 +182,13 @@ function renderToolMenu(
     lines.push(
       ...tools.map((tool, index) => {
         const marker = tool.enabled ? "✓" : "○";
-        const text = `  ${marker} ${tool.name}  ${tool.description}`;
+        const capability =
+          tool.capability === "edit"
+            ? "修改"
+            : tool.capability === "execute"
+              ? "执行"
+              : "观察";
+        const text = `  ${marker} ${tool.name} [${capability}]  ${tool.description}`;
         const line = truncate(text, columns);
         return index === selected
           ? colored(line, palette.selection, color)

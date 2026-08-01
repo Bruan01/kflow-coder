@@ -4,7 +4,7 @@ KFlow Code is a learning-first coding agent built from first principles. The pro
 
 ## Current Status
 
-P0 and P1 are accepted. P2 now includes a controlled Agent Loop, typed Tool Registry, and bounded `list_directory`, `read_file`, and fixed-string `grep` tools behind a canonical workspace boundary. `kfc agent` connects those read-only tools to OpenAI-compatible Chat Completions Tool Calling. A TTY-only `kfc` opens the KFLOW interactive workbench with a session timeline, read-only Agent, command menu, safe status panel, and in-memory context. Write operations and Shell remain disabled; Responses and Anthropic Tool Calling are not implemented.
+P0 and P1 are accepted. P2 now includes a controlled Agent Loop, typed Tool Registry, and bounded workspace tools behind a canonical workspace boundary. `kfc agent` connects the default observation tools to OpenAI-compatible Chat Completions Tool Calling. A TTY-only `kfc` opens the KFLOW interactive workbench with a session timeline, command menu, safe status panel, and in-memory context. Edit and Shell tools are registered but disabled by default; enable them explicitly from `/tool`. Responses and Anthropic Tool Calling are not implemented.
 
 ## Requirements
 
@@ -45,9 +45,12 @@ pnpm build
 pnpm kfc
 ```
 
-In a TTY, `kfc` enters a KFLOW alternate-screen workbench with a short text
-startup animation. The top area is a scrollable session timeline; the status
-bar and multi-line editor stay fixed at the bottom. Use `↑`/`↓` or
+In a TTY, `kfc` first shows a short full-width digital-rain animation: digits
+move across the terminal and resolve into a large seven-row ASCII `KFLOW CODE`
+logo. It then enters the KFLOW alternate-screen workbench. Color-disabled
+terminals keep the animation without ANSI colors; very narrow terminals use a
+safe centered text fallback. The top area is a scrollable session timeline; the
+status bar and multi-line editor stay fixed at the bottom. Use `↑`/`↓` or
 PageUp/PageDown to browse history. Mouse reporting is intentionally disabled,
 so the terminal's native text selection and copy behavior remains available.
 `Esc` or Ctrl+C cancels only the current request.
@@ -60,8 +63,9 @@ Typing `/` opens a Chinese command menu. Supported commands are:
   count, turn count, and accumulated Provider token usage. Context-window size
   is shown as unknown unless a Provider actually supplies it.
 - `/tool`: open the live tool manager. Use `↑`/`↓` to select a tool, Space to
-  enable or disable it, and Enter/Esc to return. Changes apply to the next
-  Agent turn without restarting the session.
+  enable or disable it, and Enter/Esc to return. Observation tools are enabled
+  by default; Edit and Execute tools are visibly marked and disabled by
+  default. Changes apply to the next Agent turn without restarting the session.
 - `/clear`: request clearing both in-memory context and visible timeline; type
   `y` to confirm.
 - `/exit`: restore the cursor and prior terminal screen.
@@ -84,24 +88,28 @@ Model text streams to stdout. A safe completion summary is written to stderr so 
 
 Ask sends one user message, does not inject a hidden system prompt, and does not persist a conversation. Ctrl+C cancels the active Provider request and returns exit code `130`.
 
-### Read-only Agent
+### Workspace Agent
 
 ```bash
 pnpm build
 pnpm kfc agent "查看当前工作目录下的主要文件，并总结项目用途"
 ```
 
-`agent` is deliberately separate from `ask`: it creates `list_directory`,
-`read_file`, and fixed-string `grep` tools rooted at the command's current
-directory, runs at most eight model turns by default, and streams model text
-to stdout. Set `KFC_AGENT_MAX_STEPS` to an integer from `1` to `64` to adjust
-the bounded loop for a command or session.
+`agent` is deliberately separate from `ask`: it creates the common workspace
+tool surface rooted at the command's current directory, enables observation
+tools by default, keeps Edit and Execute tools disabled until explicitly
+enabled in the interactive `/tool` menu, runs at most eight model turns by
+default, and streams model text to stdout. Set `KFC_AGENT_MAX_STEPS` to an
+integer from `1` to `64` to adjust the bounded loop for a command or session.
 Tool Calling currently requires `openai-chat-completions` (including the
 configured DeepSeek-compatible target). `openai-responses` and Anthropic
 Messages Tool Calling are rejected/not implemented rather than silently
-falling back. The tools are read-only: they reject traversal and external
-Symlinks, hide `.git`, restrict file/search sizes, and do not expose Shell,
-write, network, or Git operations.
+falling back. All workspace tools reject traversal and external symlinks,
+hide `.git`, and enforce file/search/output limits. `apply_patch` only accepts
+one exact replacement, `write_file` refuses to overwrite an existing file, and
+`shell` is disabled by default with bounded cwd, timeout, environment, and
+output. See `docs/specs/2026-08-01-common-tool-surface.md` for the necessity
+and permission rationale.
 
 ## Quickstart
 

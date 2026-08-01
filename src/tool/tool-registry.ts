@@ -6,6 +6,7 @@ import type {
 } from "../provider/model-provider.js";
 import type {
   ToolDefinition,
+  ToolCapability,
   ToolExecutionOptions,
   ToolExecutionOutput,
 } from "./define-tool.js";
@@ -14,10 +15,15 @@ import { ToolRegistryError } from "./tool-registry-error.js";
 export interface ToolMetadata {
   readonly name: string;
   readonly description: string;
+  readonly capability: ToolCapability;
 }
 
 export interface ToolStatus extends ToolMetadata {
   readonly enabled: boolean;
+}
+
+function toolCapability(tool: ToolDefinition): ToolCapability {
+  return tool.capability ?? "read";
 }
 
 function isValidDefinition(tool: unknown): tool is ToolDefinition {
@@ -31,6 +37,12 @@ function isValidDefinition(tool: unknown): tool is ToolDefinition {
     typeof candidate.description === "string" &&
     candidate.description !== "" &&
     candidate.description === candidate.description.trim() &&
+    (candidate.capability === undefined ||
+      candidate.capability === "read" ||
+      candidate.capability === "edit" ||
+      candidate.capability === "execute") &&
+    (candidate.enabledByDefault === undefined ||
+      typeof candidate.enabledByDefault === "boolean") &&
     (candidate.parameters === undefined ||
       (typeof candidate.parameters === "object" &&
         candidate.parameters !== null &&
@@ -114,21 +126,23 @@ export class ToolRegistry implements AgentToolExecutor {
       );
     }
     this.tools.set(tool.name, tool);
-    this.enabledTools.add(tool.name);
+    if (tool.enabledByDefault !== false) this.enabledTools.add(tool.name);
   }
 
   list(): readonly ToolMetadata[] {
-    return [...this.tools.values()].map(({ name, description }) => ({
-      name,
-      description,
+    return [...this.tools.values()].map((tool) => ({
+      name: tool.name,
+      description: tool.description,
+      capability: toolCapability(tool),
     }));
   }
 
   listToolStatuses(): readonly ToolStatus[] {
-    return [...this.tools.values()].map(({ name, description }) => ({
-      name,
-      description,
-      enabled: this.enabledTools.has(name),
+    return [...this.tools.values()].map((tool) => ({
+      name: tool.name,
+      description: tool.description,
+      capability: toolCapability(tool),
+      enabled: this.enabledTools.has(tool.name),
     }));
   }
 

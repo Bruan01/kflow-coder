@@ -29,14 +29,26 @@ describe("ToolRegistry registration", () => {
 
     const listed = registry.list();
     expect(listed).toEqual([
-      { name: "first", description: "first description" },
-      { name: "second", description: "second description" },
+      { name: "first", description: "first description", capability: "read" },
+      {
+        name: "second",
+        description: "second description",
+        capability: "read",
+      },
     ]);
 
-    (listed as ToolMetadata[]).push({ name: "fake", description: "fake" });
+    (listed as ToolMetadata[]).push({
+      name: "fake",
+      description: "fake",
+      capability: "read",
+    });
     expect(registry.list()).toEqual([
-      { name: "first", description: "first description" },
-      { name: "second", description: "second description" },
+      { name: "first", description: "first description", capability: "read" },
+      {
+        name: "second",
+        description: "second description",
+        capability: "read",
+      },
     ]);
   });
 
@@ -52,7 +64,12 @@ describe("ToolRegistry registration", () => {
     ]);
 
     expect(registry.listToolStatuses()).toEqual([
-      { name: "search", description: "Search fixtures", enabled: true },
+      {
+        name: "search",
+        description: "Search fixtures",
+        capability: "read",
+        enabled: true,
+      },
     ]);
     expect(registry.setEnabled("search", false)).toBe(true);
     expect(registry.listModelDefinitions()).toEqual([]);
@@ -78,7 +95,7 @@ describe("ToolRegistry registration", () => {
       registry.register(fixtureTool("search", "replacement")),
     ).toThrow(expect.objectContaining({ code: "TOOL_NAME_DUPLICATE" }));
     expect(registry.list()).toEqual([
-      { name: "search", description: "original" },
+      { name: "search", description: "original", capability: "read" },
     ]);
   });
 

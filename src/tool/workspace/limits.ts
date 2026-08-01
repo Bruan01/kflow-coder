@@ -9,6 +9,10 @@ export interface ReadOnlyToolLimits {
   readonly maxSearchResults: number;
   readonly maxSearchFiles: number;
   readonly maxPreviewLength: number;
+  readonly maxPatchBytes?: number;
+  readonly maxCommandOutputChars?: number;
+  readonly defaultCommandTimeoutMs?: number;
+  readonly maxCommandTimeoutMs?: number;
 }
 
 export const defaultReadOnlyToolLimits: ReadOnlyToolLimits = {
@@ -22,4 +26,8 @@ export const defaultReadOnlyToolLimits: ReadOnlyToolLimits = {
   maxSearchResults: 200,
   maxSearchFiles: 2000,
   maxPreviewLength: 500,
+  maxPatchBytes: 256 * 1024,
+  maxCommandOutputChars: 20_000,
+  defaultCommandTimeoutMs: 30_000,
+  maxCommandTimeoutMs: 120_000,
 };

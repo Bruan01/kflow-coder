@@ -13,18 +13,20 @@ afterEach(async () =>
     roots.splice(0).map((root) => rm(root, { recursive: true, force: true })),
   ),
 );
-it("creates three registry-compatible tools in stable order and preserves cancellation", async () => {
+it("creates four read-only tools in stable order and preserves cancellation", async () => {
   const root = await mkdtemp(resolve(tmpdir(), "kfc-tools-"));
   roots.push(root);
   const tools = await createReadOnlyWorkspaceTools({ workspaceRoot: root });
   const registry = new ToolRegistry(tools);
   expect(registry.list().map((tool) => tool.name)).toEqual([
     "list_directory",
+    "find_files",
     "read_file",
     "grep",
   ]);
   expect(registry.listModelDefinitions().map((tool) => tool.name)).toEqual([
     "list_directory",
+    "find_files",
     "read_file",
     "grep",
   ]);

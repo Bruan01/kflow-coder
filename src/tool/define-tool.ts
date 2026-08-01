@@ -9,9 +9,13 @@ export interface ToolExecutionOutput {
   readonly isError: boolean;
 }
 
+export type ToolCapability = "read" | "edit" | "execute";
+
 export interface ToolDefinition<TSchema extends z.ZodType = z.ZodType> {
   readonly name: string;
   readonly description: string;
+  readonly capability?: ToolCapability;
+  readonly enabledByDefault?: boolean;
   /** JSON Schema sent to model providers; inputSchema remains authoritative. */
   readonly parameters?: Readonly<Record<string, unknown>>;
   readonly inputSchema: TSchema;

@@ -73,11 +73,19 @@ Supported result codes:
 
 Raw inputs, Zod messages, thrown values, causes and stacks are never included. `UserInterruptedError` remains an interruption rather than an error Tool Result.
 
-## Current Limits
+## Current Workspace Tool Surface
 
-P2 provides a read-only workspace tool factory for `list_directory`,
-`read_file`, and fixed-string `grep`; it uses a canonical workspace boundary,
-rejects traversal/external Symlinks, and applies file, result, and scan limits.
-The Registry still does not execute Shell commands, write files, request
-permission, impose a universal tool timeout, persist tool traces, or run tools
-in parallel.
+`createWorkspaceTools()` registers the common local coding surface:
+
+- `read`: `list_directory`, `find_files`, `read_file`, `grep`; enabled by default.
+- `edit`: `apply_patch`, `write_file`; disabled by default. `apply_patch` requires
+  one exact match and `write_file` refuses to overwrite an existing file.
+- `execute`: `shell`; disabled by default. It fixes the working directory inside
+  the workspace, strips Provider credentials from the child environment, and
+  bounds timeout and combined output.
+
+`registry.listModelDefinitions()` exposes only enabled tools, so `/tool` changes
+take effect on the next Agent turn without changing the Provider contract.
+All workspace paths still pass through the canonical boundary and all failures
+return structured Tool Results. Shell is bounded but is not an operating-system
+sandbox; explicit enablement is therefore required and remains an audit point.

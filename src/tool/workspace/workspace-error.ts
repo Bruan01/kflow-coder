@@ -6,7 +6,11 @@ export type WorkspaceErrorCode =
   | "NOT_A_DIRECTORY"
   | "FILE_TOO_LARGE"
   | "BINARY_FILE"
-  | "SEARCH_FILE_LIMIT_REACHED";
+  | "SEARCH_FILE_LIMIT_REACHED"
+  | "PATH_ALREADY_EXISTS"
+  | "PATCH_NOT_FOUND"
+  | "PATCH_AMBIGUOUS"
+  | "CONTENT_TOO_LARGE";
 
 export class WorkspaceError extends Error {
   constructor(

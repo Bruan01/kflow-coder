@@ -25,8 +25,8 @@ export const interactiveCommands: readonly InteractiveCommandItem[] = [
   },
   {
     command: "/tool",
-    label: "启用或关闭当前可用工具",
-    description: "管理工具开关（↑↓ 选择，Space 启用/关闭）",
+    label: "启用或关闭当前工具",
+    description: "按观察、修改、执行能力管理工具开关",
   },
   {
     command: "/themes",
@@ -42,8 +42,12 @@ export const interactiveCommands: readonly InteractiveCommandItem[] = [
 
 export const interactiveToolLabels: Readonly<Record<string, string>> = {
   list_directory: "列出工作区目录",
+  find_files: "按模式查找工作区文件",
   read_file: "读取工作区文本文件",
   grep: "搜索工作区文本内容",
+  apply_patch: "精确修改工作区文件（需显式启用）",
+  write_file: "创建工作区新文件（需显式启用）",
+  shell: "执行工作区命令（高风险，需显式启用）",
 };
 
 export function interactiveToolDescription(

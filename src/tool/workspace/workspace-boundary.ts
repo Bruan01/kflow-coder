@@ -1,4 +1,4 @@
-import { realpath, stat } from "node:fs/promises";
+import { lstat, realpath, stat } from "node:fs/promises";
 import { isAbsolute, relative, resolve, sep } from "node:path";
 
 import { WorkspaceError } from "./workspace-error.js";
@@ -95,6 +95,38 @@ export class WorkspaceBoundary {
     return {
       absolutePath: canonicalTarget,
       relativePath: displayPath(this.canonicalRoot, canonicalTarget),
+    };
+  }
+
+  async resolveForWrite(path: string): Promise<WorkspaceTarget> {
+    if (!isValidToolPath(path, this.maxPathLength) || path === ".") {
+      throw new WorkspaceError("WORKSPACE_PATH_INVALID", path);
+    }
+    const segments = path.split("/");
+    const name = segments.pop();
+    if (name === undefined || name === "" || name === ".git") {
+      throw new WorkspaceError("WORKSPACE_PATH_INVALID", path);
+    }
+    const parentPath = segments.length === 0 ? "." : segments.join("/");
+    const parent = await this.resolveExisting(parentPath);
+    const parentStat = await stat(parent.absolutePath);
+    if (!parentStat.isDirectory()) {
+      throw new WorkspaceError("NOT_A_DIRECTORY", parentPath);
+    }
+    const target = resolve(parent.absolutePath, name);
+    if (!isInside(this.canonicalRoot, target)) {
+      throw new WorkspaceError("WORKSPACE_PATH_OUTSIDE", path);
+    }
+    try {
+      await lstat(target);
+      throw new WorkspaceError("PATH_ALREADY_EXISTS", path);
+    } catch (error) {
+      if (error instanceof WorkspaceError) throw error;
+      if (errorCode(error) !== "ENOENT") throw error;
+    }
+    return {
+      absolutePath: target,
+      relativePath: displayPath(this.canonicalRoot, target),
     };
   }
 

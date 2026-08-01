@@ -11,7 +11,7 @@ Usage:
 Commands:
   doctor            Check runtime and provider configuration
   ask <prompt...>   Send one prompt and stream the model response
-  agent <prompt...> Run a read-only workspace agent (Chat Completions only)
+  agent <prompt...> Run a bounded workspace agent (Chat Completions only)
 
 Options:
   --quickstart      Interactively configure an OpenAI-compatible Provider

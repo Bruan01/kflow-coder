@@ -20,7 +20,7 @@ import { runDoctor } from "./doctor/doctor.js"; // 运行诊断
 import { createQuickstartDependencies } from "./quickstart/create-quickstart-dependencies.js"; // 创建快速入门依赖
 import { runQuickstart } from "./quickstart/quickstart.js"; // 运行快速入门
 import { createModelProvider } from "./provider/create-model-provider.js"; // 创建模型提供者
-import { ToolRegistry, createReadOnlyWorkspaceTools } from "./tool/index.js"; // 工具注册表和只读工具
+import { ToolRegistry, createWorkspaceTools } from "./tool/index.js"; // 工具注册表和分层工作区工具
 import { runInteractiveTerminal } from "./interactive/run-interactive-terminal.js"; // 运行交互终端
 import { interactiveToolDescription } from "./interactive/catalog.js"; // 交互式工具描述
 import { getInteractiveTheme } from "./interactive/themes.js"; // 解析交互式主题
@@ -94,7 +94,7 @@ try {
         }
         // 创建工具注册表，并注册只读工作区工具
         const registry = new ToolRegistry(
-          await createReadOnlyWorkspaceTools({ workspaceRoot: process.cwd() }),
+          await createWorkspaceTools({ workspaceRoot: process.cwd() }),
         );
         // 解析 Agent 最大步数（从环境变量或默认值）
         const maxSteps = resolveAgentMaxSteps();
@@ -140,7 +140,7 @@ try {
       }
       // 创建工具注册表
       const registry = new ToolRegistry(
-        await createReadOnlyWorkspaceTools({ workspaceRoot: process.cwd() }),
+        await createWorkspaceTools({ workspaceRoot: process.cwd() }),
       );
       // 创建模型提供者（复用，整个会话期间不重建）
       const provider = createModelProvider(config.provider);
