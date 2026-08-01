@@ -6,6 +6,7 @@ export type {
   AgentRunDependencies,
   AgentRunRequest,
   AgentRunResult,
+  AgentToolResultEvent,
   AgentToolExecutor,
   AgentToolResult,
 } from "./run-agent.js";

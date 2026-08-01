@@ -287,12 +287,41 @@ describe("runInteractiveTerminal", () => {
             readonly name: string;
             readonly input: unknown;
           }): void;
+          onToolResult(event: {
+            readonly toolCall: {
+              readonly id: string;
+              readonly name: string;
+              readonly input: unknown;
+            };
+            readonly result: {
+              readonly toolCallId: string;
+              readonly content: string;
+              readonly isError: boolean;
+            };
+            readonly durationMs: number;
+          }): void;
         },
       ) => {
         handlers.onToolCall({
           id: "call_1",
           name: "read_file",
           input: { path: "src/interactive/workbench.ts" },
+        });
+        handlers.onToolResult({
+          toolCall: {
+            id: "call_1",
+            name: "read_file",
+            input: { path: "src/interactive/workbench.ts" },
+          },
+          result: {
+            toolCallId: "call_1",
+            content: JSON.stringify({
+              lines: [{ number: 1, text: "private content" }],
+              truncated: false,
+            }),
+            isError: false,
+          },
+          durationMs: 12,
         });
         return new Promise<{
           readonly messages: readonly [

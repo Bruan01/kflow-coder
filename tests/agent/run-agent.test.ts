@@ -75,6 +75,12 @@ describe("runAgent", () => {
     ];
     const text: string[] = [];
     const observedTools: string[] = [];
+    const observedResults: {
+      readonly toolCallId: string;
+      readonly content: string;
+      readonly isError: boolean;
+      readonly durationMs: number;
+    }[] = [];
 
     await expect(
       runAgent(
@@ -88,6 +94,8 @@ describe("runAgent", () => {
           toolExecutor,
           onText: (delta) => text.push(delta),
           onToolCall: (call) => observedTools.push(call.name),
+          onToolResult: ({ result, durationMs }) =>
+            observedResults.push({ ...result, durationMs }),
         },
       ),
     ).resolves.toMatchObject({ finalText: "Found it", steps: 2 });
@@ -97,6 +105,13 @@ describe("runAgent", () => {
     expect(provider.requests[1]?.tools).toEqual(definitions);
     expect(text).toEqual(["Found ", "it"]);
     expect(observedTools).toEqual(["lookup"]);
+    expect(observedResults).toHaveLength(1);
+    expect(observedResults[0]).toMatchObject({
+      toolCallId: "call_lookup",
+      content: "result",
+      isError: false,
+    });
+    expect(observedResults[0]?.durationMs).toBeGreaterThanOrEqual(0);
   });
 
   it("completes a direct model answer without executing a tool", async () => {

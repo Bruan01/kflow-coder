@@ -1,6 +1,6 @@
 import { emitKeypressEvents } from "node:readline";
 
-import type { AgentRunResult } from "../agent/run-agent.js";
+import type { AgentRunResult, AgentToolResult } from "../agent/run-agent.js";
 import {
   DEFAULT_AGENT_MAX_STEPS,
   type ThemeName,
@@ -21,11 +21,13 @@ import {
   type ActivityAnimationHandle,
 } from "./activity-animation.js";
 import { describeToolCall } from "./tool-activity.js";
+import { summarizeToolResult } from "./tool-result-summary.js";
 import { playStartupAnimation } from "./startup-animation.js";
 import {
   appendAssistantText,
   appendNotice,
   appendToolEvent,
+  appendToolResult,
   appendUserEvent,
   createWorkbenchState,
   isKnownCommand,
@@ -64,6 +66,15 @@ export interface InteractiveTerminalTurnHandlers {
     readonly id: string;
     readonly name: string;
     readonly input: unknown;
+  }): void;
+  onToolResult(event: {
+    readonly toolCall: {
+      readonly id: string;
+      readonly name: string;
+      readonly input: unknown;
+    };
+    readonly result: AgentToolResult;
+    readonly durationMs: number;
   }): void;
 }
 
@@ -206,6 +217,11 @@ export async function runInteractiveTerminal(
   let turns = 0;
   let totalUsage: ModelTokenUsage | undefined;
   let activityAnimation: ActivityAnimationHandle | undefined;
+  let pendingToolCalls: readonly {
+    readonly id: string;
+    readonly name: string;
+    readonly input: unknown;
+  }[] = [];
   let state: WorkbenchState = {
     ...createWorkbenchState(),
     input: createInputEditor(),
@@ -340,6 +356,7 @@ export async function runInteractiveTerminal(
       { role: "user", content: input },
     ];
     state = setWorkbenchStatus(appendUserEvent(state, input), "Working");
+    pendingToolCalls = [];
     startActivity({ kind: "thinking", frame: 0 });
     let receivedText = false;
     activeController = new AbortController();
@@ -361,12 +378,50 @@ export async function runInteractiveTerminal(
           onToolCall(toolCall) {
             const detail = describeToolCall(toolCall.name, toolCall.input);
             state = appendToolEvent(state, toolCall.name, detail);
-            startActivity({
-              kind: "tool",
-              name: toolCall.name,
-              ...(detail === undefined ? {} : { detail }),
-              frame: state.activity?.frame ?? 0,
-            });
+            pendingToolCalls = [...pendingToolCalls, toolCall];
+            if (state.activity?.kind !== "tool") {
+              startActivity({
+                kind: "tool",
+                name: toolCall.name,
+                ...(detail === undefined ? {} : { detail }),
+                frame: state.activity?.frame ?? 0,
+              });
+            }
+            redraw();
+          },
+          onToolResult(event) {
+            const summary = summarizeToolResult(
+              event.toolCall.name,
+              event.result,
+              event.durationMs,
+            );
+            state = appendToolResult(
+              state,
+              event.toolCall.name,
+              summary,
+              event.result.isError,
+            );
+            pendingToolCalls = pendingToolCalls.filter(
+              (toolCall) => toolCall.id !== event.toolCall.id,
+            );
+            const nextToolCall = pendingToolCalls[0];
+            if (nextToolCall === undefined) {
+              startActivity({
+                kind: "thinking",
+                frame: state.activity?.frame ?? 0,
+              });
+            } else {
+              const detail = describeToolCall(
+                nextToolCall.name,
+                nextToolCall.input,
+              );
+              startActivity({
+                kind: "tool",
+                name: nextToolCall.name,
+                ...(detail === undefined ? {} : { detail }),
+                frame: state.activity?.frame ?? 0,
+              });
+            }
             redraw();
           },
         },
@@ -391,6 +446,7 @@ export async function runInteractiveTerminal(
       );
     } finally {
       activeController = undefined;
+      pendingToolCalls = [];
       stopActivityAnimation();
       redraw();
     }

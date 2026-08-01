@@ -16,6 +16,12 @@ export type WorkbenchEvent =
       readonly detail?: string;
     }
   | {
+      readonly type: "tool-result";
+      readonly name: string;
+      readonly summary: string;
+      readonly isError: boolean;
+    }
+  | {
       readonly type: "notice";
       readonly text: string;
       readonly tone: "info" | "warning" | "error";
@@ -100,6 +106,19 @@ function eventLines(
         color,
       ),
     ];
+  if (event.type === "tool-result") {
+    const code = event.isError ? palette.error : palette.info;
+    return [
+      colored(
+        `    ${event.isError ? "✗" : "↳"} ${truncate(
+          `${event.name} · ${event.summary}`,
+          width,
+        )}`,
+        code,
+        color,
+      ),
+    ];
+  }
   if (event.type === "notice") {
     const code =
       event.tone === "error"
@@ -379,6 +398,28 @@ export function appendToolEvent(
         ...(detail === undefined
           ? {}
           : { detail: sanitizeDisplayText(detail) }),
+      },
+    ],
+    status: "Working",
+    scrollOffset: 0,
+  };
+}
+
+export function appendToolResult(
+  state: WorkbenchState,
+  name: string,
+  summary: string,
+  isError: boolean,
+): WorkbenchState {
+  return {
+    ...state,
+    events: [
+      ...state.events,
+      {
+        type: "tool-result",
+        name: sanitizeDisplayText(name),
+        summary: sanitizeDisplayText(summary),
+        isError,
       },
     ],
     status: "Working",

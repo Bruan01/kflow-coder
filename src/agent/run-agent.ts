@@ -45,6 +45,13 @@ export interface AgentRunDependencies {
   readonly toolExecutor: AgentToolExecutor;
   readonly onText?: (delta: string) => void;
   readonly onToolCall?: (toolCall: ModelToolCall) => void;
+  readonly onToolResult?: (event: AgentToolResultEvent) => void;
+}
+
+export interface AgentToolResultEvent {
+  readonly toolCall: ModelToolCall;
+  readonly result: AgentToolResult;
+  readonly durationMs: number;
 }
 
 interface ModelTurn {
@@ -229,6 +236,7 @@ export async function runAgent(
 
       for (const toolCall of turn.toolCalls) {
         throwIfAborted(options.signal);
+        const startedAt = Date.now();
         const result = await dependencies.toolExecutor.execute(
           toolCall,
           options,
@@ -240,6 +248,11 @@ export async function runAgent(
             "Tool result does not match the requested Tool Call",
           );
         }
+        dependencies.onToolResult?.({
+          toolCall,
+          result,
+          durationMs: Math.max(0, Date.now() - startedAt),
+        });
         messages.push({
           role: "tool",
           toolCallId: result.toolCallId,

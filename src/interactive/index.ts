@@ -40,6 +40,7 @@ export {
   appendAssistantText,
   appendNotice,
   appendToolEvent,
+  appendToolResult,
   appendUserEvent,
   createWorkbenchState,
   isKnownCommand,
@@ -60,6 +61,7 @@ export {
 } from "./workbench.js";
 export { sanitizeTerminalText } from "./sanitize-terminal-text.js";
 export { describeToolCall } from "./tool-activity.js";
+export { summarizeToolResult } from "./tool-result-summary.js";
 export type {
   InteractiveSessionInfo,
   WorkbenchEvent,

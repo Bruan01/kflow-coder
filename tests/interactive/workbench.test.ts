@@ -4,6 +4,7 @@ import {
   appendAssistantText,
   appendNotice,
   appendToolEvent,
+  appendToolResult,
   createWorkbenchState,
   moveCommandMenu,
   moveWorkbenchScroll,
@@ -101,6 +102,23 @@ describe("KFlow workbench renderer", () => {
     expect(tool).toContain(
       "⠹ 执行工具: read_file · 文件: src/interactive/workbench.ts",
     );
+  });
+
+  it("renders a safe Tool Result completion line without its raw content", () => {
+    let state = appendToolEvent(
+      createWorkbenchState(),
+      "read_file",
+      "文件: src/index.ts",
+    );
+    state = appendToolResult(state, "read_file", "读取 12 行 · 9ms", false);
+    const screen = renderWorkbench(state, {
+      columns: 80,
+      rows: 20,
+      color: false,
+    });
+
+    expect(screen).toContain("↳ read_file · 读取 12 行 · 9ms");
+    expect(screen).not.toContain("raw file content");
   });
 
   it("scrolls the timeline without moving the fixed status and composer", () => {

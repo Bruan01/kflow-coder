@@ -64,6 +64,11 @@ Shell, and edit operations expose their bounded target summary as well, without
 printing file contents or inline secrets. The animation stops and returns to
 `Ready`, `Cancelled`, or `Error` when the request finishes.
 
+After a Tool Call completes, the timeline adds a safe result summary such as
+`↳ read_file · 读取 12 行 · 9ms`, `↳ grep · 命中 3 条 · 8ms`, or
+`↳ shell · exit 0 · 1.2s`. Failed, timed-out, and truncated results are marked
+without exposing raw tool output.
+
 Typing `/` opens a Chinese command menu. Supported commands are:
 
 - `/help`: show all commands and shortcuts in Chinese.
