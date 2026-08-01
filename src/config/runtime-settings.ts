@@ -1,15 +1,5 @@
 // runtimeSettings：运行时设置常量对象，使用 as const 确保所有值被推断为字面量类型
 export const runtimeSettings = {
-  agent: {
-    // Agent 相关设置
-    maxSteps: {
-      //   最大步数设置
-      envVar: "KFC_AGENT_MAX_STEPS", // 控制该设置的环境变量名
-      defaultValue: 8, // 默认值：8 步
-      minimum: 1, // 最小值：1 步
-      maximum: 64, // 最大值：64 步
-    },
-  },
   ui: {
     // UI 相关设置
     theme: {
@@ -28,13 +18,6 @@ export const runtimeSettings = {
     },
   },
 } as const;
-
-// DEFAULT_AGENT_MAX_STEPS：Agent 默认最大步数常量（从 runtimeSettings 提取）
-export const DEFAULT_AGENT_MAX_STEPS =
-  runtimeSettings.agent.maxSteps.defaultValue;
-
-// MAX_AGENT_MAX_STEPS：Agent 允许的最大步数硬上限
-export const MAX_AGENT_MAX_STEPS = runtimeSettings.agent.maxSteps.maximum;
 
 // ThemeName：主题名称类型（从 options 数组中提取的联合类型）
 // (typeof runtimeSettings.ui.theme.options)[number] 表示取数组元素的联合类型

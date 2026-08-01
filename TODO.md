@@ -84,9 +84,9 @@
 
 ## P2：最小 Agent Loop 与只读工具
 
-**核心问题：Agent 的本质为何是受控状态机，而不是一段更长的 Prompt？**
+**核心问题：Agent 的本质为何是可中断的受控状态机，而不是一段更长的 Prompt？**
 
-- [x] 定义内部消息、Tool Call、Tool Result 和最大步数。
+- [x] 定义内部消息、Tool Call、Tool Result 和可选的显式步数预算；生产长任务模式不设置固定步数上限。
 - [x] 实现 Tool Registry 与 Zod 参数校验。
 - [x] 实现 `list_directory`、`read_file`、`grep`。
 - [x] 注册 Codex、pi、Claude Code 的共同工具面：`find_files`、`apply_patch`、`write_file`、`shell`，并按 read/edit/execute 分层，修改和执行默认关闭。

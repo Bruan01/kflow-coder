@@ -8,7 +8,6 @@ import { homedir } from "node:os";
 // 导入各个功能模块
 import { readPackageVersion } from "./cli/package-version.js"; // 读取 package.json 版本号
 import { runCli } from "./cli/run-cli.js"; // CLI 主运行函数
-import { resolveAgentMaxSteps } from "./cli/agent-settings.js"; // 解析 Agent 最大步数
 import { runAsk } from "./ask/run-ask.js"; // 运行 ask 模式
 import { runAgent } from "./agent/run-agent.js"; // 运行 agent 模式
 import { ConfigError } from "./config/config.js"; // 配置错误类
@@ -96,13 +95,11 @@ try {
         const registry = new ToolRegistry(
           await createWorkspaceTools({ workspaceRoot: process.cwd() }),
         );
-        // 解析 Agent 最大步数（从环境变量或默认值）
-        const maxSteps = resolveAgentMaxSteps();
         // 调用核心 runAgent 函数
         return await runAgent(
           {
             messages: [{ role: "user", content: prompt }], // 构建消息列表（以用户消息开始）
-            maxSteps, // 最大步数限制
+            maxSteps: "unlimited", // 长任务模式不设置固定步数上限
             tools: registry.listModelDefinitions(), // 获取工具的模型定义列表
           },
           {
@@ -144,7 +141,7 @@ try {
       );
       // 创建模型提供者（复用，整个会话期间不重建）
       const provider = createModelProvider(config.provider);
-      const maxSteps = resolveAgentMaxSteps();
+      const maxSteps = "unlimited" as const;
       let currentTheme = getInteractiveTheme(config.ui?.theme);
       let themeRevision = 0;
       // 启动交互终端
@@ -200,7 +197,7 @@ try {
             `请求超时: ${config.provider.timeoutMs}ms`,
             "API Key: 已配置（已隐藏）",
             "上下文窗口: 未知（当前 Provider 未返回）",
-            `Agent 最大步数: ${runtime.maxSteps}`,
+            "Agent 步数限制: 无（可用 Esc / Ctrl+C 随时中断）",
             `已启用工具: ${runtime.enabledToolCount}/${runtime.totalToolCount}`,
             "",
             "当前会话",
@@ -210,7 +207,7 @@ try {
           ].join("\n");
         },
 
-        maxSteps, // Agent 最大步数
+        maxSteps, // 长任务模式不设置固定步数上限
 
         // tools 回调：返回工具列表（含交互式描述）
         tools: () =>
@@ -238,7 +235,7 @@ try {
           runAgent(
             {
               messages, // 当前消息历史
-              maxSteps, // 最大步数
+              maxSteps, // 长任务模式不设置固定步数上限
               tools: registry.listModelDefinitions(), // 工具定义列表
             },
             {

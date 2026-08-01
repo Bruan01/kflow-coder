@@ -79,7 +79,7 @@ the same command remains help for pipes and deterministic tests.
 
 The workbench runner owns the process-local `ModelMessage[]`. For a normal
 input it calls `runAgent` with the previous messages, the fixed read-only tool
-definitions, and `maxSteps: 8`. On success it replaces the history with the
+definitions, and `maxSteps: "unlimited"`. On success it replaces the history with the
 returned agent messages. On cancellation/failure it retains the previous
 history, so incomplete tool turns never contaminate the next request.
 

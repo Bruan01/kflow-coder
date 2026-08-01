@@ -12,9 +12,10 @@ behavior change easy to apply incompletely.
 
 Use two typed, source-owned catalogs instead of one global constants file:
 
-1. `src/config/runtime-settings.ts` owns runtime settings that affect Agent
-   execution, including the default and maximum Agent step count and the
-   environment variable name used for overrides.
+1. `src/config/runtime-settings.ts` owns runtime settings that affect the UI.
+   Agent execution uses an explicit `"unlimited"` production mode; numeric
+   step budgets remain a Core API option for deterministic tests and callers
+   that deliberately need a bounded run.
 2. `src/interactive/catalog.ts` owns user-facing interactive commands and
    localized tool labels. The Workbench renderer and terminal runner consume
    the same command catalog for menus and help text.
@@ -25,8 +26,9 @@ contracts rather than user-facing runtime settings.
 
 ## Invariants
 
-- The default Agent step limit remains `8`.
-- `KFC_AGENT_MAX_STEPS` remains bounded to `1..64`.
+- Production CLI/TUI runs pass `maxSteps: "unlimited"`.
+- A numeric `maxSteps` is validated as a positive integer only when explicitly supplied.
+- User interruption, Provider/context failure, and a model stop response remain termination boundaries.
 - Adding a command updates slash completion and `/help` from one record.
 - Tool labels are presentation-only; Provider-facing tool names and
   descriptions remain unchanged.
@@ -42,7 +44,7 @@ contracts rather than user-facing runtime settings.
 ## Acceptance
 
 - TypeScript and all existing tests pass.
-- Agent settings tests verify default, valid override, and invalid override.
+- Agent Loop tests verify explicit numeric budgets and unlimited runs beyond the former 64-step ceiling.
 - Interactive tests verify the shared command list, `/tool` display, and live
   tool status behavior.
 - `/help`, `/status`, and the slash menu expose the same command set.

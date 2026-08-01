@@ -23,8 +23,6 @@ export { loadConfig } from "./config/load-config.js";
 export { redactConfig } from "./config/redact-config.js";
 // 导出运行时设置相关的常量和函数
 export {
-  DEFAULT_AGENT_MAX_STEPS, // Agent 默认最大步数
-  MAX_AGENT_MAX_STEPS, // Agent 允许的最大步数上限
   DEFAULT_THEME, // 默认终端主题
   runtimeSettings, // 运行时设置对象
 } from "./config/runtime-settings.js";

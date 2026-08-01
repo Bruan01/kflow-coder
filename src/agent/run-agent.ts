@@ -11,8 +11,6 @@ import type {
 } from "../provider/model-provider.js";
 import { AgentError } from "./agent-error.js";
 
-export { DEFAULT_AGENT_MAX_STEPS } from "../config/runtime-settings.js";
-
 export interface AgentToolResult {
   readonly toolCallId: string;
   readonly content: string;
@@ -28,9 +26,11 @@ export interface AgentToolExecutor {
 
 export type AgentToolAuthorizationDecision = boolean | "explain";
 
+export type AgentMaxSteps = number | "unlimited";
+
 export interface AgentRunRequest {
   readonly messages: readonly ModelMessage[];
-  readonly maxSteps: number;
+  readonly maxSteps: AgentMaxSteps;
   readonly tools?: readonly ModelToolDefinition[];
 }
 
@@ -211,10 +211,13 @@ export async function runAgent(
   dependencies: AgentRunDependencies,
   options: ModelStreamOptions = {},
 ): Promise<AgentRunResult> {
-  if (!Number.isInteger(request.maxSteps) || request.maxSteps < 1) {
+  if (
+    request.maxSteps !== "unlimited" &&
+    (!Number.isInteger(request.maxSteps) || request.maxSteps < 1)
+  ) {
     throw new AgentError(
       "AGENT_INVALID_OPTIONS",
-      "Agent maxSteps must be a positive integer",
+      "Agent maxSteps must be a positive integer or unlimited",
     );
   }
   throwIfAborted(options.signal);
@@ -242,7 +245,11 @@ export async function runAgent(
       seenToolCallIds.add(toolCall.id);
     }
   }
-  for (let step = 1; step <= request.maxSteps; step += 1) {
+  for (
+    let step = 1;
+    request.maxSteps === "unlimited" || step <= request.maxSteps;
+    step += 1
+  ) {
     throwIfAborted(options.signal);
     const turn = await collectModelTurn(
       dependencies.provider,
@@ -266,7 +273,7 @@ export async function runAgent(
         content: turn.text,
         toolCalls: [...turn.toolCalls],
       });
-      if (step === request.maxSteps) {
+      if (request.maxSteps !== "unlimited" && step === request.maxSteps) {
         throw new AgentError(
           "AGENT_MAX_STEPS_EXCEEDED",
           "Agent exceeded the maximum number of model steps",

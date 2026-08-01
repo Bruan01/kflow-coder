@@ -522,6 +522,38 @@ describe("runAgent", () => {
     expect(toolExecutor.execute).not.toHaveBeenCalled();
   });
 
+  it("keeps running in unlimited mode beyond the former 64-step ceiling", async () => {
+    const turns: (readonly ModelStreamEvent[])[] = Array.from(
+      { length: 70 },
+      (_, index): readonly ModelStreamEvent[] => [
+        { type: "start" as const },
+        {
+          type: "tool-call" as const,
+          toolCall: { id: `call_${index}`, name: "lookup", input: {} },
+        },
+        { type: "finish" as const, reason: "tool-call" as const },
+      ],
+    );
+    turns.push([
+      { type: "start" as const },
+      { type: "text-delta" as const, delta: "finished" },
+      { type: "finish" as const, reason: "stop" as const },
+    ]);
+    const provider = new ScriptedProvider(turns);
+    const toolExecutor = fakeExecutor();
+
+    const result = await runAgent(
+      {
+        messages: [{ role: "user", content: "long task" }],
+        maxSteps: "unlimited",
+      },
+      { provider, toolExecutor },
+    );
+
+    expect(result).toMatchObject({ steps: 71, finalText: "finished" });
+    expect(toolExecutor.execute).toHaveBeenCalledTimes(70);
+  });
+
   it("rejects a Tool Result with the wrong call ID", async () => {
     const toolCall = { id: "call_expected", name: "lookup", input: {} };
     const provider = new ScriptedProvider([

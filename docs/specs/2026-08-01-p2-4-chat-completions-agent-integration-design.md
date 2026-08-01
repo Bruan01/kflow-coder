@@ -120,7 +120,7 @@ adapter:
 3. creates the provider, P2.3 read-only tools rooted at `process.cwd()`, and a
    `ToolRegistry`;
 4. calls `runAgent` with the user message, registry executor, registry model
-   tool definitions, and `maxSteps: 8`;
+   tool definitions, and `maxSteps: "unlimited"`;
 5. writes assistant text deltas to stdout as they are received;
 6. applies one SIGINT abort controller across provider and tool work.
 

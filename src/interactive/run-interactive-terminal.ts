@@ -1,14 +1,12 @@
 import { emitKeypressEvents } from "node:readline";
 
 import type {
+  AgentMaxSteps,
   AgentRunResult,
   AgentToolAuthorizationDecision,
   AgentToolResult,
 } from "../agent/run-agent.js";
-import {
-  DEFAULT_AGENT_MAX_STEPS,
-  type ThemeName,
-} from "../config/runtime-settings.js";
+import type { ThemeName } from "../config/runtime-settings.js";
 import {
   formatErrorForCli,
   normalizeUnknownError,
@@ -107,7 +105,7 @@ export interface InteractiveTerminalOptions {
   readonly status: (runtime: InteractiveRuntimeStatus) => string;
   readonly tools?: () => readonly InteractiveToolStatus[];
   readonly toggleTool?: (name: string) => void;
-  readonly maxSteps?: number;
+  readonly maxSteps?: AgentMaxSteps;
   readonly themes?: readonly WorkbenchTheme[];
   readonly theme?: () => WorkbenchTheme;
   readonly setTheme?: (name: ThemeName) => void | Promise<void>;
@@ -128,7 +126,7 @@ export interface InteractiveRuntimeStatus {
   readonly usage: ModelTokenUsage | undefined;
   readonly enabledToolCount: number;
   readonly totalToolCount: number;
-  readonly maxSteps: number;
+  readonly maxSteps: AgentMaxSteps;
 }
 
 function terminalColumns(output: NodeJS.WriteStream): number {
@@ -176,7 +174,7 @@ function runtimeStatus(
     usage,
     enabledToolCount: counts.enabled,
     totalToolCount: counts.total,
-    maxSteps: options.maxSteps ?? DEFAULT_AGENT_MAX_STEPS,
+    maxSteps: options.maxSteps ?? "unlimited",
   };
 }
 
@@ -218,10 +216,10 @@ function turnRecoveryNotice(
   ].join("\n");
 }
 
-function interactiveErrorText(error: unknown, maxSteps: number): string {
+function interactiveErrorText(error: unknown): string {
   const normalized = normalizeUnknownError(error);
   if (normalized.code === "AGENT_MAX_STEPS_EXCEEDED") {
-    return `Agent 已达到本轮最大步数（${maxSteps}），为避免循环已停止。可缩小任务范围，或设置 KFC_AGENT_MAX_STEPS 后重试。`;
+    return "Agent 遇到显式步数预算并停止；当前生产模式默认不设置固定步数上限。";
   }
   return (
     formatErrorForCli(normalized).text.split("\n", 1)[0] ?? "Request failed"
@@ -621,13 +619,7 @@ export async function runInteractiveTerminal(
       );
       state = appendNotice(
         state,
-        [
-          interactiveErrorText(
-            error,
-            options.maxSteps ?? DEFAULT_AGENT_MAX_STEPS,
-          ),
-          recovery,
-        ]
+        [interactiveErrorText(error), recovery]
           .filter((part): part is string => part !== undefined)
           .join("\n"),
         presentation.exitCode === 130 ? "Cancelled" : "Error",
