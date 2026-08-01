@@ -16,6 +16,10 @@ import {
   createInputEditor,
   type InputKey,
 } from "./input-editor.js";
+import {
+  startActivityAnimation,
+  type ActivityAnimationHandle,
+} from "./activity-animation.js";
 import { playStartupAnimation } from "./startup-animation.js";
 import {
   appendAssistantText,
@@ -33,6 +37,7 @@ import {
   setThemeMenu,
   setToolMenu,
   setWorkbenchInput,
+  setWorkbenchActivity,
   setWorkbenchStatus,
   moveToolMenu,
   moveThemeMenu,
@@ -199,6 +204,7 @@ export async function runInteractiveTerminal(
   let messages: readonly ModelMessage[] = [];
   let turns = 0;
   let totalUsage: ModelTokenUsage | undefined;
+  let activityAnimation: ActivityAnimationHandle | undefined;
   let state: WorkbenchState = {
     ...createWorkbenchState(),
     input: createInputEditor(),
@@ -240,6 +246,22 @@ export async function runInteractiveTerminal(
     if (closed) return;
     closed = true;
     finish();
+  };
+
+  const stopActivityAnimation = (): void => {
+    activityAnimation?.stop();
+    activityAnimation = undefined;
+    state = setWorkbenchActivity(state, undefined);
+  };
+
+  const startActivity = (
+    activity: Exclude<WorkbenchState["activity"], undefined>,
+  ): void => {
+    activityAnimation?.stop();
+    activityAnimation = startActivityAnimation((frame) => {
+      state = setWorkbenchActivity(state, { ...activity, frame });
+      redraw();
+    });
   };
 
   const clearSession = (): void => {
@@ -317,7 +339,7 @@ export async function runInteractiveTerminal(
       { role: "user", content: input },
     ];
     state = setWorkbenchStatus(appendUserEvent(state, input), "Working");
-    redraw();
+    startActivity({ kind: "thinking", frame: 0 });
     let receivedText = false;
     activeController = new AbortController();
     try {
@@ -326,11 +348,22 @@ export async function runInteractiveTerminal(
         {
           onText(delta) {
             receivedText = true;
+            if (state.activity?.kind === "tool") {
+              state = setWorkbenchActivity(state, {
+                kind: "thinking",
+                frame: state.activity.frame,
+              });
+            }
             state = appendAssistantText(state, delta);
             redraw();
           },
           onToolCall(toolCall) {
             state = appendToolEvent(state, toolCall.name);
+            startActivity({
+              kind: "tool",
+              name: toolCall.name,
+              frame: state.activity?.frame ?? 0,
+            });
             redraw();
           },
         },
@@ -355,6 +388,7 @@ export async function runInteractiveTerminal(
       );
     } finally {
       activeController = undefined;
+      stopActivityAnimation();
       redraw();
     }
   };
@@ -565,6 +599,7 @@ export async function runInteractiveTerminal(
     options.input.off("data", handleMouseData);
     options.output.off("resize", redraw);
     if (rawModeEnabled) options.input.setRawMode?.(false);
+    stopActivityAnimation();
     options.input.pause();
     options.output.write(LEAVE_ALTERNATE_SCREEN);
   }

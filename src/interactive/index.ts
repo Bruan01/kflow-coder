@@ -6,6 +6,11 @@ export type {
   StartupAnimationOptions,
   StartupFrameOptions,
 } from "./startup-animation.js";
+export {
+  activitySpinnerFrame,
+  startActivityAnimation,
+} from "./activity-animation.js";
+export type { ActivityAnimationHandle } from "./activity-animation.js";
 export { runInteractiveSession } from "./interactive-session.js";
 export type {
   InteractiveSessionOptions,
@@ -49,6 +54,7 @@ export {
   setClearConfirmation,
   setThemeMenu,
   setToolMenu,
+  setWorkbenchActivity,
   setWorkbenchInput,
   setWorkbenchStatus,
 } from "./workbench.js";
@@ -59,4 +65,5 @@ export type {
   WorkbenchRenderOptions,
   WorkbenchState,
   InteractiveToolStatus,
+  WorkbenchActivity,
 } from "./workbench.js";

@@ -10,6 +10,7 @@ import {
   renderWorkbench,
   setClearConfirmation,
   setCommandMenu,
+  setWorkbenchActivity,
   setWorkbenchInput,
 } from "../../src/interactive/workbench.js";
 
@@ -76,6 +77,27 @@ describe("KFlow workbench renderer", () => {
     expect(screen).toContain("\u001b[32m  ✓ Tool");
     expect(screen).toContain("清除当前会话上下文和时间线");
     expect(screen).toContain("\u001b[7m");
+  });
+
+  it("renders animated thinking and tool activity in the fixed status bar", () => {
+    const thinking = renderWorkbench(
+      setWorkbenchActivity(createWorkbenchState(), {
+        kind: "thinking",
+        frame: 1,
+      }),
+      { columns: 70, rows: 20, color: false },
+    );
+    expect(thinking).toContain("⠙ 模型思考中");
+
+    const tool = renderWorkbench(
+      setWorkbenchActivity(createWorkbenchState(), {
+        kind: "tool",
+        name: "read_file",
+        frame: 2,
+      }),
+      { columns: 70, rows: 20, color: false },
+    );
+    expect(tool).toContain("⠹ 执行工具: read_file");
   });
 
   it("scrolls the timeline without moving the fixed status and composer", () => {

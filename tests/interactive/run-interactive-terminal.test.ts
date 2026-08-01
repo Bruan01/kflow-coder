@@ -265,6 +265,83 @@ describe("runInteractiveTerminal", () => {
     await pending;
   });
 
+  it("animates model thinking and tool execution, then clears the timer", async () => {
+    const input = new PassThrough();
+    const output = terminalOutput();
+    let resolveTurn:
+      | ((result: {
+          readonly messages: readonly [
+            { readonly role: "assistant"; readonly content: string },
+          ];
+          readonly steps: number;
+          readonly finalText: string;
+          readonly finishReason: "stop";
+        }) => void)
+      | undefined;
+    const runTurn = vi.fn(
+      async (
+        _messages: readonly unknown[],
+        handlers: {
+          onToolCall(toolCall: {
+            readonly id: string;
+            readonly name: string;
+            readonly input: unknown;
+          }): void;
+        },
+      ) => {
+        handlers.onToolCall({ id: "call_1", name: "read_file", input: {} });
+        return new Promise<{
+          readonly messages: readonly [
+            {
+              readonly role: "assistant";
+              readonly content: string;
+            },
+          ];
+          readonly steps: number;
+          readonly finalText: string;
+          readonly finishReason: "stop";
+        }>((resolve) => {
+          resolveTurn = resolve;
+        });
+      },
+    );
+    const pending = runInteractiveTerminal({
+      input,
+      output,
+      color: false,
+      status: () => "Read-only",
+      runTurn,
+      playAnimation: async ({ write }) => write("KFLOW\n"),
+    });
+
+    await vi.waitFor(() =>
+      expect(output.text.join(" ")).toContain("Enter send"),
+    );
+    input.write("inspect\r");
+    await vi.waitFor(() =>
+      expect(output.text.join("")).toContain("⠋ 模型思考中"),
+    );
+    await vi.waitFor(() =>
+      expect(output.text.join("")).toContain("⠋ 执行工具: read_file"),
+    );
+    const outputAfterActivity = output.text.length;
+    resolveTurn?.({
+      messages: [{ role: "assistant", content: "done" }],
+      steps: 1,
+      finalText: "done",
+      finishReason: "stop",
+    });
+    await vi.waitFor(() =>
+      expect(output.text.length).toBeGreaterThan(outputAfterActivity),
+    );
+    expect(output.text.join("")).toContain("Ready");
+    await new Promise((resolve) => setTimeout(resolve, 140));
+    expect(output.text.length).toBe(outputAfterActivity + 1);
+
+    input.write("/exit\r");
+    await pending;
+  });
+
   it("reports accumulated session usage and resets conversation history only after clear confirmation", async () => {
     const input = new PassThrough();
     const output = terminalOutput();

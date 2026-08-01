@@ -56,6 +56,11 @@ history. Mouse reporting is intentionally disabled, so the terminal's native
 text selection and copy behavior remains available. `Esc` or Ctrl+C cancels
 only the current request.
 
+While a model request is active, the fixed status bar shows a live spinner and
+`模型思考中`. When the Agent enters a Tool Call, the same animation changes to
+`执行工具: <name>`; it stops and returns to `Ready`, `Cancelled`, or `Error`
+when the request finishes.
+
 Typing `/` opens a Chinese command menu. Supported commands are:
 
 - `/help`: show all commands and shortcuts in Chinese.

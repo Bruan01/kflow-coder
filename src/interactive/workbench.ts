@@ -4,6 +4,7 @@ import { sanitizeTerminalText } from "./sanitize-terminal-text.js";
 import { interactiveCommands, type InteractiveCommandItem } from "./catalog.js";
 import type { ThemeName } from "../config/runtime-settings.js";
 import type { ToolCapability } from "../tool/define-tool.js";
+import { activitySpinnerFrame } from "./activity-animation.js";
 import { getInteractiveTheme, type WorkbenchTheme } from "./themes.js";
 
 export type WorkbenchEvent =
@@ -25,6 +26,14 @@ export interface InteractiveToolStatus {
   readonly capability?: ToolCapability;
 }
 
+export type WorkbenchActivity =
+  | { readonly kind: "thinking"; readonly frame: number }
+  | {
+      readonly kind: "tool";
+      readonly name: string;
+      readonly frame: number;
+    };
+
 export interface InteractiveSessionInfo {
   readonly model: string;
   readonly cwd: string;
@@ -41,6 +50,7 @@ export interface WorkbenchState {
   readonly events: readonly WorkbenchEvent[];
   readonly input: InputEditorState;
   readonly status: "Ready" | "Working" | "Cancelled" | "Error";
+  readonly activity: WorkbenchActivity | undefined;
   readonly commandMenu: { readonly selected: number } | undefined;
   readonly toolMenu: { readonly selected: number } | undefined;
   readonly themeMenu: { readonly selected: number } | undefined;
@@ -252,6 +262,13 @@ function statusCode(
   return palette.statusReady;
 }
 
+function activityLabel(activity: WorkbenchActivity): string {
+  const spinner = activitySpinnerFrame(activity.frame);
+  return activity.kind === "tool"
+    ? `${spinner} 执行工具: ${activity.name}`
+    : `${spinner} 模型思考中`;
+}
+
 function confirmationLines(
   state: WorkbenchState,
   color: boolean,
@@ -296,6 +313,7 @@ export function createWorkbenchState(): WorkbenchState {
     events: [],
     input: createInputEditor(),
     status: "Ready",
+    activity: undefined,
     commandMenu: undefined,
     toolMenu: undefined,
     themeMenu: undefined,
@@ -377,6 +395,7 @@ export function appendNotice(
       },
     ],
     status,
+    activity: status === "Working" ? state.activity : undefined,
     scrollOffset: 0,
   };
 }
@@ -397,7 +416,25 @@ export function setWorkbenchStatus(
   state: WorkbenchState,
   status: WorkbenchState["status"],
 ): WorkbenchState {
-  return { ...state, status };
+  return {
+    ...state,
+    status,
+    activity: status === "Working" ? state.activity : undefined,
+  };
+}
+
+export function setWorkbenchActivity(
+  state: WorkbenchState,
+  activity: WorkbenchActivity | undefined,
+): WorkbenchState {
+  return {
+    ...state,
+    status: activity === undefined ? state.status : "Working",
+    activity:
+      activity?.kind === "tool"
+        ? { ...activity, name: sanitizeDisplayText(activity.name) }
+        : activity,
+  };
 }
 
 export function setCommandMenu(
@@ -562,8 +599,12 @@ export function renderWorkbench(
     Math.max(0, transcriptEnd - transcriptRows),
     transcriptEnd,
   );
+  const statusHeadline =
+    state.status === "Working" && state.activity !== undefined
+      ? activityLabel(state.activity)
+      : state.status;
   const status = colored(
-    `${state.status}  ·  Read-only  ·  ${state.events.length} events${state.scrollOffset > 0 ? `  ·  Scroll ${state.scrollOffset} lines` : ""}  ·  Esc cancel`,
+    `${statusHeadline}  ·  Read-only  ·  ${state.events.length} events${state.scrollOffset > 0 ? `  ·  Scroll ${state.scrollOffset} lines` : ""}  ·  Esc cancel`,
     statusCode(state.status, palette),
     options.color,
   );
