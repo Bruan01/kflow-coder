@@ -145,6 +145,142 @@ describe("runInteractiveTerminal", () => {
     await pending;
   });
 
+  it("pauses before edit tools and feeds a denied confirmation back as a Tool Result", async () => {
+    const input = new PassThrough();
+    const output = terminalOutput();
+    const toolCall = {
+      id: "call_write",
+      name: "write_file",
+      input: { path: "notes.txt", content: "private" },
+    };
+    const runTurn = vi.fn(async (messages, handlers) => {
+      handlers.onToolCall(toolCall);
+      const approved = await handlers.authorizeToolCall(toolCall);
+      handlers.onToolResult({
+        toolCall,
+        result: {
+          toolCallId: toolCall.id,
+          content: JSON.stringify(
+            approved
+              ? { bytesWritten: 7 }
+              : { error: { code: "TOOL_CALL_DENIED", tool: toolCall.name } },
+          ),
+          isError: !approved,
+        },
+        durationMs: 3,
+      });
+      return {
+        messages: [
+          ...messages,
+          { role: "assistant" as const, content: "denied" },
+        ],
+        steps: 1,
+        finalText: "denied",
+        finishReason: "stop" as const,
+      };
+    });
+    const pending = runInteractiveTerminal({
+      input,
+      output,
+      color: false,
+      status: () => "Read-only",
+      tools: () => [
+        {
+          name: "write_file",
+          description: "创建工作区新文件",
+          capability: "edit" as const,
+          enabled: true,
+        },
+      ],
+      runTurn,
+      playAnimation: async ({ write }) => write("KFLOW\n"),
+    });
+
+    await vi.waitFor(() =>
+      expect(output.text.join("")).toContain("Enter send"),
+    );
+    input.write("write it\r");
+    await vi.waitFor(() => {
+      expect(output.text.join("")).toContain("模型请求执行");
+      expect(output.text.join("")).toContain("确认执行？[y/N]");
+      expect(output.text.join("")).toContain("⚠ write_file");
+    });
+    input.write("n\r");
+    await vi.waitFor(() =>
+      expect(output.text.join("")).toContain("失败: TOOL_CALL_DENIED"),
+    );
+    expect(runTurn).toHaveBeenCalledOnce();
+
+    input.write("/exit\r");
+    await pending;
+  });
+
+  it("resumes an approved edit tool and reports its structured result", async () => {
+    const input = new PassThrough();
+    const output = terminalOutput();
+    const toolCall = {
+      id: "call_patch",
+      name: "apply_patch",
+      input: { path: "src/app.ts" },
+    };
+    const approvedValues: boolean[] = [];
+    const runTurn = vi.fn(async (messages, handlers) => {
+      handlers.onToolCall(toolCall);
+      const approved = await handlers.authorizeToolCall(toolCall);
+      approvedValues.push(approved);
+      handlers.onToolResult({
+        toolCall,
+        result: {
+          toolCallId: toolCall.id,
+          content: JSON.stringify({ replacements: 1, bytesWritten: 12 }),
+          isError: false,
+        },
+        durationMs: 4,
+      });
+      return {
+        messages: [
+          ...messages,
+          { role: "assistant" as const, content: "patched" },
+        ],
+        steps: 1,
+        finalText: "patched",
+        finishReason: "stop" as const,
+      };
+    });
+    const pending = runInteractiveTerminal({
+      input,
+      output,
+      color: false,
+      status: () => "Read-only",
+      tools: () => [
+        {
+          name: "apply_patch",
+          description: "修改文件",
+          capability: "edit" as const,
+          enabled: true,
+        },
+      ],
+      runTurn,
+      playAnimation: async ({ write }) => write("KFLOW\n"),
+    });
+
+    await vi.waitFor(() =>
+      expect(output.text.join("")).toContain("Enter send"),
+    );
+    input.write("patch it\r");
+    await vi.waitFor(() =>
+      expect(output.text.join("")).toContain("确认执行？[y/N]"),
+    );
+    input.write("y\r");
+    await vi.waitFor(() => {
+      expect(approvedValues).toEqual([true]);
+      expect(output.text.join("")).toContain("替换 1 处 · 写入 12 字节");
+    });
+
+    input.write("/exit\r");
+    await pending;
+  });
+
   it("previews the selected theme immediately and keeps it after Enter confirmation", async () => {
     const input = new PassThrough();
     const output = terminalOutput();

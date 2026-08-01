@@ -246,6 +246,7 @@ try {
               toolExecutor: registry, // 工具执行器
               onText: handlers.onText, // 文本增量回调
               onToolCall: handlers.onToolCall, // 工具调用事件回调
+              authorizeToolCall: handlers.authorizeToolCall, // 写操作与 Shell 逐次确认
               onToolResult: handlers.onToolResult, // 工具结果事件回调
             },
             { signal }, // 取消信号

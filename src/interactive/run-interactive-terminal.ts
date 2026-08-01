@@ -42,6 +42,8 @@ import {
   setWorkbenchInput,
   setWorkbenchActivity,
   setWorkbenchStatus,
+  setToolConfirmation,
+  updateToolApproval,
   moveToolMenu,
   moveThemeMenu,
   selectedThemeIndex,
@@ -76,6 +78,11 @@ export interface InteractiveTerminalTurnHandlers {
     readonly result: AgentToolResult;
     readonly durationMs: number;
   }): void;
+  authorizeToolCall(toolCall: {
+    readonly id: string;
+    readonly name: string;
+    readonly input: unknown;
+  }): Promise<boolean>;
 }
 
 export interface InteractiveTerminalInput extends NodeJS.ReadableStream {
@@ -208,6 +215,14 @@ function mapInputKey(
   return { type: "text", value };
 }
 
+function requiresToolConfirmation(
+  options: InteractiveTerminalOptions,
+  name: string,
+): boolean {
+  const tool = options.tools?.().find((candidate) => candidate.name === name);
+  return tool?.capability === "edit" || tool?.capability === "execute";
+}
+
 export async function runInteractiveTerminal(
   options: InteractiveTerminalOptions,
 ): Promise<void> {
@@ -222,6 +237,16 @@ export async function runInteractiveTerminal(
     readonly name: string;
     readonly input: unknown;
   }[] = [];
+  let pendingToolApproval:
+    | {
+        readonly toolCall: {
+          readonly id: string;
+          readonly name: string;
+          readonly input: unknown;
+        };
+        readonly resolve: (approved: boolean) => void;
+      }
+    | undefined;
   let state: WorkbenchState = {
     ...createWorkbenchState(),
     input: createInputEditor(),
@@ -236,6 +261,7 @@ export async function runInteractiveTerminal(
   const themes = options.themes ?? interactiveThemes;
 
   const redraw = (): void => {
+    if (closed) return;
     const runtime = runtimeStatus(options, turns, messages.length, totalUsage);
     options.output.write(
       `\u001b[2J\u001b[H${renderWorkbench(state, {
@@ -251,20 +277,6 @@ export async function runInteractiveTerminal(
       })}`,
     );
   };
-  const handleInterrupt = (): void => {
-    if (activeController !== undefined) {
-      activeController.abort();
-      return;
-    }
-    state = appendNotice(state, "Use /exit to leave KFlow.");
-    redraw();
-  };
-  const exit = (): void => {
-    if (closed) return;
-    closed = true;
-    finish();
-  };
-
   const stopActivityAnimation = (): void => {
     activityAnimation?.stop();
     activityAnimation = undefined;
@@ -279,6 +291,82 @@ export async function runInteractiveTerminal(
       state = setWorkbenchActivity(state, { ...activity, frame });
       redraw();
     });
+  };
+
+  const settleToolApproval = (
+    approved: boolean,
+    shouldRedraw = true,
+  ): boolean => {
+    const pending = pendingToolApproval;
+    if (pending === undefined) return false;
+    pendingToolApproval = undefined;
+    state = updateToolApproval(
+      state,
+      pending.toolCall.id,
+      approved ? "approved" : "denied",
+    );
+    state = setToolConfirmation(state, undefined);
+    if (approved) {
+      const detail = describeToolCall(
+        pending.toolCall.name,
+        pending.toolCall.input,
+      );
+      startActivity({
+        kind: "tool",
+        name: pending.toolCall.name,
+        ...(detail === undefined ? {} : { detail }),
+        frame: state.activity?.frame ?? 0,
+      });
+    }
+    if (shouldRedraw && !closed) redraw();
+    pending.resolve(approved);
+    return true;
+  };
+
+  const requestToolApproval = (toolCall: {
+    readonly id: string;
+    readonly name: string;
+    readonly input: unknown;
+  }): Promise<boolean> => {
+    if (closed) return Promise.resolve(false);
+    const detail = describeToolCall(toolCall.name, toolCall.input);
+    return new Promise<boolean>((resolve) => {
+      pendingToolApproval = { toolCall, resolve };
+      state = setToolConfirmation(state, {
+        id: toolCall.id,
+        name: toolCall.name,
+        ...(detail === undefined ? {} : { detail }),
+      });
+      activityAnimation?.stop();
+      activityAnimation = undefined;
+      state = setWorkbenchActivity(state, {
+        kind: "approval",
+        name: toolCall.name,
+        ...(detail === undefined ? {} : { detail }),
+        frame: state.activity?.frame ?? 0,
+      });
+      redraw();
+    });
+  };
+
+  const handleInterrupt = (): void => {
+    if (pendingToolApproval !== undefined) {
+      settleToolApproval(false);
+      return;
+    }
+    if (activeController !== undefined) {
+      activeController.abort();
+      return;
+    }
+    state = appendNotice(state, "Use /exit to leave KFlow.");
+    redraw();
+  };
+  const exit = (): void => {
+    if (closed) return;
+    settleToolApproval(false, false);
+    activeController?.abort();
+    closed = true;
+    finish();
   };
 
   const clearSession = (): void => {
@@ -365,6 +453,7 @@ export async function runInteractiveTerminal(
         requestMessages,
         {
           onText(delta) {
+            if (closed) return;
             receivedText = true;
             if (state.activity?.kind === "tool") {
               state = setWorkbenchActivity(state, {
@@ -376,8 +465,19 @@ export async function runInteractiveTerminal(
             redraw();
           },
           onToolCall(toolCall) {
+            if (closed) return;
             const detail = describeToolCall(toolCall.name, toolCall.input);
-            state = appendToolEvent(state, toolCall.name, detail);
+            const requiresConfirmation = requiresToolConfirmation(
+              options,
+              toolCall.name,
+            );
+            state = appendToolEvent(
+              state,
+              toolCall.name,
+              detail,
+              toolCall.id,
+              requiresConfirmation ? "pending" : "approved",
+            );
             pendingToolCalls = [...pendingToolCalls, toolCall];
             if (state.activity?.kind !== "tool") {
               startActivity({
@@ -389,7 +489,13 @@ export async function runInteractiveTerminal(
             }
             redraw();
           },
+          authorizeToolCall(toolCall) {
+            return requiresToolConfirmation(options, toolCall.name)
+              ? requestToolApproval(toolCall)
+              : Promise.resolve(true);
+          },
           onToolResult(event) {
+            if (closed) return;
             const summary = summarizeToolResult(
               event.toolCall.name,
               event.result,
@@ -435,6 +541,7 @@ export async function runInteractiveTerminal(
       }
       state = setWorkbenchStatus(state, "Ready");
     } catch (error) {
+      if (closed) return;
       const presentation = formatErrorForCli(error);
       state = appendNotice(
         state,
@@ -445,6 +552,7 @@ export async function runInteractiveTerminal(
         presentation.exitCode === 130 ? "Cancelled" : "Error",
       );
     } finally {
+      settleToolApproval(false, false);
       activeController = undefined;
       pendingToolCalls = [];
       stopActivityAnimation();
@@ -474,6 +582,10 @@ export async function runInteractiveTerminal(
       normalizedKey.name === "escape" ||
       (normalizedKey.ctrl === true && normalizedKey.name === "c")
     ) {
+      if (pendingToolApproval !== undefined) {
+        settleToolApproval(false);
+        return;
+      }
       if (state.toolMenu !== undefined && activeController === undefined) {
         state = setToolMenu(state, false);
         redraw();
@@ -563,6 +675,19 @@ export async function runInteractiveTerminal(
         redraw();
         return;
       }
+      return;
+    }
+    if (pendingToolApproval !== undefined) {
+      if (normalizedKey.name === "return") {
+        settleToolApproval(state.input.value.trim().toLowerCase() === "y");
+        state = setWorkbenchInput(state, "");
+        redraw();
+        return;
+      }
+      const inputKey = mapInputKey(value, normalizedKey);
+      if (inputKey === undefined) return;
+      state = { ...state, input: applyInputKey(state.input, inputKey) };
+      redraw();
       return;
     }
     if (

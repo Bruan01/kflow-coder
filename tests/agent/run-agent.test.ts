@@ -114,6 +114,57 @@ describe("runAgent", () => {
     expect(observedResults[0]?.durationMs).toBeGreaterThanOrEqual(0);
   });
 
+  it("turns a denied tool call into a structured result without executing the tool", async () => {
+    const toolCall = {
+      id: "call_write",
+      name: "write_file",
+      input: { path: "notes.txt", content: "private" },
+    };
+    const provider = new ScriptedProvider([
+      [
+        { type: "start" },
+        { type: "tool-call", toolCall },
+        { type: "finish", reason: "tool-call" },
+      ],
+      [
+        { type: "start" },
+        { type: "text-delta", delta: "denied" },
+        { type: "finish", reason: "stop" },
+      ],
+    ]);
+    const toolExecutor = fakeExecutor();
+    const observedResults: string[] = [];
+
+    const result = await runAgent(
+      {
+        messages: [{ role: "user", content: "write notes" }],
+        maxSteps: 2,
+      },
+      {
+        provider,
+        toolExecutor,
+        authorizeToolCall: async () => false,
+        onToolResult: ({ result: toolResult }) =>
+          observedResults.push(toolResult.content),
+      },
+    );
+
+    expect(toolExecutor.execute).not.toHaveBeenCalled();
+    expect(JSON.parse(observedResults[0] ?? "{}")).toEqual({
+      error: {
+        code: "TOOL_CALL_DENIED",
+        tool: "write_file",
+      },
+    });
+    expect(provider.requests[1]?.messages).toContainEqual({
+      role: "tool",
+      toolCallId: "call_write",
+      content: observedResults[0],
+      isError: true,
+    });
+    expect(result.finalText).toBe("denied");
+  });
+
   it("completes a direct model answer without executing a tool", async () => {
     const initialMessages = [
       { role: "system" as const, content: "Be concise." },

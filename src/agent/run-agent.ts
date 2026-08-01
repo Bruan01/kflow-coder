@@ -45,6 +45,12 @@ export interface AgentRunDependencies {
   readonly toolExecutor: AgentToolExecutor;
   readonly onText?: (delta: string) => void;
   readonly onToolCall?: (toolCall: ModelToolCall) => void;
+  /**
+   * Optional authorization boundary for interactive callers. Returning false
+   * must not execute the tool; the denial is fed back to the model as a
+   * structured Tool Result so the loop remains deterministic.
+   */
+  readonly authorizeToolCall?: (toolCall: ModelToolCall) => Promise<boolean>;
   readonly onToolResult?: (event: AgentToolResultEvent) => void;
 }
 
@@ -167,6 +173,19 @@ function throwIfAborted(signal: AbortSignal | undefined): void {
   if (signal?.aborted === true) throw new UserInterruptedError();
 }
 
+function deniedToolResult(toolCall: ModelToolCall): AgentToolResult {
+  return {
+    toolCallId: toolCall.id,
+    content: JSON.stringify({
+      error: {
+        code: "TOOL_CALL_DENIED",
+        tool: toolCall.name.slice(0, 128),
+      },
+    }),
+    isError: true,
+  };
+}
+
 export async function runAgent(
   request: AgentRunRequest,
   dependencies: AgentRunDependencies,
@@ -237,10 +256,14 @@ export async function runAgent(
       for (const toolCall of turn.toolCalls) {
         throwIfAborted(options.signal);
         const startedAt = Date.now();
-        const result = await dependencies.toolExecutor.execute(
-          toolCall,
-          options,
-        );
+        const authorized =
+          dependencies.authorizeToolCall === undefined
+            ? true
+            : await dependencies.authorizeToolCall(toolCall);
+        throwIfAborted(options.signal);
+        const result = authorized
+          ? await dependencies.toolExecutor.execute(toolCall, options)
+          : deniedToolResult(toolCall);
         throwIfAborted(options.signal);
         if (result.toolCallId !== toolCall.id) {
           throw new AgentError(

@@ -5,6 +5,7 @@ import {
   appendNotice,
   appendToolEvent,
   appendToolResult,
+  appendUserEvent,
   createWorkbenchState,
   moveCommandMenu,
   moveWorkbenchScroll,
@@ -119,6 +120,44 @@ describe("KFlow workbench renderer", () => {
 
     expect(screen).toContain("↳ read_file · 读取 12 行 · 9ms");
     expect(screen).not.toContain("raw file content");
+  });
+
+  it("projects assistant Markdown into readable terminal structure", () => {
+    let state = createWorkbenchState();
+    state = appendAssistantText(
+      state,
+      "# Summary\n\n- **important**\n\n```ts\nconst answer = 42;\n```",
+    );
+
+    const screen = renderWorkbench(state, {
+      columns: 80,
+      rows: 24,
+      color: false,
+    });
+
+    expect(screen).toContain("KFC › Summary");
+    expect(screen).toContain("• important");
+    expect(screen).toContain("┌─ ts");
+    expect(screen).toContain("│ const answer = 42;");
+    expect(screen).toContain("└─");
+    expect(screen).not.toContain("# Summary");
+    expect(screen).not.toContain("**important**");
+  });
+
+  it("adds a dim turn divider before each new question", () => {
+    let state = createWorkbenchState();
+    state = appendUserEvent(state, "first");
+    state = appendAssistantText(state, "answer");
+    state = appendUserEvent(state, "second");
+
+    const screen = renderWorkbench(state, {
+      columns: 40,
+      rows: 16,
+      color: false,
+    });
+
+    expect(screen).toContain("─".repeat(38));
+    expect(screen).toContain("you › second");
   });
 
   it("scrolls the timeline without moving the fixed status and composer", () => {

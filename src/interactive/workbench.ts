@@ -5,6 +5,7 @@ import { interactiveCommands, type InteractiveCommandItem } from "./catalog.js";
 import type { ThemeName } from "../config/runtime-settings.js";
 import type { ToolCapability } from "../tool/define-tool.js";
 import { activitySpinnerFrame } from "./activity-animation.js";
+import { projectMarkdown, type MarkdownLine } from "./markdown-projection.js";
 import { getInteractiveTheme, type WorkbenchTheme } from "./themes.js";
 
 export type WorkbenchEvent =
@@ -12,8 +13,10 @@ export type WorkbenchEvent =
   | { readonly type: "assistant"; readonly text: string }
   | {
       readonly type: "tool";
+      readonly id?: string;
       readonly name: string;
       readonly detail?: string;
+      readonly approval?: ToolApprovalState;
     }
   | {
       readonly type: "tool-result";
@@ -43,7 +46,21 @@ export type WorkbenchActivity =
       readonly name: string;
       readonly detail?: string;
       readonly frame: number;
+    }
+  | {
+      readonly kind: "approval";
+      readonly name: string;
+      readonly detail?: string;
+      readonly frame: number;
     };
+
+export type ToolApprovalState = "pending" | "approved" | "denied";
+
+export interface ToolConfirmation {
+  readonly id: string;
+  readonly name: string;
+  readonly detail?: string;
+}
 
 export interface InteractiveSessionInfo {
   readonly model: string;
@@ -67,6 +84,7 @@ export interface WorkbenchState {
   readonly themeMenu: { readonly selected: number } | undefined;
   readonly scrollOffset: number;
   readonly clearConfirmation: boolean;
+  readonly toolConfirmation: ToolConfirmation | undefined;
 }
 
 export interface WorkbenchRenderOptions {
@@ -95,17 +113,30 @@ function eventLines(
   palette: WorkbenchTheme["palette"],
 ): readonly string[] {
   const width = Math.max(1, columns - 6);
-  if (event.type === "tool")
+  if (event.type === "tool") {
+    const detail = `${event.name}${event.detail === undefined ? "" : ` · ${event.detail}`}`;
+    if (event.approval === "pending") {
+      return [
+        colored(
+          `  ⚠ ${truncate(`${detail} · 等待确认`, width)}`,
+          palette.warning,
+          color,
+        ),
+      ];
+    }
+    if (event.approval === "denied") {
+      return [
+        colored(
+          `  ✗ ${truncate(`${detail} · 已拒绝`, width)}`,
+          palette.error,
+          color,
+        ),
+      ];
+    }
     return [
-      colored(
-        `  ✓ Tool  ${truncate(
-          `${event.name}${event.detail === undefined ? "" : ` · ${event.detail}`}`,
-          width,
-        )}`,
-        palette.tool,
-        color,
-      ),
+      colored(`  ✓ Tool  ${truncate(detail, width)}`, palette.tool, color),
     ];
+  }
   if (event.type === "tool-result") {
     const code = event.isError ? palette.error : palette.info;
     return [
@@ -141,18 +172,65 @@ function eventLines(
         ),
       );
   }
-  const lines = sanitizeDisplayText(event.text).split("\n");
-  return lines.map((line, index) =>
-    colored(
-      `${index === 0 ? "KFC › " : "      "}${truncate(line, width)}`,
-      palette.assistant,
+  const lines = projectMarkdown(event.text);
+  return lines.map((line, index) => {
+    if (line.kind === "blank") return "";
+    const prefix = index === 0 ? "KFC › " : "      ";
+    return `${colored(prefix, palette.assistant, color)}${renderMarkdownLine(
+      { ...line, text: truncate(line.text, width) },
+      palette,
       color,
-    ),
-  );
+    )}`;
+  });
 }
 
 function colored(text: string, code: string, color: boolean): string {
   return color ? `\u001b[${code}m${text}\u001b[0m` : text;
+}
+
+function renderInlineMarkdown(
+  text: string,
+  palette: WorkbenchTheme["palette"],
+  color: boolean,
+  baseCode = palette.assistant,
+): string {
+  const safe = sanitizeDisplayText(text);
+  const tokenPattern =
+    /(`[^`\n]+`|\*\*[^*\n]+\*\*|__[^_\n]+__|\*[^*\n]+\*|_[^_\n]+_)/g;
+  let output = "";
+  let cursor = 0;
+  for (const match of safe.matchAll(tokenPattern)) {
+    const token = match[0];
+    const offset = match.index;
+    if (token === undefined || offset === undefined) continue;
+    output += colored(safe.slice(cursor, offset), baseCode, color);
+    if (token.startsWith("`")) {
+      output += colored(token.slice(1, -1), palette.selection, color);
+    } else if (token.startsWith("**") || token.startsWith("__")) {
+      output += colored(token.slice(2, -2), palette.header, color);
+    } else {
+      output += colored(token.slice(1, -1), palette.user, color);
+    }
+    cursor = offset + token.length;
+  }
+  return `${output}${colored(safe.slice(cursor), baseCode, color)}`;
+}
+
+function renderMarkdownLine(
+  line: MarkdownLine,
+  palette: WorkbenchTheme["palette"],
+  color: boolean,
+): string {
+  if (line.kind === "code" || line.kind === "code-border") {
+    return colored(line.text, palette.info, color);
+  }
+  if (line.kind === "heading") {
+    return renderInlineMarkdown(line.text, palette, color, palette.header);
+  }
+  if (line.kind === "quote") {
+    return renderInlineMarkdown(line.text, palette, color, palette.meta);
+  }
+  return renderInlineMarkdown(line.text, palette, color);
 }
 
 function renderInput(
@@ -295,6 +373,9 @@ function statusCode(
 
 function activityLabel(activity: WorkbenchActivity): string {
   const spinner = activitySpinnerFrame(activity.frame);
+  if (activity.kind === "approval") {
+    return `${spinner} 等待确认: ${activity.name}${activity.detail === undefined ? "" : ` · ${activity.detail}`}`;
+  }
   return activity.kind === "tool"
     ? `${spinner} 执行工具: ${activity.name}${activity.detail === undefined ? "" : ` · ${activity.detail}`}`
     : `${spinner} 模型思考中`;
@@ -309,6 +390,34 @@ function confirmationLines(
   return [
     colored("  确认清除当前会话上下文和时间线？", palette.warning, color),
     colored("  输入 y 确认，其他任意内容取消", palette.warning, color),
+  ];
+}
+
+function toolConfirmationLines(
+  state: WorkbenchState,
+  columns: number,
+  color: boolean,
+  palette: WorkbenchTheme["palette"],
+): readonly string[] {
+  const confirmation = state.toolConfirmation;
+  if (confirmation === undefined) return [];
+  return [
+    colored("  模型请求执行：", palette.warning, color),
+    colored(
+      `  ${truncate(confirmation.name, columns)}`,
+      palette.warning,
+      color,
+    ),
+    ...(confirmation.detail === undefined
+      ? []
+      : [
+          colored(
+            `  ${truncate(confirmation.detail, columns)}`,
+            palette.warning,
+            color,
+          ),
+        ]),
+    colored("  确认执行？[y/N]", palette.warning, color),
   ];
 }
 
@@ -350,6 +459,7 @@ export function createWorkbenchState(): WorkbenchState {
     themeMenu: undefined,
     scrollOffset: 0,
     clearConfirmation: false,
+    toolConfirmation: undefined,
   };
 }
 
@@ -387,6 +497,8 @@ export function appendToolEvent(
   state: WorkbenchState,
   name: string,
   detail?: string,
+  id?: string,
+  approval: ToolApprovalState = "approved",
 ): WorkbenchState {
   return {
     ...state,
@@ -394,15 +506,31 @@ export function appendToolEvent(
       ...state.events,
       {
         type: "tool",
+        ...(id === undefined ? {} : { id }),
         name: sanitizeDisplayText(name),
         ...(detail === undefined
           ? {}
           : { detail: sanitizeDisplayText(detail) }),
+        approval,
       },
     ],
     status: "Working",
     scrollOffset: 0,
   };
+}
+
+export function updateToolApproval(
+  state: WorkbenchState,
+  id: string,
+  approval: ToolApprovalState,
+): WorkbenchState {
+  let changed = false;
+  const events = state.events.map((event) => {
+    if (event.type !== "tool" || event.id !== id) return event;
+    changed = true;
+    return { ...event, approval };
+  });
+  return changed ? { ...state, events } : state;
 }
 
 export function appendToolResult(
@@ -491,7 +619,7 @@ export function setWorkbenchActivity(
     ...state,
     status: activity === undefined ? state.status : "Working",
     activity:
-      activity?.kind === "tool"
+      activity?.kind === "tool" || activity?.kind === "approval"
         ? {
             ...activity,
             name: sanitizeDisplayText(activity.name),
@@ -551,6 +679,21 @@ export function setClearConfirmation(
     commandMenu: pending ? undefined : state.commandMenu,
     toolMenu: pending ? undefined : state.toolMenu,
     themeMenu: pending ? undefined : state.themeMenu,
+  };
+}
+
+export function setToolConfirmation(
+  state: WorkbenchState,
+  confirmation: ToolConfirmation | undefined,
+): WorkbenchState {
+  return {
+    ...state,
+    toolConfirmation: confirmation,
+    clearConfirmation:
+      confirmation === undefined ? state.clearConfirmation : false,
+    commandMenu: confirmation === undefined ? state.commandMenu : undefined,
+    toolMenu: confirmation === undefined ? state.toolMenu : undefined,
+    themeMenu: confirmation === undefined ? state.themeMenu : undefined,
   };
 }
 
@@ -642,6 +785,12 @@ export function renderWorkbench(
     palette,
   );
   const confirmation = confirmationLines(state, options.color, palette);
+  const toolConfirmation = toolConfirmationLines(
+    state,
+    columns,
+    options.color,
+    palette,
+  );
   const sessionInfo = sessionInfoLines(
     options.sessionInfo,
     columns,
@@ -655,11 +804,22 @@ export function renderWorkbench(
     toolMenu.length +
     themeMenu.length +
     confirmation.length +
+    toolConfirmation.length +
     sessionInfo.length;
   const transcriptRows = Math.max(1, rows - fixedRows);
-  const transcript = state.events.flatMap((event) =>
-    eventLines(event, columns, options.color, palette),
-  );
+  const transcript = state.events.flatMap((event, index) => [
+    ...(event.type === "user" &&
+    state.events.slice(0, index).some((previous) => previous.type === "user")
+      ? [
+          colored(
+            "─".repeat(Math.max(1, columns - 2)),
+            palette.divider,
+            options.color,
+          ),
+        ]
+      : []),
+    ...eventLines(event, columns, options.color, palette),
+  ]);
   const transcriptEnd = Math.max(0, transcript.length - state.scrollOffset);
   const visibleTranscript = transcript.slice(
     Math.max(0, transcriptEnd - transcriptRows),
@@ -691,6 +851,7 @@ export function renderWorkbench(
     ...toolMenu,
     ...themeMenu,
     ...confirmation,
+    ...toolConfirmation,
     ...sessionInfo,
     colored(
       truncate("  Enter send · Ctrl+J newline · /help · /themes", columns),

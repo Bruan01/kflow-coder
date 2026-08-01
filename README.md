@@ -69,6 +69,12 @@ After a Tool Call completes, the timeline adds a safe result summary such as
 `↳ shell · exit 0 · 1.2s`. Failed, timed-out, and truncated results are marked
 without exposing raw tool output.
 
+Assistant replies also receive a lightweight terminal Markdown projection:
+headings, lists, quotes, emphasis, inline code, and fenced code blocks keep
+their structure without adding a full Markdown runtime. Unsupported syntax
+falls back to safe text. A dim divider separates each completed question-and-
+answer turn so long sessions remain scannable.
+
 Typing `/` opens a Chinese command menu. Supported commands are:
 
 - `/help`: show all commands and shortcuts in Chinese.
@@ -80,6 +86,9 @@ Typing `/` opens a Chinese command menu. Supported commands are:
   enable or disable it, and Enter/Esc to return. Observation tools are enabled
   by default; Edit and Execute tools are visibly marked and disabled by
   default. Changes apply to the next Agent turn without restarting the session.
+  Once an Edit or Execute tool is enabled, every individual call pauses at a
+  `y/N` confirmation boundary; rejecting it returns a structured denial to the
+  Agent instead of executing the operation.
 - `/clear`: request clearing both in-memory context and visible timeline; type
   `y` to confirm.
 - `/exit`: restore the cursor and prior terminal screen.

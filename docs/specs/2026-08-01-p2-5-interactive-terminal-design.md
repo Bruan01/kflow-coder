@@ -54,6 +54,11 @@ KFC › ...final streamed answer...
 kfc ›
 ```
 
+Assistant Markdown is projected into terminal-safe structure rather than
+printed as raw Markdown. Headings, lists, quotes, inline emphasis/code and
+fenced code blocks are supported; a dim horizontal divider separates completed
+question-and-answer turns.
+
 The UI uses Node raw-mode keypress events and a small custom editor so the
 timeline can scroll while a multi-line editor remains fixed at the bottom. It
 supports basic text editing, left/right/home/end, backspace/delete, Ctrl+J
@@ -99,6 +104,8 @@ real TTY.
   unknown.
 - `/tool`: show available tools and toggle their enabled state with Space;
   changes apply to the next Agent turn without restarting the session.
+  Enabled edit and execute tools pause at a per-call `y/N` confirmation gate;
+  denial is returned to the Agent as a structured Tool Result.
 - `/clear`: request clearing both the visible timeline and conversation
   context; only `y` confirms.
 - `/exit`: leave the loop and restore the original terminal.

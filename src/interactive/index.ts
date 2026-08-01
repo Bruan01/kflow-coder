@@ -53,12 +53,16 @@ export {
   selectedThemeIndex,
   setCommandMenu,
   setClearConfirmation,
+  setToolConfirmation,
   setThemeMenu,
   setToolMenu,
   setWorkbenchActivity,
   setWorkbenchInput,
   setWorkbenchStatus,
+  updateToolApproval,
 } from "./workbench.js";
+export { projectMarkdown } from "./markdown-projection.js";
+export type { MarkdownLine, MarkdownLineKind } from "./markdown-projection.js";
 export { sanitizeTerminalText } from "./sanitize-terminal-text.js";
 export { describeToolCall } from "./tool-activity.js";
 export { summarizeToolResult } from "./tool-result-summary.js";
@@ -69,4 +73,6 @@ export type {
   WorkbenchState,
   InteractiveToolStatus,
   WorkbenchActivity,
+  ToolApprovalState,
+  ToolConfirmation,
 } from "./workbench.js";
