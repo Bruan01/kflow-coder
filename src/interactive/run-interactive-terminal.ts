@@ -15,6 +15,13 @@ import {
 import type { ModelMessage } from "../provider/model-provider.js";
 import type { ModelTokenUsage } from "../provider/model-provider.js";
 import {
+  SESSION_EVENT_VERSION,
+  sessionEventFromAgentResult,
+  type SessionEvent,
+  type SessionEventBase,
+  type SessionStore,
+} from "../session/index.js";
+import {
   applyInputKey,
   createInputEditor,
   type InputKey,
@@ -113,12 +120,21 @@ export interface InteractiveTerminalOptions {
   readonly sessionInfo?: (
     runtime: InteractiveRuntimeStatus,
   ) => InteractiveSessionInfo;
+  readonly sessionJournal?: InteractiveSessionJournal;
   readonly runTurn: (
     messages: readonly ModelMessage[],
     handlers: InteractiveTerminalTurnHandlers,
     signal: AbortSignal,
   ) => Promise<AgentRunResult>;
   readonly playAnimation?: typeof playStartupAnimation;
+}
+
+export interface InteractiveSessionJournal {
+  readonly sessionId: string;
+  readonly cwd: string;
+  readonly model: string;
+  readonly protocol: string;
+  readonly store: SessionStore;
 }
 
 export interface InteractiveRuntimeStatus {
@@ -387,6 +403,33 @@ export async function runInteractiveTerminal(
       })}`,
     );
   };
+  const appendJournal = (
+    createEvent: (base: SessionEventBase) => SessionEvent,
+  ): void => {
+    const journal = options.sessionJournal;
+    if (journal === undefined) return;
+    const base: SessionEventBase = {
+      version: SESSION_EVENT_VERSION,
+      sessionId: journal.sessionId,
+      timestamp: new Date().toISOString(),
+    };
+    void journal.store.append(createEvent(base)).catch((error: unknown) => {
+      if (closed) return;
+      state = appendNotice(
+        state,
+        `会话日志写入失败：${formatErrorForCli(error).text.split("\n", 1)[0] ?? "未知错误"}`,
+        "Error",
+      );
+      redraw();
+    });
+  };
+  appendJournal((base) => ({
+    ...base,
+    type: "session.started",
+    cwd: options.sessionJournal?.cwd ?? process.cwd(),
+    model: options.sessionJournal?.model ?? "unknown",
+    protocol: options.sessionJournal?.protocol ?? "unknown",
+  }));
   const stopActivityAnimation = (): void => {
     activityAnimation?.stop();
     activityAnimation = undefined;
@@ -475,8 +518,13 @@ export async function runInteractiveTerminal(
     state = appendNotice(state, "Use /exit to leave KFlow.");
     redraw();
   };
-  const exit = (): void => {
+  const exit = (reason: "user-exit" | "stdin-closed" = "user-exit"): void => {
     if (closed) return;
+    appendJournal((base) => ({
+      ...base,
+      type: "session.ended",
+      reason,
+    }));
     settleToolApproval(false, false);
     activeController?.abort();
     closed = true;
@@ -484,6 +532,11 @@ export async function runInteractiveTerminal(
   };
 
   const clearSession = (): void => {
+    appendJournal((base) => ({
+      ...base,
+      type: "session.cleared",
+      reason: "user-request",
+    }));
     messages = [];
     turns = 0;
     totalUsage = undefined;
@@ -569,6 +622,13 @@ export async function runInteractiveTerminal(
       ...messages,
       { role: "user", content: input },
     ];
+    const journalTurn = turns + 1;
+    appendJournal((base) => ({
+      ...base,
+      type: "turn.started",
+      turn: journalTurn,
+      messages: requestMessages,
+    }));
     state = setWorkbenchStatus(appendUserEvent(state, input), "Working");
     pendingToolCalls = [];
     startActivity({ kind: "thinking", frame: 0 });
@@ -596,6 +656,12 @@ export async function runInteractiveTerminal(
           },
           onToolCall(toolCall) {
             if (closed) return;
+            appendJournal((base) => ({
+              ...base,
+              type: "tool.call",
+              turn: journalTurn,
+              toolCall,
+            }));
             const detail = describeToolCall(toolCall.name, toolCall.input);
             const requiresConfirmation = requiresToolConfirmation(
               options,
@@ -626,6 +692,14 @@ export async function runInteractiveTerminal(
           },
           onToolResult(event) {
             if (closed) return;
+            appendJournal((base) => ({
+              ...base,
+              type: "tool.result",
+              turn: journalTurn,
+              toolCall: event.toolCall,
+              result: event.result,
+              durationMs: event.durationMs,
+            }));
             const summary = summarizeToolResult(
               event.toolCall.name,
               event.result,
@@ -686,12 +760,23 @@ export async function runInteractiveTerminal(
         completedTools.length + failedTools.length,
         failedTools.length,
       );
+      appendJournal((base) =>
+        sessionEventFromAgentResult(base, journalTurn, result),
+      );
       if (!receivedText && result.finalText !== "") {
         state = appendAssistantText(state, result.finalText);
       }
       state = setWorkbenchStatus(state, "Ready");
     } catch (error) {
       if (closed) return;
+      const normalized = normalizeUnknownError(error);
+      appendJournal((base) => ({
+        ...base,
+        type: "turn.failed",
+        turn: journalTurn,
+        code: normalized.code,
+        message: normalized.message,
+      }));
       const presentation = formatErrorForCli(error);
       const recovery = turnRecoveryNotice(
         completedTools,
@@ -725,6 +810,9 @@ export async function runInteractiveTerminal(
     queueMicrotask(() => {
       suppressMouseKeypress = false;
     });
+  };
+  const handleInputEnd = (): void => {
+    exit("stdin-closed");
   };
   const handleKeypress = (value: unknown, key: unknown): void => {
     if (closed) return;
@@ -923,6 +1011,7 @@ export async function runInteractiveTerminal(
 
   process.on("SIGINT", handleInterrupt);
   options.input.prependListener("data", handleMouseData);
+  options.input.on("end", handleInputEnd);
   emitKeypressEvents(options.input);
   options.input.on("keypress", handleKeypress);
   options.output.on("resize", redraw);
@@ -947,10 +1036,12 @@ export async function runInteractiveTerminal(
     process.removeListener("SIGINT", handleInterrupt);
     options.input.off("keypress", handleKeypress);
     options.input.off("data", handleMouseData);
+    options.input.off("end", handleInputEnd);
     options.output.off("resize", redraw);
     if (rawModeEnabled) options.input.setRawMode?.(false);
     stopActivityAnimation();
     options.input.pause();
+    await options.sessionJournal?.store.flush().catch(() => {});
     options.output.write(LEAVE_ALTERNATE_SCREEN);
   }
 }

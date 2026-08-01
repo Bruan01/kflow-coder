@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   resolveConfigPath,
   resolveCredentialsPath,
+  resolveSessionsDirectory,
 } from "../../src/config/config-path.js";
 
 describe("resolveConfigPath", () => {
@@ -52,5 +53,16 @@ describe("resolveCredentialsPath", () => {
         currentDirectory: "/workspace",
       }),
     ).toBe("/home/learner/.config/kfc/credentials.json");
+  });
+});
+
+describe("resolveSessionsDirectory", () => {
+  it("keeps session journals beside the resolved config under a private directory", () => {
+    expect(
+      resolveSessionsDirectory(
+        { KFC_CONFIG_PATH: "settings/kfc.json" },
+        { homeDirectory: "/home/learner", currentDirectory: "/workspace" },
+      ),
+    ).toBe("/workspace/settings/sessions");
   });
 });

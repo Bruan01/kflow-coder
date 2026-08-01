@@ -3,7 +3,9 @@
 // 声明这是一个 Node.js 可执行脚本（Unix shebang），可直接用 ./cli.js 运行
 
 // 从 Node.js os 模块导入获取用户主目录的函数
+import { randomUUID } from "node:crypto";
 import { homedir } from "node:os";
+import { join } from "node:path";
 
 // 导入各个功能模块
 import { readPackageVersion } from "./cli/package-version.js"; // 读取 package.json 版本号
@@ -11,7 +13,10 @@ import { runCli } from "./cli/run-cli.js"; // CLI 主运行函数
 import { runAsk } from "./ask/run-ask.js"; // 运行 ask 模式
 import { runAgent } from "./agent/run-agent.js"; // 运行 agent 模式
 import { ConfigError } from "./config/config.js"; // 配置错误类
-import { resolveConfigPath } from "./config/config-path.js"; // 解析配置文件路径
+import {
+  resolveConfigPath,
+  resolveSessionsDirectory,
+} from "./config/config-path.js"; // 解析配置文件路径
 import { loadConfig } from "./config/load-config.js"; // 加载配置
 import { writeThemeAtomically } from "./config/write-theme.js"; // 持久化终端主题
 import { createDoctorDependencies } from "./doctor/create-doctor-dependencies.js"; // 创建诊断依赖
@@ -23,6 +28,7 @@ import { ToolRegistry, createWorkspaceTools } from "./tool/index.js"; // 工具�
 import { runInteractiveTerminal } from "./interactive/run-interactive-terminal.js"; // 运行交互终端
 import { interactiveToolDescription } from "./interactive/catalog.js"; // 交互式工具描述
 import { getInteractiveTheme } from "./interactive/themes.js"; // 解析交互式主题
+import { createJsonlSessionStore } from "./session/index.js"; // 创建本地会话日志
 
 // displayConfigPath：将配置路径显示为紧凑形式（用 ~ 替代主目录）
 function displayConfigPath(path: string): string {
@@ -142,6 +148,10 @@ try {
       // 创建模型提供者（复用，整个会话期间不重建）
       const provider = createModelProvider(config.provider);
       const maxSteps = "unlimited" as const;
+      const sessionId = randomUUID();
+      const sessionStore = createJsonlSessionStore(
+        join(resolveSessionsDirectory(), `${sessionId}.jsonl`),
+      );
       let currentTheme = getInteractiveTheme(config.ui?.theme);
       let themeRevision = 0;
       // 启动交互终端
@@ -204,6 +214,7 @@ try {
             `完成轮数: ${runtime.turns}`,
             `上下文消息: ${runtime.messageCount}`,
             `累计 Token（输入 / 输出 / 总计）: ${tokenText}`,
+            `会话日志: ${displayConfigPath(sessionStore.path)}`,
             `模型轮次: ${runtime.modelTurns}`,
             `工具调用: ${runtime.toolCalls}（失败 ${runtime.failedToolCalls}）`,
             `累计模型耗时: ${runtime.totalDurationMs}ms`,
@@ -214,6 +225,14 @@ try {
         },
 
         maxSteps, // 长任务模式不设置固定步数上限
+
+        sessionJournal: {
+          sessionId,
+          cwd: process.cwd(),
+          model: config.provider.model,
+          protocol: config.provider.protocol,
+          store: sessionStore,
+        },
 
         // tools 回调：返回工具列表（含交互式描述）
         tools: () =>

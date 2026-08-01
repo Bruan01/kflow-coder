@@ -6,7 +6,7 @@ KFC errors separate machine decisions from user-safe presentation. Raw provider 
 
 | Category           | Examples                                                                            | Exit code | Retryable       |
 | ------------------ | ----------------------------------------------------------------------------------- | --------: | --------------- |
-| `internal`         | unknown/unclassified failure                                                        |         1 | no              |
+| `internal`         | unknown/unclassified failure, session log read/write failure                        |         1 | no              |
 | `config`           | missing or invalid configuration                                                    |         2 | no              |
 | `provider`         | authentication, quota, rate limit, timeout, context, service, invalid response      |         3 | depends on code |
 | `agent`            | invalid options, repeated no-progress Tool Call, maximum steps, invalid Tool Result |         1 | no              |

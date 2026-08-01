@@ -27,6 +27,7 @@ export type {
   InteractiveTerminalInput,
   InteractiveTerminalOptions,
   InteractiveRuntimeStatus,
+  InteractiveSessionJournal,
   InteractiveTerminalTurnHandlers,
 } from "./run-interactive-terminal.js";
 export type {

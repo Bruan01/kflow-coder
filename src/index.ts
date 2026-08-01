@@ -16,6 +16,7 @@ export type {
 export {
   resolveConfigPath, // 解析配置文件路径
   resolveCredentialsPath, // 解析凭证文件路径
+  resolveSessionsDirectory, // 解析会话日志目录
 } from "./config/config-path.js";
 // 导出加载配置的函数
 export { loadConfig } from "./config/load-config.js";
@@ -40,6 +41,8 @@ export * from "./errors/index.js";
 export * from "./interactive/index.js";
 // 从 quickstart 模块导出所有公开 API（快速入门）
 export * from "./quickstart/index.js";
+// 从 session 模块导出本地 JSONL 会话日志能力
+export * from "./session/index.js";
 // 从 provider 模块导出所有公开 API（模型提供者）
 export * from "./provider/index.js";
 // 从 tool 模块导出所有公开 API（工具系统）

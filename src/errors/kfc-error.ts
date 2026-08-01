@@ -20,6 +20,7 @@ export type KfcErrorCode =
   | "AGENT_MAX_STEPS_EXCEEDED" // 智能体超过最大步数
   | "AGENT_INVALID_TOOL_RESULT" // 智能体工具结果无效
   | "AGENT_REPEATED_TOOL_CALL" // 智能体重复执行无进展工具调用
+  | "SESSION_STORAGE_FAILED" // 会话日志读写失败
   | "TOOL_DEFINITION_INVALID" // 工具定义无效
   | "TOOL_NAME_DUPLICATE" // 工具名称重复
   | "USER_INTERRUPTED" // 用户中断操作

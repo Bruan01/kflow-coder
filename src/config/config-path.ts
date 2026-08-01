@@ -60,3 +60,11 @@ export function resolveCredentialsPath(
   // 如果未设置环境变量，默认放在 config.json 同目录下的 credentials.json
   return explicitPath ?? join(dirname(configPath), "credentials.json");
 }
+
+/** Resolve the private directory used for local JSONL session journals. */
+export function resolveSessionsDirectory(
+  env: NodeJS.ProcessEnv = process.env,
+  options: ConfigPathOptions = {},
+): string {
+  return join(dirname(resolveConfigPath(env, options)), "sessions");
+}

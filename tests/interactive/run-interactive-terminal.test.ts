@@ -1,4 +1,7 @@
 import { PassThrough } from "node:stream";
+import { mkdtemp, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
 import { describe, expect, it, vi } from "vitest";
 
@@ -7,6 +10,7 @@ import {
   type InteractiveRuntimeStatus,
 } from "../../src/interactive/run-interactive-terminal.js";
 import { getInteractiveTheme } from "../../src/interactive/themes.js";
+import { createJsonlSessionStore } from "../../src/session/index.js";
 
 function terminalOutput(): NodeJS.WriteStream & { readonly text: string[] } {
   const text: string[] = [];
@@ -731,5 +735,88 @@ describe("runInteractiveTerminal", () => {
     });
     input.write("/exit\r");
     await pending;
+  });
+
+  it("writes a recoverable JSONL event trail for a completed turn", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "kfc-tui-session-"));
+    try {
+      const input = new PassThrough();
+      const output = terminalOutput();
+      const toolCall = {
+        id: "call_read",
+        name: "read_file",
+        input: { path: "README.md" },
+      };
+      const store = createJsonlSessionStore(join(directory, "session.jsonl"));
+      const pending = runInteractiveTerminal({
+        input,
+        output,
+        color: false,
+        status: () => "Ready",
+        sessionJournal: {
+          sessionId: "session-test",
+          cwd: directory,
+          model: "fixture-model",
+          protocol: "openai-chat-completions",
+          store,
+        },
+        playAnimation: async ({ write }) => write("KFLOW\n"),
+        runTurn: async (messages, handlers) => {
+          handlers.onToolCall(toolCall);
+          handlers.onToolResult({
+            toolCall,
+            result: {
+              toolCallId: toolCall.id,
+              content: "file content",
+              isError: false,
+            },
+            durationMs: 4,
+          });
+          handlers.onText("done");
+          return {
+            messages: [
+              ...messages,
+              {
+                role: "assistant" as const,
+                content: "done",
+              },
+            ],
+            steps: 2,
+            finalText: "done",
+            finishReason: "stop" as const,
+            metrics: {
+              modelTurns: 2,
+              toolCalls: 1,
+              failedToolCalls: 0,
+              durationMs: 9,
+              timeToFirstTextMs: 3,
+              peakInputTokens: 12,
+              usage: { inputTokens: 12, outputTokens: 2, totalTokens: 14 },
+            },
+          };
+        },
+      });
+
+      await vi.waitFor(() =>
+        expect(output.text.join("")).toContain("Enter send"),
+      );
+      input.write("inspect\r");
+      await vi.waitFor(() => expect(output.text.join("")).toContain("done"));
+      input.write("/exit\r");
+      await pending;
+
+      const result = await store.read();
+      expect(result.issues).toEqual([]);
+      expect(result.events.map((event) => event.type)).toEqual([
+        "session.started",
+        "turn.started",
+        "tool.call",
+        "tool.result",
+        "turn.completed",
+        "session.ended",
+      ]);
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
   });
 });
