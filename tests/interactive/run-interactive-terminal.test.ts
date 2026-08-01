@@ -6,6 +6,7 @@ import {
   runInteractiveTerminal,
   type InteractiveRuntimeStatus,
 } from "../../src/interactive/run-interactive-terminal.js";
+import { getInteractiveTheme } from "../../src/interactive/themes.js";
 
 function terminalOutput(): NodeJS.WriteStream & { readonly text: string[] } {
   const text: string[] = [];
@@ -143,6 +144,58 @@ describe("runInteractiveTerminal", () => {
     input.write("/exit\r");
     await pending;
   });
+
+  it("previews the selected theme immediately and keeps it after Enter confirmation", async () => {
+    const input = new PassThrough();
+    const output = terminalOutput();
+    let activeTheme = getInteractiveTheme("kflow-dark");
+    const setTheme = vi.fn(
+      (name: Parameters<typeof getInteractiveTheme>[0]) => {
+        activeTheme = getInteractiveTheme(name);
+      },
+    );
+    const pending = runInteractiveTerminal({
+      input,
+      output,
+      color: true,
+      status: () => "Read-only",
+      theme: () => activeTheme,
+      setTheme,
+      sessionInfo: () => ({
+        model: "fixture-model",
+        cwd: "/tmp/kflow",
+        protocol: "openai-chat-completions",
+        theme: activeTheme.name,
+        turns: 0,
+        enabledToolCount: 1,
+        totalToolCount: 2,
+      }),
+      playAnimation: async ({ write }) => write("KFLOW\n"),
+      runTurn: vi.fn(),
+    });
+
+    await vi.waitFor(() =>
+      expect(output.text.join("")).toContain("Enter send"),
+    );
+    expect(output.text.join("")).toContain("模型: fixture-model");
+    expect(output.text.join("")).toContain("目录: /tmp/kflow");
+
+    input.write("/themes\r");
+    await vi.waitFor(() => expect(output.text.join("")).toContain("主题"));
+    input.write("\u001b[B");
+    await vi.waitFor(() => {
+      expect(setTheme).toHaveBeenCalledWith("nord");
+      expect(output.text.join("")).toContain("\u001b[1;96mKFLOW");
+    });
+    input.write("\r");
+    await vi.waitFor(() =>
+      expect(output.text.join("")).toContain("主题: nord"),
+    );
+
+    input.write("/exit\r");
+    await pending;
+  });
+
   it("restores cursor and the prior terminal screen after /exit", async () => {
     const input = new PassThrough();
     const pause = vi.spyOn(input, "pause");

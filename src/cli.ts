@@ -14,6 +14,7 @@ import { runAgent } from "./agent/run-agent.js"; // 运行 agent 模式
 import { ConfigError } from "./config/config.js"; // 配置错误类
 import { resolveConfigPath } from "./config/config-path.js"; // 解析配置文件路径
 import { loadConfig } from "./config/load-config.js"; // 加载配置
+import { writeThemeAtomically } from "./config/write-theme.js"; // 持久化终端主题
 import { createDoctorDependencies } from "./doctor/create-doctor-dependencies.js"; // 创建诊断依赖
 import { runDoctor } from "./doctor/doctor.js"; // 运行诊断
 import { createQuickstartDependencies } from "./quickstart/create-quickstart-dependencies.js"; // 创建快速入门依赖
@@ -22,6 +23,7 @@ import { createModelProvider } from "./provider/create-model-provider.js"; // �
 import { ToolRegistry, createReadOnlyWorkspaceTools } from "./tool/index.js"; // 工具注册表和只读工具
 import { runInteractiveTerminal } from "./interactive/run-interactive-terminal.js"; // 运行交互终端
 import { interactiveToolDescription } from "./interactive/catalog.js"; // 交互式工具描述
+import { getInteractiveTheme } from "./interactive/themes.js"; // 解析交互式主题
 
 // displayConfigPath：将配置路径显示为紧凑形式（用 ~ 替代主目录）
 function displayConfigPath(path: string): string {
@@ -143,12 +145,42 @@ try {
       // 创建模型提供者（复用，整个会话期间不重建）
       const provider = createModelProvider(config.provider);
       const maxSteps = resolveAgentMaxSteps();
+      let currentTheme = getInteractiveTheme(config.ui?.theme);
+      let themeRevision = 0;
       // 启动交互终端
       await runInteractiveTerminal({
         input: process.stdin, // 标准输入流
         output: process.stdout, // 标准输出流
         // color：如果未设置 NO_COLOR 环境变量，则启用颜色
         color: process.env.NO_COLOR === undefined,
+
+        // theme：返回当前会话正在展示的主题，确保每次 redraw 都读取最新值
+        theme: () => currentTheme,
+
+        // setTheme：先同步更新内存主题实现实时预览，再原子持久化到配置文件
+        setTheme: (name) => {
+          const previousTheme = currentTheme;
+          const revision = ++themeRevision;
+          currentTheme = getInteractiveTheme(name);
+          return writeThemeAtomically(resolveConfigPath(), name).catch(
+            (error: unknown) => {
+              // 旧请求失败时不能覆盖更新的主题预览
+              if (revision === themeRevision) currentTheme = previousTheme;
+              throw error;
+            },
+          );
+        },
+
+        // sessionInfo：固定投影到对话框底部，避免用户必须输入 /status 才能看到关键上下文
+        sessionInfo: (runtime) => ({
+          model: config.provider.model,
+          cwd: process.cwd(),
+          protocol: config.provider.protocol,
+          theme: currentTheme.name,
+          turns: runtime.turns,
+          enabledToolCount: runtime.enabledToolCount,
+          totalToolCount: runtime.totalToolCount,
+        }),
 
         // status 回调：生成交互终端的状态面板文本
         status: (runtime) => {
