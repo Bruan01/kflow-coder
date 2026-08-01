@@ -4,7 +4,7 @@ KFlow Code is a learning-first coding agent built from first principles. The pro
 
 ## Current Status
 
-P0 and P1 are accepted. KFC now includes fixture-verified `openai-chat-completions` and `openai-responses` Providers plus a minimal `kfc ask` vertical slice with explicit protocol selection, streaming stdout, safe stderr summaries, cancellation, usage, TTFT, and total duration. A real DeepSeek V4 Flash call has passed; Anthropic Messages is explicitly deferred. The active task is now the P2 Agent Loop contract. See `TODO.md`, `docs/reviews/P1-review.md`, and `docs/experiments/EXP-003-real-kfc-ask-deepseek.md`.
+P0 and P1 are accepted. P2.1 now adds a protocol-neutral, maximum-step Agent Loop with atomic Tool Calls, Tool Result feedback, deterministic Mock replay, cancellation, and structured Agent errors. Real file tools and real Provider Tool Calling are not enabled yet. The active task is P2.2 Tool Registry and Zod parameter validation. See `TODO.md`, ADR-0005, and the P2.1 design document.
 
 ## Requirements
 
@@ -85,6 +85,7 @@ Domain failures extend `KfcError`. Public output contains only safe messages/det
 - `src/cli.ts`: executable process adapter
 - `src/cli/`: pure argument parsing, help, runner, and package metadata modules
 - `src/ask/`: protocol-neutral single-turn stream consumer and call report
+- `src/agent/`: controlled Agent Loop, Tool execution contract, and Agent errors
 - `src/index.ts`: package module entry
 - `src/provider/`: protocol-neutral model contract and wire-protocol adapters
 - `tests/`: Vitest tests

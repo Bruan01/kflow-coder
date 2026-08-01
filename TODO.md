@@ -86,12 +86,12 @@
 
 **核心问题：Agent 的本质为何是受控状态机，而不是一段更长的 Prompt？**
 
-- [ ] 定义内部消息、Tool Call、Tool Result 和最大步数。
+- [x] 定义内部消息、Tool Call、Tool Result 和最大步数。
 - [ ] 实现 Tool Registry 与 Zod 参数校验。
 - [ ] 实现 `list_directory`、`read_file`、`grep`。
 - [ ] 防止路径穿越，限制文件大小、结果数量和工具超时。
 - [ ] 检测重复调用；工具失败应成为结构化结果，而非进程崩溃。
-- [ ] 用脚本化 Mock Provider 确定性重放完整循环。
+- [x] 用脚本化 Mock Provider 确定性重放完整循环。
 - [ ] 在陌生 TypeScript 仓库回答配置来源并给出文件与行号。
 - [ ] 保存工具轨迹、ADR、学习日志和 P2 复盘。
 
@@ -159,4 +159,4 @@
 
 ## 当前唯一任务
 
-**P2.1 Agent Loop 领域契约**：先定义内部 Tool Call、Tool Result、循环状态与最大步数，不接真实文件工具；用脚本化 Mock Provider 证明循环终止、工具结果回灌和超限拒绝。
+**P2.2 Tool Registry 与参数验证**：实现只存元数据与执行函数的 Tool Registry，用 Zod 校验完整 Tool Call input；继续使用内存假工具，不读取文件，不开放 Shell。

@@ -72,6 +72,12 @@ Both adapters share the incremental SSE decoder and request lifecycle. The decod
 
 Metrics remain local to the Ask report. KFC does not yet persist or upload telemetry, and it does not introduce a general observability decorator before another real consumer needs one.
 
+## Agent Tool Boundary
+
+The protocol-neutral contract now supports an atomic `tool-call` event, assistant messages containing Tool Calls, tool-result messages, and a normalized `tool-call` finish reason. These are Core concepts: IDs, tool names, complete JSON inputs, string results, and error flags. No OpenAI argument delta, Responses item index, or vendor field enters the Agent Loop.
+
+P2.1 uses this contract only with a scripted Mock Provider. The production Chat Completions and Responses adapters remain text-only: they do not send tool definitions, encode tool-result messages, or parse wire Tool Calling yet. `kfc ask` continues to reject Tool Call events rather than silently entering an Agent Loop.
+
 ## Failure Boundary
 
 Caller cancellation becomes `USER_INTERRUPTED`; the configured deadline becomes `PROVIDER_TIMEOUT`. Authentication, quota, rate limiting, context limit, temporary service errors, and invalid responses use stable KFC codes. Raw Provider messages, response bodies, authorization headers, API keys, and stacks are never public error output.

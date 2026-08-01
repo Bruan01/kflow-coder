@@ -203,3 +203,14 @@
 - **得到的可复用原则：** 自动化 Fixture 证明边界可重复，真实调用证明环境、凭证、网络和供应商共同工作，两者不能互相替代。真实验收 Prompt 应低成本、无秘密、可判断，但不能把自然语言输出当作结构化协议。完成阶段应主动列出未实测失败路径，而不是用一次成功掩盖风险。
 - **尚未理解：** DeepSeek 真实认证失败、限流、配额、上下文和断网响应是否完全符合当前映射；Responses 的真实端点行为；argv Prompt 的隐私风险应何时通过 stdin 解决。
 - **下一步：** P1 技术门槛通过，进入 P2.1 Agent Loop 领域契约。先用 Mock Provider 和假工具结果验证受控循环状态、最大步数与终止条件，不立即开放文件或 Shell 权限。
+
+## 2026-08-01 / P2.1 Agent Loop 领域契约
+
+- **第一性问题：** 模型提出动作、程序执行动作并把结果回灌时，怎样保证循环的状态、终止和错误归属由程序控制，而不是由供应商协议或模型自律决定？
+- **我的初始假设：** 在 `ModelProvider` 增加一个完整 Tool Call 事件，再写一个 for-loop 即可；只要最终消息正确，历史请求引用和取消检查位置不会影响行为。
+- **最小实验：** 扩展内部消息、原子 `ModelToolCall`、tool result message 与 `tool-call` finish reason；实现只依赖 Mock Provider/Fake Executor 的 `runAgent`。用确定性脚本覆盖直接完成、Tool Result 回灌、两步完成、多工具串行、ID 唯一、最大步数、非法流、结果不匹配、执行器失败和三类取消路径。
+- **观察到的证据：** 首次全量门禁为 32 个 Vitest 文件、172 个测试全部通过；`pnpm build`、`pnpm typecheck:tests`、`pnpm lint`、`pnpm format:check` 和 `git diff --check` 均通过。Agent 定向测试为 23 项，证明完整 Tool Result 精确出现在下一次 ModelRequest，最后一步请求工具时零工具执行，`kfc ask` 观察到 Tool Call 时仍返回安全的 `PROVIDER_INVALID_RESPONSE`。
+- **假设哪里错了：** Provider 首次记录的是 Agent 内部可变 messages 数组，后续追加 assistant 后，历史请求也被改写；模型调用必须获得数组快照。取消也不能只在开始和工具前检查：工具 resolve 时或 Provider 忽略 Signal 时，Agent 仍可能继续下一步或宣布成功，因此模型 turn 后、工具 await 后和每个步骤前都需要检查。TypeScript 的 string 类型也不能保护运行时 Mock，非字符串 Tool Call ID 曾被误报为 maxSteps，而不是非法 Provider 响应。
+- **得到的可复用原则：** Agent 的本质是受控状态机，不是“模型循环调用自己”。每个外部 await 都是取消重新判定点；每次模型请求都是不可变快照；Tool Call 必须先成为供应商无关原子事实，再进入工具系统。最后一步不执行无法回灌的工具，避免产生孤立动作。错误归属必须区分 Provider 流、Agent 控制与 Tool Executor。
+- **尚未理解：** 真实协议 Tool Call delta 如何可靠组装成原子 input；工具不存在、参数错误、执行超时和输出过大应怎样统一变成 Tool Result；多个无副作用工具何时值得并行。
+- **下一步：** 进入 P2.2 Tool Registry 与 Zod 参数验证。先使用纯内存假工具验证注册、查找、重复名称、参数错误和执行失败结果，不读取工作区或开放任何系统权限。

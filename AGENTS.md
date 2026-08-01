@@ -8,6 +8,7 @@ The current layout is:
 
 - `src/cli.ts`: executable process adapter; keep it thin and free of core decisions.
 - `src/cli/`: pure argument parsing, help text, CLI runner, and package metadata access.
+- `src/agent/`: protocol-neutral Agent Loop, Tool execution contract, and Agent control errors.
 - `src/index.ts`: package module entry.
 - `tests/`: Vitest tests mirroring `src/` behavior.
 - `docs/`: vision, learning logs, specifications, experiments, reviews, and future ADRs.

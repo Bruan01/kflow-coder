@@ -160,6 +160,17 @@ describe("runAsk", () => {
         { type: "finish", reason: "stop" },
       ],
     ],
+    [
+      "Tool Call event",
+      [
+        { type: "start" },
+        {
+          type: "tool-call",
+          toolCall: { id: "call_1", name: "lookup", input: {} },
+        },
+        { type: "finish", reason: "tool-call" },
+      ],
+    ],
     ["missing finish", [{ type: "start" }]],
   ] satisfies readonly [string, readonly ModelStreamEvent[]][])(
     "rejects a stream with %s",

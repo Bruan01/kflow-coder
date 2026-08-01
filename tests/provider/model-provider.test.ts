@@ -7,6 +7,7 @@ import {
   type ModelRequest,
   type ModelStreamEvent,
   type ModelStreamOptions,
+  type ModelToolCall,
 } from "../../src/index.js";
 
 const request: ModelRequest = {
@@ -20,13 +21,14 @@ class ScriptedModelProvider implements ModelProvider {
   constructor(
     private readonly events: readonly ModelStreamEvent[],
     private readonly failure?: ProviderError,
+    private readonly expectedRequest: ModelRequest = request,
   ) {}
 
   async *stream(
     receivedRequest: ModelRequest,
     options: ModelStreamOptions = {},
   ): AsyncIterable<ModelStreamEvent> {
-    expect(receivedRequest).toBe(request);
+    expect(receivedRequest).toBe(this.expectedRequest);
     throwIfAborted(options.signal);
 
     for (const event of this.events) {
@@ -164,5 +166,51 @@ describe("ModelProvider contract", () => {
       { type: "start" },
       { type: "text-delta", delta: "first" },
     ]);
+  });
+
+  it("represents atomic tool calls and tool result messages without wire fields", async () => {
+    const toolCall: ModelToolCall = {
+      id: "call_1",
+      name: "lookup",
+      input: { query: "KFC" },
+    };
+    const toolRequest: ModelRequest = {
+      messages: [
+        { role: "user", content: "Look up KFC" },
+        { role: "assistant", content: "", toolCalls: [toolCall] },
+        {
+          role: "tool",
+          toolCallId: "call_1",
+          content: "KFlow Code",
+          isError: false,
+        },
+      ],
+    };
+    const provider = new ScriptedModelProvider(
+      [
+        { type: "start" },
+        { type: "tool-call", toolCall },
+        { type: "finish", reason: "tool-call" },
+      ],
+      undefined,
+      toolRequest,
+    );
+    const observed: ModelStreamEvent[] = [];
+
+    for await (const event of provider.stream(toolRequest)) {
+      observed.push(event);
+    }
+
+    expect(observed).toEqual([
+      { type: "start" },
+      { type: "tool-call", toolCall },
+      { type: "finish", reason: "tool-call" },
+    ]);
+    expect(toolRequest.messages[2]).toEqual({
+      role: "tool",
+      toolCallId: "call_1",
+      content: "KFlow Code",
+      isError: false,
+    });
   });
 });

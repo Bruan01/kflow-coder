@@ -9,9 +9,12 @@ KFC errors separate machine decisions from user-safe presentation. Raw provider 
 | `internal`         | unknown/unclassified failure                                                   |         1 | no              |
 | `config`           | missing or invalid configuration                                               |         2 | no              |
 | `provider`         | authentication, quota, rate limit, timeout, context, service, invalid response |         3 | depends on code |
+| `agent`            | invalid options, maximum steps, invalid Tool Result                            |         1 | no              |
 | `user_interrupted` | Ctrl+C or explicit cancellation                                                |       130 | no              |
 
 Provider failures considered retryable are rate limiting, timeout, and temporary service unavailability. Authentication, exhausted quota, context limit, and invalid response errors require a configuration, account, input, or adapter change.
+
+Agent control failures are non-retryable without changing the run: invalid `maxSteps`, an exhausted model-step budget, or a Tool Result that does not match its Tool Call. Model stream violations remain Provider errors, while Tool Executor failures retain their original identity until the Tool Registry defines structured failure results.
 
 ## Public and Debug Information
 

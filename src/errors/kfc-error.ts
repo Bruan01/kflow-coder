@@ -1,5 +1,5 @@
 export type KfcErrorCategory =
-  "config" | "provider" | "user_interrupted" | "internal";
+  "config" | "provider" | "agent" | "user_interrupted" | "internal";
 
 export type KfcErrorCode =
   | "CONFIG_FILE_READ_FAILED"
@@ -14,6 +14,9 @@ export type KfcErrorCode =
   | "PROVIDER_CONTEXT_LIMIT"
   | "PROVIDER_SERVICE_UNAVAILABLE"
   | "PROVIDER_INVALID_RESPONSE"
+  | "AGENT_INVALID_OPTIONS"
+  | "AGENT_MAX_STEPS_EXCEEDED"
+  | "AGENT_INVALID_TOOL_RESULT"
   | "USER_INTERRUPTED"
   | "INTERNAL_ERROR";
 
